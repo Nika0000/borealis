@@ -148,7 +148,10 @@ void Dropdown::didSelectRowAt(RecyclerFrame* recycler, IndexPath index)
 {
     this->cb(index.row);
     Application::popActivity(TransitionAnimation::FADE, [this, index]
-        { this->dismissCb(index.row); });
+        {
+            if (this->dismissCb)
+                this->dismissCb(index.row);
+        });
 }
 
 AppletFrame* Dropdown::getAppletFrame()

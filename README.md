@@ -130,6 +130,7 @@ make -C build_ps4 -j$(nproc)
 cd android-project
 export JAVA_HOME=/Applications/Android\ Studio.app/Contents/jbr/Contents/Home
 export ANDROID_SDK_ROOT=~/Library/Android/sdk
+export ANDROID_NDK_HOME=~/Library/Android/sdk/ndk-bundle
 # Once built, the APK will be located in the app/build/outputs/apk/debug directory by default
 ./gradlew assembleDebug
 # Directly install the APK (requires the device or emulator to be connected via adb)

@@ -180,16 +180,7 @@ bool Application::internalMainLoop()
     }
 
     // Mouse and touch
-    if (Application::blockInputsTokens == 0)
-    {
-        Application::processInput();
-    }
-    else
-    {
-        Logger::verbose("input blocked (tokens={})", Application::blockInputsTokens);
-        if (!muteSounds)
-            Application::getAudioPlayer()->play(Sound::SOUND_CLICK_ERROR);
-    }
+    Application::processInput();
 
     // Animations
 #ifndef SIMPLE_HIGHLIGHT
@@ -485,6 +476,13 @@ void Application::navigate(FocusDirection direction, bool repeating)
 
 void Application::onControllerButtonPressed(enum ControllerButton button, bool repeating)
 {
+    if (Application::blockInputsTokens != 0)
+    {
+        Logger::debug("button press blocked (tokens={})", Application::blockInputsTokens);
+        if (!muteSounds)
+            Application::getAudioPlayer()->play(Sound::SOUND_CLICK_ERROR);
+        return;
+    }
 
     // Actions
     if (Application::handleAction(button, repeating))
@@ -1173,7 +1171,7 @@ int Application::getFont(std::string fontName)
 int Application::getDefaultFont()
 {
 #ifdef __SWITCH__
-    static int regular = Application::getFont(FONT_CHINESE_SIMPLIFIED);
+    static int regular = Application::getFont(FONT_REGULAR);
 #else
     static int regular = Application::getFont(FONT_REGULAR);
 #endif
