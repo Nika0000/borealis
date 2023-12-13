@@ -83,7 +83,8 @@ SDLPlatform::SDLPlatform()
                 { "zh_TW", LOCALE_ZH_HANT },
                 { "ja_JP", LOCALE_JA },
                 { "ko_KR", LOCALE_Ko },
-                { "it_IT", LOCALE_IT }
+                { "it_IT", LOCALE_IT },
+                { "ru", LOCALE_RU }
             };
             std::string lang = std::string { locales->language };
             if (locales->country)
