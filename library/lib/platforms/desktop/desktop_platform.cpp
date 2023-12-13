@@ -425,7 +425,7 @@ DesktopPlatform::DesktopPlatform()
     }
 
     // Locale
-    if (Platform::APP_LOCALE_DEFAULT == LOCALE_AUTO)
+    if (Platform::APP_LOCALE_DEFAULT == "" || Platform::APP_LOCALE_DEFAULT == LOCALE_AUTO)
     {
         char* langEnv = getenv("BOREALIS_LANG");
         this->locale  = langEnv ? std::string(langEnv) : LOCALE_DEFAULT;

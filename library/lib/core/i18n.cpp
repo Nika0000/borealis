@@ -117,6 +117,8 @@ void loadTranslations()
     std::string currentLocaleName = Application::getLocale();
     if (currentLocaleName != LOCALE_DEFAULT)
         loadLocale(currentLocaleName, &currentLocale);
+    else
+        currentLocale = defaultLocale;
 }
 
 namespace internal
