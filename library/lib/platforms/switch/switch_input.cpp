@@ -284,18 +284,21 @@ void SwitchInputManager::updateTouchStates(std::vector<RawTouchState>* states)
 
 void SwitchInputManager::sendRumbleInternal(HidVibrationDeviceHandle vibration_device[2], HidVibrationValue vibration_values[2], unsigned short lowFreqMotor, unsigned short highFreqMotor)
 {
-    float low  = (float)lowFreqMotor / 0xFFFF;
-    float high = (float)highFreqMotor / 0xFFFF;
+    vibration_values[0].amp_low =
+    vibration_values[0].amp_high =
+    vibration_values[1].amp_low = 
+    vibration_values[1].amp_high = 
+        lowFreqMotor == 0 ? 0.0f : 320.0f;
 
-    vibration_values[0].amp_low   = low;
-    vibration_values[0].freq_low  = low * 50;
-    vibration_values[0].amp_high  = high;
-    vibration_values[0].freq_high = high * 100;
+    vibration_values[0].freq_low =
+    vibration_values[1].freq_low =
+        lowFreqMotor == 0 ? 160.0f : (float) lowFreqMotor / 204;
 
-    vibration_values[1].amp_low   = low;
-    vibration_values[1].freq_low  = low * 50;
-    vibration_values[1].amp_high  = high;
-    vibration_values[1].freq_high = high * 100;
+    vibration_values[0].freq_high =
+    vibration_values[1].freq_high =
+        highFreqMotor == 0 ? 320.0f : (float) highFreqMotor / 204;
+
+
 
     hidSendVibrationValues(vibration_device, vibration_values, 2);
 }
