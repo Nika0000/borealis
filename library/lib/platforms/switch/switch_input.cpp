@@ -238,8 +238,19 @@ void SwitchInputManager::updateControllerStateInner(ControllerState* state, PadS
     }
     else
     {
-        state->axes[LEFT_X]  = (float)analog_stick_l.y / (float)0x7FFF * -1.0f + (float)analog_stick_r.y / (float)0x7FFF;
-        state->axes[LEFT_Y]  = (float)analog_stick_l.x / (float)0x7FFF * -1.0f + (float)analog_stick_r.x / (float)0x7FFF;
+        auto swap = Application::isSwapHalfJoyconStickToDpad();
+        auto x = (float)analog_stick_l.y / (float)0x7FFF * -1.0f + (float)analog_stick_r.y / (float)0x7FFF;
+        auto y = (float)analog_stick_l.x / (float)0x7FFF * -1.0f + (float)analog_stick_r.x / (float)0x7FFF;
+           
+        if (!swap) {
+            state->axes[LEFT_X] = x;
+            state->axes[LEFT_Y] = y;
+        } else {
+            state->buttons[BUTTON_UP] = y < -0.3f;
+            state->buttons[BUTTON_DOWN] = y > 0.3f;
+            state->buttons[BUTTON_RIGHT] = x > 0.3f;
+            state->buttons[BUTTON_LEFT] = x < -0.3f;
+        }
         state->axes[RIGHT_X] = 0;
         state->axes[RIGHT_Y] = 0;
     }

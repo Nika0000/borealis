@@ -299,6 +299,16 @@ class Application
         return drawCoursor;
     }
 
+    inline static void setSwapHalfJoyconStickToDpad(bool swap)
+    {
+        swapHalfJoyconStickToDpad = swap;
+    }
+
+    inline static bool isSwapHalfJoyconStickToDpad()
+    {
+        return swapHalfJoyconStickToDpad;
+    }
+
     static void tryDeinitFirstResponder(View* view);
 
   private:
@@ -307,6 +317,7 @@ class Application
     inline static bool debuggingViewEnabled = false;
     inline static bool swapInputKeys        = false;
     inline static bool drawCoursor          = false;
+    inline static bool swapHalfJoyconStickToDpad = false;
 
     inline static Platform* platform = nullptr;
 
