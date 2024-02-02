@@ -626,6 +626,16 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
     SDL_GameControllerRumble(c, lowFreqMotor, highFreqMotor, 30000);
 }
 
+void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor)
+{
+    if (controllers.find(controller) == controllers.end())
+        return;
+    SDL_GameController* c = controllers[controller];
+
+    SDL_GameControllerRumble(c, lowFreqMotor, highFreqMotor, 30000);
+    SDL_GameControllerRumbleTriggers(c, leftTriggerFreqMotor, rightTriggerFreqMotor, 30000);
+}
+
 void SDLInputManager::updateMouseMotion(SDL_MouseMotionEvent event)
 {
     if (pointerLocked && SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE)

@@ -307,7 +307,7 @@ struct MouseState
 class InputManager
 {
   public:
-    virtual ~InputManager() { }
+    virtual ~InputManager() = default;
 
     virtual short getControllersConnectedCount() = 0;
 
@@ -333,6 +333,11 @@ class InputManager
      * Calls to update gamepad's rumble state.
      */
     virtual void sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor) = 0;
+
+    /**
+     * Calls to update gamepad's rumble state.
+     */
+    virtual void sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor) = 0;
 
     /**
      * Called once every runloop cycle to perform some cleanup before new one.

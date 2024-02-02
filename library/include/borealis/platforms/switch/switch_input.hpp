@@ -53,7 +53,6 @@ class SwitchInputManager : public InputManager
 
     void drawCursor(NVGcontext* vg) override;
 
-    void sendRumbleRaw(float lowFreq, float highFreq, float lowAmp, float highAmp);
 
     void clearVibration(int controller);
 
@@ -87,7 +86,9 @@ class SwitchInputManager : public InputManager
     void sendRumbleInternal(HidVibrationDeviceHandle vibration_device[2], HidVibrationValue vibration_values[2],
         unsigned short lowFreqMotor, unsigned short highFreqMotor);
     void sendRumbleInternal(HidVibrationDeviceHandle vibration_device[2], HidVibrationValue vibration_values[2],
-        float lowFreq, float highFreq, float lowAmp, float highAmp);
+        unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor);
+    void sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, 
+        unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor);
 
 };
 

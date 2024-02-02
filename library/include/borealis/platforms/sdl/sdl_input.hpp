@@ -13,7 +13,7 @@ class SDLInputManager : public InputManager
   public:
     explicit SDLInputManager(SDL_Window* window);
 
-    ~SDLInputManager();
+    ~SDLInputManager() override;
 
     short getControllersConnectedCount() override;
 
@@ -28,6 +28,8 @@ class SDLInputManager : public InputManager
     void updateMouseStates(RawMouseState* state) override;
 
     void sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor) override;
+
+    void sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor) override;
 
     void runloopStart() override;
 
