@@ -650,15 +650,16 @@ void SDLInputManager::updateMouseMotion(SDL_MouseMotionEvent event)
 
 void SDLInputManager::updateMouseWheel(SDL_MouseWheelEvent event)
 {
-#if defined(_WIN32) || defined(__linux__)
-    this->scrollOffset.x += event.preciseX * 30;
-    this->scrollOffset.y += event.preciseY * 30;
-#else
-    this->scrollOffset.x += event.preciseX * 10;
-    this->scrollOffset.y += event.preciseY * 10;
-#endif
+    if (event.preciseX == 0.0f && event.preciseY == 0.0f) return;
 
-    this->getMouseScrollOffsetChanged()->fire(Point(event.x, event.y));
+//#ifdef APPLE
+    // HACK: Clamp the scroll values on macOS to prevent OS scroll acceleration
+    // from generating wild scroll deltas when scrolling quickly.
+    event.preciseX = SDL_clamp(event.preciseX, -1.0f, 1.0f);
+    event.preciseY = SDL_clamp(event.preciseY, -1.0f, 1.0f);
+//#endif
+
+    this->getMouseScrollOffsetChanged()->fire(Point(event.preciseX * 120, event.preciseY * 120));
 }
 
 void SDLInputManager::updateControllerSensorsUpdate(SDL_ControllerSensorEvent event)

@@ -43,7 +43,7 @@ class TabFrame : public Box
 
     static View* create();
 
-  private:
+  protected:
     BRLS_BIND(Sidebar, sidebar, "brls/tab_frame/sidebar");
 
     View* activeTab = nullptr;
