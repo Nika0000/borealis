@@ -206,6 +206,12 @@ bool SDLPlatform::processEvent(SDL_Event* event)
         if (manager)
             manager->updateMouseMotion(event->motion);
     }
+    else if (event->type == SDL_MOUSEMOTION)
+    {
+        auto* manager = this->inputManager;
+        if (manager)
+            manager->updateMouseMotion(event->motion);
+    }
     else if (event->type == SDL_MOUSEWHEEL)
     {
         auto* manager = this->inputManager;
