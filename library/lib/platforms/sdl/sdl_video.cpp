@@ -52,6 +52,10 @@ extern "C"
 std::unique_ptr<brls::D3D11Context> D3D11_CONTEXT;
 #endif
 
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
+
 namespace brls
 {
 
@@ -333,7 +337,22 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 
 void SDLVideoContext::beginFrame()
 {
-#if defined(BOREALIS_USE_D3D11)
+#ifdef  __SWITCH__ // TODO: Not work, needs to be implemented properly to apply correct screen resolution on Switch (example in GLFW video)
+    s32 width = 0, height = 0;
+    static s32 oldWidth = 0, oldHeight = 0;
+    appletGetDefaultDisplayResolution(&width, &height);
+
+    if (oldWidth != width || oldHeight != height)
+    {
+        oldWidth  = width;
+        oldHeight = height;
+
+        brls::Logger::info("Resolution chaned: {} / {}", oldWidth, oldHeight);
+
+        SDL_SetWindowSize(window, width, height);
+        Application::setWindowSize(width, height);
+    }
+#elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->beginFrame();
 #endif
 }
