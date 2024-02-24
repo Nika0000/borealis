@@ -67,15 +67,14 @@ static void sdlWindowFramebufferSizeCallback(SDL_Window* window, int width, int 
         return;
 
     int fWidth, fHeight;
+    int wWidth, wHeight;
 #ifdef BOREALIS_USE_OPENGL
-    SDL_GL_GetDrawableSize(window, &fWidth, &fHeight);
-    scaleFactor = fWidth * 1.0 / width;
 #if defined(ANDROID)
     // On Android, doing this is to ensure that glViewport is called from the main thread
     brls::sync([fWidth, fHeight]()
         { glViewport(0, 0, fWidth, fHeight); });
 #else
-    glViewport(0, 0, fWidth, fHeight);
+    glViewport(0, 0, width * scaleFactor, height * scaleFactor);
 #endif
 #elif defined(BOREALIS_USE_D3D11)
     fWidth      = width;
@@ -84,7 +83,7 @@ static void sdlWindowFramebufferSizeCallback(SDL_Window* window, int width, int 
     D3D11_CONTEXT->onFramebufferSize(fWidth, fHeight);
 #endif
 
-    Application::onWindowResized(fWidth, fHeight);
+    Application::onWindowResized(width * 2, height * 2);
 
     if (!VideoContext::FULLSCREEN)
     {
@@ -114,6 +113,8 @@ static int sdlWindowEventWatcher(void* data, SDL_Event* event)
             case SDL_WINDOWEVENT_RESIZED:
                 if (win == (SDL_Window*)data)
                 {
+                    int w, h;
+                    SDL_GetWindowSize(win, &w, &h);
                     sdlWindowFramebufferSizeCallback(win,
                         event->window.data1,
                         event->window.data2);
@@ -337,22 +338,7 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 
 void SDLVideoContext::beginFrame()
 {
-#ifdef  __SWITCH__ // TODO: Not work, needs to be implemented properly to apply correct screen resolution on Switch (example in GLFW video)
-    s32 width = 0, height = 0;
-    static s32 oldWidth = 0, oldHeight = 0;
-    appletGetDefaultDisplayResolution(&width, &height);
-
-    if (oldWidth != width || oldHeight != height)
-    {
-        oldWidth  = width;
-        oldHeight = height;
-
-        brls::Logger::info("Resolution chaned: {} / {}", oldWidth, oldHeight);
-
-        SDL_SetWindowSize(window, width, height);
-        Application::setWindowSize(width, height);
-    }
-#elif defined(BOREALIS_USE_D3D11)
+#if defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->beginFrame();
 #endif
 }
