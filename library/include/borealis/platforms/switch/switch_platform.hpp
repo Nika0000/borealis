@@ -70,6 +70,7 @@ class SwitchPlatform : public Platform
     void exitToHomeMode(bool value) override;
     void forceEnableGamePlayRecording() override;
     void openBrowser(std::string url) override;
+    std::string getHomeDirectory(std::string appName) override;
 
     void appletCallback(AppletHookType hookType);
 

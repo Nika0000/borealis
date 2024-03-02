@@ -978,6 +978,12 @@ std::string DesktopPlatform::getLocale()
     return this->locale;
 }
 
+std::string DesktopPlatform::getHomeDirectory(std::string appName) 
+{
+    std::string home(getenv("HOME"));
+    return home + "/" + appName;
+}
+
 DesktopPlatform::~DesktopPlatform()
 {
 #if defined(__WINRT__)

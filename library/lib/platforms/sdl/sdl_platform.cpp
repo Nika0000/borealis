@@ -107,6 +107,7 @@ SDLPlatform::SDLPlatform()
 
 void SDLPlatform::createWindow(std::string windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos)
 {
+    appTitle = windowTitle;
     this->videoContext = new SDLVideoContext(windowTitle, windowWidth, windowHeight, windowXPos, windowYPos);
     this->inputManager = new SDLInputManager(this->videoContext->getSDLWindow());
     this->imeManager   = new SDLImeManager(&this->otherEvent);
@@ -284,6 +285,14 @@ InputManager* SDLPlatform::getInputManager()
 
 ImeManager* SDLPlatform::getImeManager() {
     return this->imeManager;
+}
+
+std::string SDLPlatform::getHomeDirectory(std::string appName) 
+{
+    auto name = appTitle;
+    if (!appName.empty()) name = appName;
+
+    return { SDL_GetPrefPath(nullptr, appName.c_str()) };
 }
 
 SDLPlatform::~SDLPlatform()

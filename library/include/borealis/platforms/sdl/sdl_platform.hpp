@@ -42,6 +42,7 @@ class SDLPlatform : public DesktopPlatform
     void setWindowState(uint32_t windowWidth, uint32_t windowHeight, int windowXPos, int windowYPos) override;
     void disableScreenDimming(bool disable, const std::string& reason, const std::string& app) override;
     bool isScreenDimmingDisabled() override;
+    std::string getHomeDirectory(std::string appName) override;
 
     void setWindowAlwaysOnTop(bool enable) override;
     void pasteToClipboard(const std::string& text) override;
@@ -59,6 +60,7 @@ protected:
     SDLInputManager* inputManager = nullptr;
     SDLImeManager* imeManager     = nullptr;
     Event<SDL_Event*> otherEvent;
+    std::string appTitle;
 };
 
 } // namespace brls

@@ -298,6 +298,11 @@ void SwitchPlatform::setThemeVariant(ThemeVariant theme)
 #endif
 }
 
+std::string SwitchPlatform::getHomeDirectory(std::string appName)
+{
+    return "sdmc:/switch/" + appName;
+}
+
 SwitchPlatform::~SwitchPlatform()
 {
     delete this->audioPlayer;
