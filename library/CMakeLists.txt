@@ -173,9 +173,15 @@ elseif(PLATFORM_IOS OR PLATFORM_TVOS)
             ${BOREALIS_PATH}/lib/platforms/sdl
             ${BOREALIS_PATH}/lib/platforms/desktop)
     list(APPEND BRLS_PLATFORM_LIBS SDL2-static SDL2main)
-    list(APPEND BRLS_PLATFORM_OPTION -D__SDL2__ -DIOS -DUSE_GLES3)
     list(APPEND BOREALIS_SRC ${BOREALIS_PATH}/lib/platforms/desktop/ios_darwin.mm)
-    target_include_directories(SDL2-static PRIVATE ${BOREALIS_PATH}/lib/extern/angle/MetalANGLE.framework/Headers)
+
+    if(PLATFORM_IOS)
+        list(APPEND BRLS_PLATFORM_OPTION -D__SDL2__ -DIOS -DUSE_GLES3)
+        target_include_directories(SDL2-static PRIVATE ${BOREALIS_PATH}/lib/extern/angle/ios/MetalANGLE.framework/Headers)
+    elseif(PLATFORM_TVOS)
+        list(APPEND BRLS_PLATFORM_OPTION -D__SDL2__ -DTVOS -DUSE_GLES3)
+        target_include_directories(SDL2-static PRIVATE ${BOREALIS_PATH}/lib/extern/angle/tvos/MetalANGLE.framework/Headers)
+    endif()
 elseif(PLATFORM_SWITCH)
     list(APPEND BOREALIS_SOURCE
             ${BOREALIS_PATH}/lib/extern/switch-libpulsar/src/archive
