@@ -600,7 +600,6 @@ void SDLInputManager::updateMouseStates(RawMouseState* state)
 #endif
 
     state->offset = pointerOffset;
-
     state->scroll = scrollOffset;
 }
 
@@ -656,9 +655,17 @@ void SDLInputManager::updateMouseWheel(SDL_MouseWheelEvent event)
 //#ifdef APPLE
     // HACK: Clamp the scroll values on macOS to prevent OS scroll acceleration
     // from generating wild scroll deltas when scrolling quickly.
-    event.preciseX = SDL_clamp(event.preciseX, -1.0f, 1.0f);
-    event.preciseY = SDL_clamp(event.preciseY, -1.0f, 1.0f);
+//    event.preciseX = SDL_clamp(event.preciseX, -1.0f, 1.0f);
+//    event.preciseY = SDL_clamp(event.preciseY, -1.0f, 1.0f);
 //#endif
+
+// #if defined(_WIN32) || defined(__linux__)
+//     self->scrollOffset.x += event.preciseX * 30;
+//     self->scrollOffset.y += event.preciseY * 30;
+// #else
+    this->scrollOffset.x += event.preciseX * 4;
+    this->scrollOffset.y += event.preciseY * 4;
+// #endif
 
     this->getMouseScrollOffsetChanged()->fire(Point(event.preciseX * 120, event.preciseY * 120));
 }
