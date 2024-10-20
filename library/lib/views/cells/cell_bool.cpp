@@ -28,6 +28,9 @@ BooleanCell::BooleanCell()
     baseDetailTextSize = detail->getFontSize();
     setOn(false, false);
     this->registerClickAction([this](View* view) {
+        if (!enabled) 
+            return false;
+
         this->setOn(!state);
         this->event.fire(state);
         return true;
@@ -63,11 +66,19 @@ void BooleanCell::setOn(bool on, bool animated)
     }
 }
 
+
+void BooleanCell::setEnabled(bool enabled) 
+{
+    this->enabled = enabled;
+    updateUI();
+}
+
 void BooleanCell::updateUI()
 {
     Theme theme = Application::getTheme();
     detail->setText(state ? "hints/on"_i18n : "hints/off"_i18n);
-    detail->setTextColor(state ? theme["brls/list/listItem_value_color"] : theme["brls/text_disabled"]);
+    detail->setTextColor(state && enabled ? theme["brls/list/listItem_value_color"] : theme["brls/text_disabled"]);
+    title->setTextColor(enabled ? theme["brls/text"] : theme["brls/text_disabled"]);
 }
 
 void BooleanCell::scaleTick()

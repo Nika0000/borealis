@@ -38,6 +38,9 @@ class BooleanCell : public DetailCell
         return state;
     }
 
+    void setEnabled(bool enabled);
+    bool isEnabled() { return enabled; }
+
     Event<bool>* getEvent()
     {
         return &event;
@@ -47,6 +50,7 @@ class BooleanCell : public DetailCell
 
   private:
     bool state;
+    bool enabled = true;
     float baseDetailTextSize;
 
     Animatable scale = 1;

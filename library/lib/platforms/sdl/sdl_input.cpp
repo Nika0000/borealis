@@ -607,7 +607,7 @@ void SDLInputManager::setPointerLock(bool lock)
 {
     pointerLocked = lock;
     SDL_ShowCursor(lock ? SDL_FALSE : SDL_TRUE);
-    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
+//    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
 }
 
 void SDLInputManager::runloopStart()
