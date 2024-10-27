@@ -22,6 +22,14 @@
 namespace brls
 {
 
+#if defined(PLATFORM_IOS)
+extern void init_device_rumble();
+extern void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor);
+#else
+void init_device_rumble() {}
+void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor) {}
+#endif
+
 #define SDL_GAMEPAD_BUTTON_NONE SIZE_MAX
 #define SDL_GAMEPAD_BUTTON_MAX 15
 #define SDL_GAMEPAD_AXIS_MAX 6
@@ -450,6 +458,8 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
 
         pointerOffset.x = 0;
         pointerOffset.y = 0; });
+
+    init_device_rumble();
 }
 
 SDLInputManager::~SDLInputManager()
@@ -623,6 +633,11 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
         return;
     SDL_GameController* c = controllers[controller];
 
+    if (!SDL_GameControllerHasRumble(c)) {
+        device_rumble(lowFreqMotor, highFreqMotor);
+        return;
+    }
+
     SDL_GameControllerRumble(c, lowFreqMotor, highFreqMotor, 30000);
 }
 
@@ -631,6 +646,11 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
     if (controllers.find(controller) == controllers.end())
         return;
     SDL_GameController* c = controllers[controller];
+
+    if (!SDL_GameControllerHasRumble(c)) {
+        device_rumble(lowFreqMotor, highFreqMotor);
+        return;
+    }
 
     SDL_GameControllerRumble(c, lowFreqMotor, highFreqMotor, 30000);
     SDL_GameControllerRumbleTriggers(c, leftTriggerFreqMotor, rightTriggerFreqMotor, 30000);
