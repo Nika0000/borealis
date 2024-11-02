@@ -19,6 +19,8 @@
 
 #include <switch.h>
 
+#include <stop_token>
+#include <thread>
 #include <borealis/core/input.hpp>
 
 #define TOUCHES_MAX 10
@@ -53,10 +55,18 @@ class SwitchInputManager : public InputManager
 
     void drawCursor(NVGcontext* vg) override;
 
-
     void clearVibration(int controller);
 
+    bool isReplaceScreenshotWithGuideButton() { return replaceScreenshotWithGuideButton; }
+    void setReplaceScreenshotWithGuideButton(bool value) { replaceScreenshotWithGuideButton = value; }
+
   private:
+    void screenshot_button_thread_fn(std::stop_token token);
+    bool replaceScreenshotWithGuideButton = false;
+    std::jthread screenshot_button_thread;
+
+  private:
+    bool isScreenshotPressed = false;
     bool cursorInited = false;
     int cursorWidth, cursorHeight;
     int cursorTexture = 0;
