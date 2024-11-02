@@ -31,10 +31,12 @@ bool startsWith(const std::string& data, const std::string& prefix);
 
 std::string loadFileContents(const std::string& path);
 
+namespace utils {
+
 #define _BR_CAT(x, y) x ## y
 #define  BR_CAT(x, y) _BR_CAT(x, y)
 #define BR_ANONYMOUS BR_CAT(var, __COUNTER__)
-#define DEFER(f) auto BR_ANONYMOUS = ::brls::_Defer(f)
+#define DEFER(f) auto BR_ANONYMOUS = ::brls::utils::_Defer(f)
 
 template <typename F>
 struct _Defer {
@@ -57,4 +59,5 @@ struct _Defer {
         F f;
 };
 
+} // namespace utils
 } // namespace brls
