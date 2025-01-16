@@ -44,6 +44,8 @@ class GLFWInputManager : public InputManager
 
     void sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor) override;
 
+    void sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor) override;
+
     void runloopStart() override;
     
     void setPointerLock(bool lock) override;

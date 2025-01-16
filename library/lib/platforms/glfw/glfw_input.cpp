@@ -390,4 +390,8 @@ void GLFWInputManager::sendRumble(unsigned short controller, unsigned short lowF
 {
 }
 
+void GLFWInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor)
+{
+}
+
 };

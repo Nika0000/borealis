@@ -143,7 +143,7 @@ function(program_target target source)
     endif ()
 endfunction()
 
-function(ios_bundle iosStoryBoard assets plist name version build)
+function(ios_bundle iosStoryBoard assets plist name version)
     set(IOS_CODE_SIGN_IDENTITY "" CACHE STRING "The code sign identity to use when building the IPA.")
     set(IOS_GUI_IDENTIFIER "" CACHE STRING "The package name")
     if(IOS_CODE_SIGN_IDENTITY STREQUAL "")
@@ -166,7 +166,6 @@ function(ios_bundle iosStoryBoard assets plist name version build)
             MACOSX_BUNDLE TRUE
             MACOSX_BUNDLE_GUI_IDENTIFIER ${IOS_GUI_IDENTIFIER}
             MACOSX_BUNDLE_BUNDLE_NAME ${name}
-            MACOSX_BUNDLE_BUNDLE_VERSION "${build}"
             MACOSX_BUNDLE_SHORT_VERSION_STRING "${version}"
             XCODE_ATTRIBUTE_ENABLE_BITCODE NO
             XCODE_ATTRIBUTE_SKIP_INSTALL NO
