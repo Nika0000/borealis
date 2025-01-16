@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 #include <borealis/platforms/sdl/sdl_ime.hpp>
+#include <borealis/platforms/sdl/sdl_video.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/core/event.hpp>
 #include <borealis/views/edit_text_dialog.hpp>
@@ -86,6 +87,8 @@ namespace brls
         std::string subText,
         size_t maxStringLength,
         std::string initialText) {
+        SDLVideoContext* videoContext = (SDLVideoContext*)Application::getPlatform()->getVideoContext();
+        SDL_Window* window = videoContext->getSDLWindow();
         EditTextDialog* dialog = new EditTextDialog();
         this->inputBuffer = initialText;
 #ifdef __PSV__
@@ -145,10 +148,11 @@ namespace brls
         float scale = Application::windowScale / Application::getPlatform()->getVideoContext()->getScaleFactor();
 #endif
         // 更新输入法条位置
-        dialog->getLayoutEvent()->subscribe([scale](Point p) {
+        dialog->getLayoutEvent()->subscribe([window, scale](Point p) {
 #ifndef PS4
+           
             const SDL_Rect rect = {(int)(p.x* scale), (int)(p.y * scale), 100, 20};
-            SDL_SetTextInputRect(&rect);
+            SDL_SetTextInputArea (window, &rect, 0);
 #endif
         });
 
@@ -160,11 +164,11 @@ namespace brls
 
         auto eventID1 = event->subscribe([this, updateTextAndCursor, updateText, updateTextCursor](SDL_Event *e) {
             switch (e->type) {
-            case SDL_TEXTINPUT:
+            case SDL_EVENT_TEXT_INPUT:
                 this->isEditing = false;
                 updateTextAndCursor(e->text.text);
                 break;
-            case SDL_TEXTEDITING:
+            case SDL_EVENT_TEXT_EDITING:
                 if (strlen(e->edit.text) == 0) {
                     this->isEditing = false;
                 } else {
@@ -223,20 +227,21 @@ namespace brls
         });
 
         // cancel
-        dialog->getCancelEvent()->subscribe([this, eventID1]() {
-            SDL_StopTextInput();
+        dialog->getCancelEvent()->subscribe([this, window, eventID1]() {
+            SDL_StopTextInput(window);
             event->unsubscribe(eventID1);
         });
 
         // submit
-        dialog->getSubmitEvent()->subscribe([this, eventID1, cb]() {
-            SDL_StopTextInput();
+        dialog->getSubmitEvent()->subscribe([this, window, eventID1, cb]() {
+        
+            SDL_StopTextInput(window);
             event->unsubscribe(eventID1);
             cb(this->inputBuffer);
             return true;
         });
 
-        SDL_StartTextInput();
+        SDL_StartTextInput(window);
         dialog->open();
     }
 

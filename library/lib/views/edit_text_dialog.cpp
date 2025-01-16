@@ -6,7 +6,7 @@
 #ifdef __PSV__
 #define EDIT_TEXT_DIALOG_POP_ANIMATION TransitionAnimation::NONE
 #define EDIT_TEXT_DIALOG_BACKGROUND_TRANSLUCENT false
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "borealis/platforms/sdl/sdl_video.hpp"
 #else
 #define EDIT_TEXT_DIALOG_POP_ANIMATION TransitionAnimation::FADE

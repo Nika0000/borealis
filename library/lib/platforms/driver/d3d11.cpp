@@ -9,8 +9,8 @@
 #ifdef __GLFW__
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
-#elif defined(__SDL2__)
-#include <SDL_syswm.h>
+#elif defined(__SDL3__)
+#include <SDL3/SDL.h>
 #endif
 #ifdef __WINRT__
 #include <windows.ui.core.h>
@@ -29,12 +29,9 @@ D3D11Context::D3D11Context(GLFWwindow* window, int width, int height)
     this->hWnd = glfwGetWin32Window(window);
     this->initDX(this->hWnd, nullptr, width, height);
 }
-#elif defined(__SDL2__)
+#elif defined(__SDL3__)
 D3D11Context::D3D11Context(SDL_Window* window, int width, int height)
 {
-    SDL_SysWMinfo wi;
-    SDL_GetVersion(&wi.version);
-    SDL_GetWindowWMInfo(window, &wi);
 #ifdef __WINRT__
     // winrt 代码需要特别编译
     ABI::Windows::UI::Core::ICoreWindow* coreWindow = nullptr;
@@ -44,7 +41,7 @@ D3D11Context::D3D11Context(SDL_Window* window, int width, int height)
     }
     this->initDX(nullptr, coreWindow, width, height);
 #else
-    this->hWnd = wi.info.win.window;
+    this->hWnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
     this->initDX(this->hWnd, nullptr, width, height);
 #endif
 }

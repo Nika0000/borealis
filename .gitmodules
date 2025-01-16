@@ -3,4 +3,4 @@
 	url = https://github.com/xfangfang/glfw.git
 [submodule "library/lib/extern/SDL"]
 	path = library/lib/extern/SDL
-	url = https://github.com/XITRIX/SDL.git
+	url = https://github.com/libsdl-org/SDL.git

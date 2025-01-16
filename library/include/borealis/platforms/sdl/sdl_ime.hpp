@@ -18,7 +18,7 @@ limitations under the License.
 
 #include <borealis/core/ime.hpp>
 #include <borealis/core/event.hpp>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 namespace brls
 {

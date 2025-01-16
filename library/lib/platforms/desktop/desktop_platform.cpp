@@ -24,8 +24,8 @@
 #include <memory>
 #include <sstream>
 
-#ifdef __SDL2__
-#include <SDL2/SDL_misc.h>
+#ifdef __SDL3__
+#include <SDL3/SDL_misc.h>
 #endif
 
 #ifdef _WIN32
@@ -929,7 +929,7 @@ void DesktopPlatform::forceEnableGamePlayRecording()
 void DesktopPlatform::openBrowser(std::string url)
 {
     brls::Logger::debug("open url: {}", url);
-#if __SDL2__
+#if __SDL3__
     SDL_OpenURL(url.c_str());
 #elif __APPLE__
     std::string cmd = "open \"" + url + "\"";

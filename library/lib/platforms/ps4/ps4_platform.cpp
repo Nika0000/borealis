@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <orbis/CommonDialog.h>
 #include <orbis/NetCtl.h>
 #include <orbis/Sysmodule.h>

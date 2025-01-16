@@ -36,7 +36,7 @@
 #include <borealis/platforms/glfw/glfw_platform.hpp>
 #endif
 
-#ifdef __SDL2__
+#ifdef __SDL3__
 #include <borealis/platforms/sdl/sdl_platform.hpp>
 #endif
 
@@ -53,7 +53,7 @@ Platform* Platform::createPlatform()
     return new PsvPlatform();
 #elif defined(PS4)
     return new Ps4Platform();
-#elif defined(__SDL2__)
+#elif defined(__SDL3__)
     return new SDLPlatform();
 #elif defined(__GLFW__)
     return new GLFWPlatform();

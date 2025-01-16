@@ -116,7 +116,7 @@ void SwitchPlatform::createWindow(std::string windowTitle, uint32_t windowWidth,
 {
 #ifdef BOREALIS_USE_DEKO3D
     this->videoContext = new SwitchVideoContext();
-#elif defined(__SDL2__)
+#elif defined(__SDL3__)
     this->videoContext = new SDLVideoContext(windowTitle, windowWidth, windowHeight, 0, 0);
 #else
     this->videoContext = new GLFWVideoContext(windowTitle, windowWidth, windowHeight);

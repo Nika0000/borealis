@@ -90,7 +90,7 @@ target("borealis")
             add_defines("SDL_VIDEO_DRIVER_WINRT")
             add_packages("cppwinrt")
         end
-        add_defines("__SDL2__")
+        add_defines("__SDL3__")
     end
     local driver = get_config("driver")
     if driver == "metal" then

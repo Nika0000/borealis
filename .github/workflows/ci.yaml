@@ -80,10 +80,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        driver: [ glfw, sdl2, deko3d ]
+        driver: [ glfw, sdl3, deko3d ]
         include:
           - { driver: glfw, cmake: "-DUSE_GLFW=ON", ext: "gl3-glfw" }
-          - { driver: sdl2, cmake: "-DUSE_SDL2=ON", ext: "gl3-sdl2" }
+          - { driver: sdl3, cmake: "-DUSE_SDL3=ON", ext: "gl3-sdl3" }
           - { driver: deko3d, cmake: "-DUSE_DEKO3D=ON", ext: "deko3d" }
     steps:
       - name: Checkout
@@ -133,7 +133,7 @@ jobs:
       matrix:
         window:
           - { name: glfw, cmake: "-DUSE_GLFW=ON" }
-          - { name: sdl2, cmake: "-DUSE_SDL2=ON" }
+          - { name: sdl3, cmake: "-DUSE_SDL3=ON" }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -201,7 +201,7 @@ jobs:
           - { driver: gles2, cmake: "-DUSE_GLES2=ON" }
           - { driver: gles3, cmake: "-DUSE_GLES3=ON" }
           - { driver: gl3, cmake: "-DUSE_GLFW=ON", ext: "-glfw" }
-          - { driver: gl3, cmake: "-DUSE_SDL2=ON", ext: "-sdl2" }
+          - { driver: gl3, cmake: "-DUSE_SDL3=ON", ext: "-sdl3" }
     steps:
       - name: Checkout
         uses: actions/checkout@v4

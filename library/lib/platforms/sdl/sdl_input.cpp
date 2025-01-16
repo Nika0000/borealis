@@ -34,6 +34,8 @@ void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor) {}
 #define SDL_GAMEPAD_BUTTON_MAX 15
 #define SDL_GAMEPAD_AXIS_MAX 6
 #define SDL_STICKY 2
+#define SDL_RELEASED 0
+#define SDL_PRESSED 1
 
 /// HidKeyboardScancode
 /// Uses the same key codes as GLFW
@@ -353,7 +355,7 @@ static const size_t SDL_AXIS_MAPPING[SDL_GAMEPAD_AXIS_MAX] = {
     RIGHT_Z,
 };
 
-std::vector<std::pair<SDL_JoystickID, SDL_GameController*>> controllers;
+std::vector<std::pair<SDL_JoystickID, SDL_Gamepad*>> controllers;
 
 static int mouseButtons[3] = { 0 };
 
@@ -370,7 +372,7 @@ static inline int getMouseButtonState(int buttonIndex)
     }
 }
 
-static inline int getKeyboardKeys(SDL_Scancode code)
+static inline bool getKeyboardKeys(SDL_Scancode code)
 {
     if (keyboardKeys.find(code) == keyboardKeys.end())
         return SDL_RELEASED;
@@ -387,67 +389,73 @@ static inline int getKeyboardKeys(SDL_Scancode code)
     }
 }
 
-static int sdlEventWatcher(void* data, SDL_Event* event)
+static bool sdlEventWatcher(void* data, SDL_Event* event)
 {
-    if (event->type == SDL_CONTROLLERDEVICEADDED)
+    if (event->type == SDL_EVENT_GAMEPAD_ADDED)
     {
-        SDL_GameController* controller = SDL_GameControllerOpen(event->cdevice.which);
+        SDL_Gamepad* controller = SDL_OpenGamepad(event->cdevice.which);
+        int num_joysticks;
+        SDL_JoystickID *joysticks = SDL_GetJoysticks(&num_joysticks);
         if (controller)
         {
-            SDL_JoystickID jid = SDL_JoystickGetDeviceInstanceID(event->cdevice.which);
-            Logger::info("Controller connected: {}/{}", jid, SDL_GameControllerName(controller));
+            SDL_JoystickID jid = joysticks[event->cdevice.which];
+            Logger::info("Controller connected: {}/{}", jid, SDL_GetGamepadName(controller));
             controllers.push_back({ jid, controller });
         }
     }
-    else if (event->type == SDL_CONTROLLERDEVICEREMOVED)
+    else if (event->type == SDL_EVENT_GAMEPAD_REMOVED)
     {
+        int num_joysticks;
+        SDL_JoystickID *joysticks = SDL_GetJoysticks(&num_joysticks);
+
         Logger::info("Controller disconnected: {}", event->cdevice.which);
-        SDL_JoystickID jid = SDL_JoystickGetDeviceInstanceID(event->cdevice.which);
+        SDL_JoystickID jid = joysticks[event->cdevice.which];
         controllers.erase(std::remove_if(controllers.begin(), controllers.end(), [jid](auto x) {
             return x.first == jid;
         }), controllers.end());
     }
-    else if (event->type == SDL_MOUSEBUTTONDOWN)
+    else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
     {
         if (event->button.button <= 3)
             mouseButtons[event->button.button - 1] = SDL_PRESSED;
     }
-    else if (event->type == SDL_MOUSEBUTTONUP)
+    else if (event->type == SDL_EVENT_MOUSE_BUTTON_UP)
     {
         if (event->button.button <= 3)
             mouseButtons[event->button.button - 1] = SDL_STICKY;
     }
-    else if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP)
+    else if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP)
     {
-        keyboardKeys[event->key.keysym.scancode] = event->type == SDL_KEYDOWN ? SDL_PRESSED : SDL_STICKY;
+        keyboardKeys[event->key.scancode] = event->type == SDL_EVENT_KEY_DOWN ? SDL_PRESSED : SDL_STICKY;
     }
     Application::setActiveEvent(true);
-    return 0;
+    return true;
 }
 
 SDLInputManager::SDLInputManager(SDL_Window* window)
     : window(window)
 {
 
-    int32_t flags = SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER;
+    int32_t flags = SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD;
 #ifndef __WINRT__
     flags |= SDL_INIT_HAPTIC;
 #endif
-    if (SDL_Init(flags) < 0)
+    if (!SDL_Init(flags))
     {
         brls::fatal("Couldn't initialize joystick: " + std::string(SDL_GetError()));
     }
 
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    int numJoysticks;
+    SDL_JoystickID * joysticks = SDL_GetJoysticks(&numJoysticks);
 
-    int controllersCount = SDL_NumJoysticks();
-    brls::Logger::info("joystick num: {}", controllersCount);
+    Logger::info("joystick num: {}", numJoysticks);
 
-    for (int i = 0; i < controllersCount; i++)
+    for (int i = 0; i < numJoysticks; i++)
     {
-        SDL_JoystickID jid = SDL_JoystickGetDeviceInstanceID(i);
-        Logger::info("sdl: joystick {}: \"{}\"", jid, SDL_JoystickNameForIndex(i));
-        controllers.push_back({ jid, SDL_GameControllerOpen(i) });
+        SDL_JoystickID jid = joysticks[i];
+        Logger::info("sdl: joystick {}: \"{}\"", jid, SDL_GetJoystickNameForID(jid));
+        controllers.push_back({ jid, SDL_OpenGamepad(i) });
     }
 
     SDL_AddEventWatch(sdlEventWatcher, this->window);
@@ -469,7 +477,7 @@ SDLInputManager::~SDLInputManager()
 {
     for (auto i : controllers)
     {
-        SDL_GameControllerClose(i.second);
+        SDL_CloseGamepad(i.second);
     }
 }
 
@@ -541,26 +549,26 @@ void SDLInputManager::updateControllerState(ControllerState* state, int controll
 {
     if (controllers.size() <= controller) return;
 
-    SDL_GameController* c = controllers[controller].second;
+    SDL_Gamepad* c = controllers[controller].second;
 
     for (size_t i = 0; i < SDL_GAMEPAD_BUTTON_MAX; i++)
     {
         // Translate SDL gamepad to borealis controller
         size_t brlsButton          = SDL_BUTTONS_MAPPING[i];
-        state->buttons[brlsButton] = (bool)SDL_GameControllerGetButton(c, (SDL_GameControllerButton)i);
+        state->buttons[brlsButton] = (bool)SDL_GetGamepadButton(c, (SDL_GamepadButton)i);
     }
 
-    state->buttons[BUTTON_LT] = SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 3276.7f;
-    state->buttons[BUTTON_RT] = SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 3276.7f;
+    state->buttons[BUTTON_LT] = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > 3276.7f;
+    state->buttons[BUTTON_RT] = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 3276.7f;
 
-    state->buttons[BUTTON_NAV_UP]    = SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_LEFTY) < -16383.5f || SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_RIGHTY) < -16383.5f || state->buttons[BUTTON_UP];
-    state->buttons[BUTTON_NAV_RIGHT] = SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_LEFTX) > 16383.5f || SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_RIGHTX) > 16383.5f || state->buttons[BUTTON_RIGHT];
-    state->buttons[BUTTON_NAV_DOWN]  = SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_LEFTY) > 16383.5f || SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_RIGHTY) > 16383.5f || state->buttons[BUTTON_DOWN];
-    state->buttons[BUTTON_NAV_LEFT]  = SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_LEFTX) < -16383.5f || SDL_GameControllerGetAxis(c, SDL_CONTROLLER_AXIS_RIGHTX) < -16383.5f || state->buttons[BUTTON_LEFT];
+    state->buttons[BUTTON_NAV_UP]    = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTY) < -16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTY) < -16383.5f || state->buttons[BUTTON_UP];
+    state->buttons[BUTTON_NAV_RIGHT] = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTX) > 16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTX) > 16383.5f || state->buttons[BUTTON_RIGHT];
+    state->buttons[BUTTON_NAV_DOWN]  = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTY) > 16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTY) > 16383.5f || state->buttons[BUTTON_DOWN];
+    state->buttons[BUTTON_NAV_LEFT]  = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTX) < -16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTX) < -16383.5f || state->buttons[BUTTON_LEFT];
 
     for (size_t i = 0; i < SDL_GAMEPAD_AXIS_MAX; i++)
     {
-        state->axes[SDL_AXIS_MAPPING[i]] = SDL_GameControllerGetAxis(c, (SDL_GameControllerAxis)i) / 32767.0;
+        state->axes[SDL_AXIS_MAPPING[i]] = SDL_GetGamepadAxis(c, (SDL_GamepadAxis)i) / 32767.0;
     }
 }
 
@@ -571,17 +579,19 @@ bool SDLInputManager::getKeyboardKeyState(BrlsKeyboardScancode key)
 
 void SDLInputManager::updateTouchStates(std::vector<RawTouchState>* states)
 {
-    int devices = SDL_GetNumTouchDevices();
-    if (devices == 0)
+    int numTouchDevices;
+    SDL_TouchID* devices = SDL_GetTouchDevices(&numTouchDevices);
+    if (numTouchDevices == 0)
         return;
 
-    for (int deviceID = 0; deviceID < devices; deviceID++)
+    for (int deviceID = 0; deviceID < numTouchDevices; deviceID++)
     {
-        SDL_TouchID device = SDL_GetTouchDevice(deviceID);
-        int touchesCount   = SDL_GetNumTouchFingers(device);
-        for (int touchID = 0; touchID < touchesCount; touchID++)
+        SDL_TouchID device = devices[deviceID];
+        int numTouchesCount;
+        SDL_Finger** fingers = SDL_GetTouchFingers(device, &numTouchesCount);
+        for (int touchID = 0; touchID < numTouchesCount; touchID++)
         {
-            SDL_Finger* finger = SDL_GetTouchFinger(device, touchID);
+            SDL_Finger* finger = fingers[touchID];
 
             RawTouchState state;
             state.pressed    = true;
@@ -595,7 +605,7 @@ void SDLInputManager::updateTouchStates(std::vector<RawTouchState>* states)
 
 void SDLInputManager::updateMouseStates(RawMouseState* state)
 {
-    int x, y;
+    float x, y;
     SDL_GetMouseState(&x, &y);
 
     state->leftButton   = getMouseButtonState(SDL_BUTTON_LEFT);
@@ -619,7 +629,7 @@ void SDLInputManager::updateMouseStates(RawMouseState* state)
 void SDLInputManager::setPointerLock(bool lock)
 {
     pointerLocked = lock;
-    SDL_ShowCursor(lock ? SDL_FALSE : SDL_TRUE);
+    lock? SDL_HideCursor() : SDL_ShowCursor();
 //    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
 }
 
@@ -634,34 +644,40 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 {
     if (controllers.size() <= controller) return;
 
-    SDL_GameController* c = controllers[controller].second;
+    SDL_Gamepad* c = controllers[controller].second;
 
-    if (!SDL_GameControllerHasRumble(c)) {
+    auto cProps = SDL_GetGamepadProperties(c);
+    bool hasRumble = SDL_GetBooleanProperty(cProps, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
+
+    if (!hasRumble) {
         device_rumble(lowFreqMotor, highFreqMotor);
         return;
     }
 
-    SDL_GameControllerRumble(c, lowFreqMotor, highFreqMotor, 30000);
+    SDL_RumbleGamepad(c, lowFreqMotor, highFreqMotor, 30000);
 }
 
 void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor)
 {
     if (controllers.size() <= controller) return;
 
-    SDL_GameController* c = controllers[controller].second;
+    SDL_Gamepad* c = controllers[controller].second;
 
-    if (!SDL_GameControllerHasRumble(c)) {
+    auto cProps = SDL_GetGamepadProperties(c);
+    bool hasRumble = SDL_GetBooleanProperty(cProps, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
+
+    if (!hasRumble) {
         device_rumble(lowFreqMotor, highFreqMotor);
         return;
     }
 
-    SDL_GameControllerRumble(c, lowFreqMotor, highFreqMotor, 30000);
-    SDL_GameControllerRumbleTriggers(c, leftTriggerFreqMotor, rightTriggerFreqMotor, 30000);
+    SDL_RumbleGamepad(c, lowFreqMotor, highFreqMotor, 30000);
+    SDL_RumbleGamepadTriggers(c, leftTriggerFreqMotor, rightTriggerFreqMotor, 30000);
 }
 
 void SDLInputManager::updateMouseMotion(SDL_MouseMotionEvent event)
 {
-    if (pointerLocked && SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE)
+   if (pointerLocked && !SDL_CursorVisible())
     {
         getMouseCusorOffsetChanged()->fire(Point(float(event.xrel), float(event.yrel)));
 
@@ -671,9 +687,9 @@ void SDLInputManager::updateMouseMotion(SDL_MouseMotionEvent event)
     }
 }
 
-void SDLInputManager::updateMouseWheel(SDL_MouseWheelEvent event)
+void SDLInputManager::updateMouseWheel(SDL_MouseWheelEvent  event)
 {
-    if (event.preciseX == 0.0f && event.preciseY == 0.0f) return;
+    if (event.x == 0.0f && event.y == 0.0f) return;
 
 //#ifdef APPLE
     // HACK: Clamp the scroll values on macOS to prevent OS scroll acceleration
@@ -686,14 +702,14 @@ void SDLInputManager::updateMouseWheel(SDL_MouseWheelEvent event)
 //     self->scrollOffset.x += event.preciseX * 30;
 //     self->scrollOffset.y += event.preciseY * 30;
 // #else
-    this->scrollOffset.x += event.preciseX * 4;
-    this->scrollOffset.y += event.preciseY * 4;
+    this->scrollOffset.x += event.x * 4;
+    this->scrollOffset.y += event.y * 4;
 // #endif
 
-    this->getMouseScrollOffsetChanged()->fire(Point(event.preciseX * 120, event.preciseY * 120));
+    this->getMouseScrollOffsetChanged()->fire(Point(event.x * 120, event.y * 120));
 }
 
-void SDLInputManager::updateControllerSensorsUpdate(SDL_ControllerSensorEvent event)
+void SDLInputManager::updateControllerSensorsUpdate(SDL_GamepadSensorEvent event)
 {
     auto id = event.which;
     SensorEvent state;
@@ -717,12 +733,12 @@ void SDLInputManager::updateKeyboardState(SDL_KeyboardEvent event)
 {
     auto* self = (SDLInputManager*)Application::getPlatform()->getInputManager();
     KeyState state {};
-    state.key     = sdlToBrlsKeyboardScancode(event.keysym.scancode);
-    state.pressed = event.type == SDL_KEYDOWN;
-    state.mods |= event.keysym.mod & KMOD_SHIFT ? BRLS_KBD_MODIFIER_SHIFT : 0;
-    state.mods |= event.keysym.mod & KMOD_CTRL ? BRLS_KBD_MODIFIER_CTRL : 0;
-    state.mods |= event.keysym.mod & KMOD_ALT ? BRLS_KBD_MODIFIER_ALT : 0;
-    state.mods |= event.keysym.mod & KMOD_GUI ? BRLS_KBD_MODIFIER_META : 0;
+    state.key     = sdlToBrlsKeyboardScancode(event.scancode);
+    state.pressed = event.type == SDL_EVENT_KEY_DOWN;
+    state.mods |= event.mod & SDL_KMOD_SHIFT ? BRLS_KBD_MODIFIER_SHIFT : 0;
+    state.mods |= event.mod & SDL_KMOD_CTRL ? BRLS_KBD_MODIFIER_CTRL : 0;
+    state.mods |= event.mod & SDL_KMOD_ALT ? BRLS_KBD_MODIFIER_ALT : 0;
+    state.mods |= event.mod & SDL_KMOD_GUI ? BRLS_KBD_MODIFIER_META : 0;
 
     self->getKeyboardKeyStateChanged()->fire(state);
     Application::setActiveEvent(true);

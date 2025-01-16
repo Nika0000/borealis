@@ -22,8 +22,8 @@
 #ifdef __GLFW__
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-#elif defined(__SDL2__)
-#include <SDL2/SDL.h>
+#elif defined(__SDL3__)
+#include <SDL3/SDL.h>
 #endif
 
 namespace brls
@@ -34,7 +34,7 @@ class D3D11Context
   public:
 #ifdef __GLFW__
     D3D11Context(GLFWwindow* window, int width, int height);
-#elif defined(__SDL2__)
+#elif defined(__SDL3__)
     D3D11Context(SDL_Window* window, int width, int height);
 #endif
     ~D3D11Context();

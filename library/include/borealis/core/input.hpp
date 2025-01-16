@@ -239,10 +239,10 @@ enum class SensorEventType
 // Represents the state of the controller's sensor
 struct SensorEvent
 {
-    int controllerIndex;
+    uint32_t controllerIndex;
     SensorEventType type;
     float data[3];
-    uint32_t timestamp;
+    uint64_t timestamp;
 };
 
 // Represents the state of the controller (a gamepad or a keyboard) in the current frame

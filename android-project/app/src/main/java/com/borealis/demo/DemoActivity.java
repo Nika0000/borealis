@@ -35,7 +35,7 @@ public class DemoActivity extends SDLActivity
     protected String[] getLibraries() {
         // Load SDL2 and borealis demo app
         return new String[] {
-                "SDL2",
+                "SDL3",
                 "borealis_demo"
         };
     }

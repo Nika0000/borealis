@@ -42,7 +42,6 @@ SDLPlatform::SDLPlatform()
     // Enable Fullscreen on Android
     VideoContext::FULLSCREEN = true;
     SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
-    SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
 #elif defined(IOS) || defined(TVOS)
     // Enable Fullscreen on iOS
     VideoContext::FULLSCREEN = true;
@@ -63,7 +62,7 @@ SDLPlatform::SDLPlatform()
 #endif
 
     // Init sdl
-    if (SDL_Init(SDL_INIT_EVENTS | SDL_INIT_TIMER) < 0)
+    if (!SDL_Init(SDL_INIT_EVENTS))
     {
         Logger::error("sdl: failed to initialize");
         return;
@@ -75,10 +74,12 @@ SDLPlatform::SDLPlatform()
     // override local
     if (Platform::APP_LOCALE_DEFAULT == LOCALE_AUTO)
     {
-        SDL_Locale* locales = SDL_GetPreferredLocales();
-        if (locales != nullptr && locales->language != nullptr)
+        int numLocales;
+        SDL_Locale** locales = SDL_GetPreferredLocales(&numLocales);
+
+        if (locales != nullptr && numLocales > 0)
         {
-            std::unordered_map<std::string, std::string> sdl2brls = {
+            std::unordered_map<std::string, std::string> localeMap = {
                 { "zh_CN", LOCALE_ZH_HANS },
                 { "zh_TW", LOCALE_ZH_HANT },
                 { "ja_JP", LOCALE_JA },
@@ -86,22 +87,32 @@ SDLPlatform::SDLPlatform()
                 { "it_IT", LOCALE_IT },
                 { "ru", LOCALE_RU }
             };
-            std::string lang = std::string { locales->language };
-            if (locales->country)
+
+
+            for (int i = 0; i < numLocales; ++i)
             {
-                lang += "_" + std::string { locales->country };
+                std::string lang = std::string { locales[i]->language };
+                if(locales[i]->country)
+                {
+                    lang += "_" + std::string { locales[i]->country };
+                }
+
+                if(localeMap.count(lang) > 0)
+                {
+                    this->locale = localeMap[lang];
+                    Logger::info("Set app localeMM: {}", this->locale);
+                    break;
+                }
             }
-            if (sdl2brls.count(lang) > 0)
-            {
-                this->locale = sdl2brls[lang];
-            }
-            else
-            {
-                this->locale = LOCALE_EN_US;
-            }
-            brls::Logger::info("Set app locale: {}", this->locale);
-            SDL_free(locales);
         }
+
+        if(this->locale.empty())
+        {
+            this->locale = LOCALE_EN_US;
+            Logger::info("Set app locale to default: {}", this->locale);
+        }
+
+        SDL_free(locales);
     }
 }
 
@@ -120,7 +131,7 @@ void SDLPlatform::restoreWindow()
 
 void SDLPlatform::setWindowAlwaysOnTop(bool enable)
 {
-    SDL_SetWindowAlwaysOnTop(this->videoContext->getSDLWindow(), enable ? SDL_TRUE : SDL_FALSE);
+    SDL_SetWindowAlwaysOnTop(this->videoContext->getSDLWindow(), enable ? true : false);
 }
 
 void SDLPlatform::setWindowSize(uint32_t windowWidth, uint32_t windowHeight)
@@ -168,7 +179,7 @@ void SDLPlatform::disableScreenDimming(bool disable, const std::string& reason, 
 
 bool SDLPlatform::isScreenDimmingDisabled()
 {
-    return !SDL_IsScreenSaverEnabled();
+    return !SDL_ScreenSaverEnabled();
 }
 
 void SDLPlatform::pasteToClipboard(const std::string& text)
@@ -191,39 +202,39 @@ std::string SDLPlatform::getName()
 
 bool SDLPlatform::processEvent(SDL_Event* event)
 {
-    if (event->type == SDL_QUIT)
+    if (event->type == SDL_EVENT_QUIT)
     {
         return false;
     }
-    else if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP)
+    else if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP)
     {
         auto* manager = this->inputManager;
         if (manager)
             manager->updateKeyboardState(event->key);
     }
-    else if (event->type == SDL_MOUSEMOTION)
+    else if (event->type == SDL_EVENT_MOUSE_MOTION)
     {
         auto* manager = this->inputManager;
         if (manager)
             manager->updateMouseMotion(event->motion);
     }
-    else if (event->type == SDL_MOUSEMOTION)
+    else if (event->type == SDL_EVENT_MOUSE_MOTION)
     {
         auto* manager = this->inputManager;
         if (manager)
             manager->updateMouseMotion(event->motion);
     }
-    else if (event->type == SDL_MOUSEWHEEL)
+    else if (event->type == SDL_EVENT_MOUSE_WHEEL)
     {
         auto* manager = this->inputManager;
         if (manager)
             manager->updateMouseWheel(event->wheel);
     }
-    else if (event->type == SDL_CONTROLLERSENSORUPDATE)
+    else if (event->type == SDL_EVENT_GAMEPAD_SENSOR_UPDATE)
     {
         auto* manager = this->inputManager;
         if (manager)
-            manager->updateControllerSensorsUpdate(event->csensor);
+            manager->updateControllerSensorsUpdate(event->gsensor);
     }
 #ifdef IOS
     else if (event->type == SDL_APP_WILLENTERBACKGROUND)
@@ -236,7 +247,7 @@ bool SDLPlatform::processEvent(SDL_Event* event)
 
     }
 #endif
-    else if (event->type != SDL_POLLSENTINEL)
+    else if (event->type != SDL_EVENT_POLL_SENTINEL)
     {
         // 其它没有处理的事件
         this->otherEvent.fire(event);

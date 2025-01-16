@@ -54,6 +54,7 @@ std::unique_ptr<brls::D3D11Context> D3D11_CONTEXT;
 
 #ifdef __SWITCH__
 #include <switch.h>
+#include "sdl_video.hpp"
 #endif
 
 namespace brls
@@ -68,7 +69,7 @@ static void sdlWindowFramebufferSizeCallback(SDL_Window* window, int width, int 
 
     int fWidth, fHeight;
 #ifdef BOREALIS_USE_OPENGL
-    SDL_GL_GetDrawableSize(window, &fWidth, &fHeight);
+    SDL_GetWindowSizeInPixels(window, &fWidth, &fHeight);
     scaleFactor = fWidth * 1.0 / width;
 #if defined(ANDROID)
     // On Android, doing this is to ensure that glViewport is called from the main thread
@@ -104,14 +105,14 @@ static void sdlWindowPositionCallback(SDL_Window* window, int windowXPos, int wi
     }
 }
 
-static int sdlWindowEventWatcher(void* data, SDL_Event* event)
+static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
 {
-    if (event->type == SDL_WINDOWEVENT)
+    if (event->type >= SDL_EVENT_WINDOW_FIRST && event->type <= SDL_EVENT_WINDOW_LAST)
     {
         SDL_Window* win = SDL_GetWindowFromID(event->window.windowID);
-        switch (event->window.event)
+        switch (event->type)
         {
-            case SDL_WINDOWEVENT_RESIZED:
+            case SDL_EVENT_WINDOW_RESIZED:
                 if (win == (SDL_Window*)data)
                 {
                     sdlWindowFramebufferSizeCallback(win,
@@ -119,7 +120,7 @@ static int sdlWindowEventWatcher(void* data, SDL_Event* event)
                         event->window.data2);
                 }
                 break;
-            case SDL_WINDOWEVENT_MOVED:
+            case SDL_EVENT_WINDOW_MOVED:
                 if (win == (SDL_Window*)data)
                 {
                     sdlWindowPositionCallback(win,
@@ -129,7 +130,7 @@ static int sdlWindowEventWatcher(void* data, SDL_Event* event)
                 break;
         }
     }
-    return 0;
+    return true;
 }
 
 SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos)
@@ -169,14 +170,14 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     PVRSRVCreateVirtualAppHint(&hint);
 #endif
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (!SDL_Init(SDL_INIT_VIDEO))
     {
         Logger::error("sdl: failed to initialize");
         return;
     }
 
     // Create window
-    Uint32 windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
+    Uint32 windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 #ifdef BOREALIS_USE_OPENGL
 #ifdef __SWITCH__
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -236,30 +237,33 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 #ifdef __WINRT__
         windowFlags |= SDL_WINDOW_FULLSCREEN;
 #else
-        windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    ///TODO:
+    windowFlags |= SDL_WINDOW_FULLSCREEN;
 #endif
     }
-    SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+    SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "1");
+
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, windowTitle.c_str());
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, windowWidth);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, windowHeight);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, windowFlags);
 
     if (isnan(windowXPos) || isnan(windowYPos))
     {
-        this->window = SDL_CreateWindow(windowTitle.c_str(),
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
-            windowWidth,
-            windowHeight,
-            windowFlags);
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_UNDEFINED);
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_UNDEFINED);
+        this->window = SDL_CreateWindowWithProperties(props);
     }
     else
     {
-        this->window = SDL_CreateWindow(windowTitle.c_str(),
-            windowXPos > 0 ? windowXPos : SDL_WINDOWPOS_UNDEFINED,
-            windowYPos > 0 ? windowYPos : SDL_WINDOWPOS_UNDEFINED,
-            windowWidth,
-            windowHeight,
-            windowFlags);
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, windowXPos > 0 ? windowXPos : SDL_WINDOWPOS_UNDEFINED);
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER,  windowYPos > 0 ? windowYPos : SDL_WINDOWPOS_UNDEFINED);
+        this->window = SDL_CreateWindowWithProperties(props);
     }
 
+    SDL_DestroyProperties(props);
+    
     if (!this->window)
     {
         fatal("sdl: failed to create window");
@@ -267,8 +271,8 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 #ifdef BOREALIS_USE_OPENGL
     // Configure window
     SDL_GLContext context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, context);
-#endif
+    SDL_GL_MakeCurrent(window, context); 
+#endif  
     SDL_AddEventWatch(sdlWindowEventWatcher, window);
 #ifdef BOREALIS_USE_OPENGL
 #if !defined(__PSV__) && !defined(PS4)
@@ -310,7 +314,7 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 
     int fWidth, fHeight;
 #ifdef BOREALIS_USE_OPENGL
-    SDL_GL_GetDrawableSize(window, &fWidth, &fHeight);
+    SDL_GetWindowSizeInPixels(window, &fWidth, &fHeight);
     scaleFactor = fWidth * 1.0 / width;
     Application::setWindowSize(fWidth, fHeight);
     glViewport(0, 0, fWidth, fHeight);
@@ -445,9 +449,12 @@ void SDLVideoContext::fullScreen(bool fs)
     // win32 会很模糊，而且点击事件貌似也错位了，只给 winrt 使用。
     static unsigned int flag = SDL_WINDOW_FULLSCREEN;
 #else
-    static unsigned int flag = SDL_WINDOW_FULLSCREEN_DESKTOP;
+    ///TODO:
+    static unsigned int flag = SDL_WINDOW_FULLSCREEN;
+    //static unsigned int flag = SDL_WINDOW_FULLSCREEN_DESKTOP;
 #endif
-    SDL_SetWindowFullscreen(this->window, fs ? flag : 0);
+    ///TODO: 
+    SDL_SetWindowFullscreen(this->window, fs ? flag : 0 );
 }
 
 } // namespace brls

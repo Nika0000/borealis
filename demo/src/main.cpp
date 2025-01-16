@@ -16,7 +16,7 @@
 */
 
 #if defined(ANDROID) || defined(IOS)
-#include <SDL2/SDL_main.h>
+#include <SDL3/SDL_main.h>
 #endif
 
 #include <borealis.hpp>

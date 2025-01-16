@@ -21,7 +21,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include <borealis/core/application.hpp>
 #include <borealis/core/i18n.hpp>
@@ -32,7 +32,7 @@ namespace brls
 {
 
     bool static getPlatformBool(const std::string& method, bool defaultValue = false) {
-        auto env = static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+        auto env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
 
         jclass utilsClass = env->FindClass("org/libsdl/app/PlatformUtils");
         if (utilsClass == nullptr)
@@ -47,7 +47,7 @@ namespace brls
     }
 
     int static getPlatformInt(const std::string& method, int defaultValue = 100) {
-        auto env = static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+        auto env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
 
         jclass utilsClass = env->FindClass("org/libsdl/app/PlatformUtils");
         if (utilsClass == nullptr)
@@ -140,7 +140,7 @@ namespace brls
     }
 
     void AndroidPlatform::openBrowser(std::string url) {
-        auto env = static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+        auto env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
 
         jclass utilsClass = env->FindClass("org/libsdl/app/PlatformUtils");
         if (utilsClass == nullptr) {
@@ -160,12 +160,12 @@ namespace brls
     }
 
     float AndroidPlatform::getBacklightBrightness() {
-        auto env = static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+        auto env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
 
         jclass utilsClass = env->FindClass("org/libsdl/app/PlatformUtils");
         if (utilsClass == nullptr)
             return 0.0f;
-        auto activity = (jobject)SDL_AndroidGetActivity();
+        auto activity = (jobject)SDL_GetAndroidJNIEnv();
         if (activity == nullptr) {
             env->DeleteLocalRef(utilsClass);
             return 0.0f;
@@ -181,7 +181,7 @@ namespace brls
     }
 
     void AndroidPlatform::setBacklightBrightness(float brightness) {
-        auto env = static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+        auto env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
         jclass utilsClass = env->FindClass("org/libsdl/app/PlatformUtils");
         if (utilsClass == nullptr) {
             return;
@@ -190,7 +190,7 @@ namespace brls
                                                              "(Landroid/app/Activity;F)V");
         if (method == nullptr) return;
 
-        auto activity = (jobject)SDL_AndroidGetActivity();
+        auto activity = (jobject)SDL_GetAndroidJNIEnv();
         if (activity == nullptr) {
             env->DeleteLocalRef(utilsClass);
             return;

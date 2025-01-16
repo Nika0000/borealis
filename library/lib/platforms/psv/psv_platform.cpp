@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <psp2/apputil.h>
 #include <psp2/avconfig.h>
 #include <psp2/kernel/processmgr.h>

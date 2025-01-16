@@ -40,7 +40,7 @@ option(USE_STD_THREAD "Whether to use std::thread instead of pthread" OFF)
 option(CUSTOM_RESOURCES_DIR "Custom resources dir" "")
 
 option(USE_GLFW "using glfw for input and create window" OFF)
-option(USE_SDL2 "using sdl2 for input and create window" OFF)
+option(USE_SDL3 "using sdl3 for input and create window" OFF)
 
 # OpenGL version
 option(USE_GL3 "using OpenGL 3.2+" OFF)
