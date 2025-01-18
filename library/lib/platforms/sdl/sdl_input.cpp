@@ -355,7 +355,7 @@ static const size_t SDL_AXIS_MAPPING[SDL_GAMEPAD_AXIS_MAX] = {
     RIGHT_Z,
 };
 
-std::vector<std::pair<SDL_JoystickID, SDL_Gamepad*>> controllers;
+std::vector<std::pair<size_t, std::pair<SDL_JoystickID, SDL_Gamepad*>>> controllers;
 
 static int mouseButtons[3] = { 0 };
 
@@ -393,26 +393,29 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
 {
     if (event->type == SDL_EVENT_GAMEPAD_ADDED)
     {
-        SDL_Gamepad* controller = SDL_OpenGamepad(event->cdevice.which);
-        int num_joysticks;
-        SDL_JoystickID *joysticks = SDL_GetJoysticks(&num_joysticks);
+        SDL_Gamepad* controller = SDL_OpenGamepad(event->gdevice.which);
         if (controller)
         {
-            SDL_JoystickID jid = joysticks[event->cdevice.which];
-            Logger::info("Controller connected: {}/{}", jid, SDL_GetGamepadName(controller));
-            controllers.push_back({ jid, controller });
+            SDL_Joystick* joystick = SDL_GetGamepadJoystick(controller);
+            SDL_JoystickID jid = SDL_GetJoystickID(joystick);
+
+            Logger::info("Controller connected: {} | {}", jid, SDL_GetGamepadName(controller));
+           
+            controllers.push_back({ controllers.size(), { jid, controller } });
         }
     }
     else if (event->type == SDL_EVENT_GAMEPAD_REMOVED)
     {
-        int num_joysticks;
-        SDL_JoystickID *joysticks = SDL_GetJoysticks(&num_joysticks);
-
-        Logger::info("Controller disconnected: {}", event->cdevice.which);
-        SDL_JoystickID jid = joysticks[event->cdevice.which];
-        controllers.erase(std::remove_if(controllers.begin(), controllers.end(), [jid](auto x) {
-            return x.first == jid;
+        controllers.erase(std::remove_if(controllers.begin(), controllers.end(), [event](auto c) {
+            return c.second.first == event->gdevice.which;
         }), controllers.end());
+     
+        Logger::info("Controller with id {} disconnected.", event->gdevice.which);
+
+        for(size_t i = 0; i < controllers.size(); ++i)
+        {
+            controllers[i].first = static_cast<int>(i);
+        }
     }
     else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
     {
@@ -446,17 +449,24 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
     }
 
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-    int numJoysticks;
-    SDL_JoystickID * joysticks = SDL_GetJoysticks(&numJoysticks);
 
-    Logger::info("joystick num: {}", numJoysticks);
-
-    for (int i = 0; i < numJoysticks; i++)
+    if(SDL_HasGamepad())
     {
-        SDL_JoystickID jid = joysticks[i];
-        Logger::info("sdl: joystick {}: \"{}\"", jid, SDL_GetJoystickNameForID(jid));
-        controllers.push_back({ jid, SDL_OpenGamepad(i) });
+        int numGamepads;
+        SDL_JoystickID * joysticks = SDL_GetGamepads(&numGamepads);
+        Logger::info("Detected {} game controllers.", numGamepads);
+
+        for (int i = 0; i < numGamepads; i++)
+        {
+            if(SDL_IsGamepad(joysticks[i]))
+            {
+                SDL_JoystickID jid = joysticks[i];
+                Logger::info("SDL: Controller {} | {}", jid, SDL_GetGamepadNameForID(jid));
+                controllers.push_back({ controllers.size(), { jid, SDL_OpenGamepad(jid) }});
+            }
+        }
     }
+    
 
     SDL_AddEventWatch(sdlEventWatcher, this->window);
 
@@ -477,7 +487,7 @@ SDLInputManager::~SDLInputManager()
 {
     for (auto i : controllers)
     {
-        SDL_CloseGamepad(i.second);
+        SDL_CloseGamepad(i.second.second);
     }
 }
 
@@ -549,7 +559,7 @@ void SDLInputManager::updateControllerState(ControllerState* state, int controll
 {
     if (controllers.size() <= controller) return;
 
-    SDL_Gamepad* c = controllers[controller].second;
+    SDL_Gamepad* c = controllers[controller].second.second;
 
     for (size_t i = 0; i < SDL_GAMEPAD_BUTTON_MAX; i++)
     {
@@ -630,6 +640,8 @@ void SDLInputManager::setPointerLock(bool lock)
 {
     pointerLocked = lock;
     lock? SDL_HideCursor() : SDL_ShowCursor();
+
+    SDL_SetWindowRelativeMouseMode(window, lock? true : false);
 //    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
 }
 
@@ -644,7 +656,7 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 {
     if (controllers.size() <= controller) return;
 
-    SDL_Gamepad* c = controllers[controller].second;
+    SDL_Gamepad* c = controllers[controller].second.second;
 
     auto cProps = SDL_GetGamepadProperties(c);
     bool hasRumble = SDL_GetBooleanProperty(cProps, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
@@ -660,8 +672,8 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor)
 {
     if (controllers.size() <= controller) return;
-
-    SDL_Gamepad* c = controllers[controller].second;
+    
+    SDL_Gamepad* c = controllers[controller].second.second;
 
     auto cProps = SDL_GetGamepadProperties(c);
     bool hasRumble = SDL_GetBooleanProperty(cProps, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
