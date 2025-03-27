@@ -26,14 +26,15 @@
 #include <borealis/core/font.hpp>
 #include <borealis/core/frame_context.hpp>
 #include <borealis/core/logger.hpp>
+#include <borealis/core/notification_manager.hpp>
 #include <borealis/core/platform.hpp>
 #include <borealis/core/style.hpp>
 #include <borealis/core/theme.hpp>
 #include <borealis/core/view.hpp>
-#include <borealis/core/notification_manager.hpp>
 #include <borealis/views/label.hpp>
 #include <deque>
 #include <vector>
+
 
 #ifdef __WINRT__
 #ifdef main
@@ -130,13 +131,25 @@ class Application
     static void pushActivity(Activity* view, TransitionAnimation animation = TransitionAnimation::FADE);
 
     /**
+     * Replaces the current activity with a new one on the application's view stack.
+     *
+     * The new view will automatically be resized to take
+     * the whole screen.
+     *
+     * The view will gain focus if applicable.
+     *
+     * The previous activity will be removed from the stack.
+     */
+    static void replaceActivity(Activity* view, TransitionAnimation animation = TransitionAnimation::FADE);
+
+    /**
      * Pops the last pushed activity from the stack
      * and gives focus back where it was before.
      *
      * return false if no actifity to pop.
      */
     static bool popActivity(
-        TransitionAnimation animation = TransitionAnimation::FADE, std::function<void(void)> cb = [] {}, bool free = true);
+        TransitionAnimation animation = TransitionAnimation::FADE, std::function<void(void)> cb = [] { }, bool free = true);
 
     /**
      * Gives the focus to the given view
@@ -314,11 +327,11 @@ class Application
     inline static std::vector<TouchState> currentTouchState;
 
   private:
-    inline static bool inited               = false;
-    inline static bool quitRequested        = false;
-    inline static bool debuggingViewEnabled = false;
-    inline static bool swapInputKeys        = false;
-    inline static bool drawCoursor          = false;
+    inline static bool inited                    = false;
+    inline static bool quitRequested             = false;
+    inline static bool debuggingViewEnabled      = false;
+    inline static bool swapInputKeys             = false;
+    inline static bool drawCoursor               = false;
     inline static bool swapHalfJoyconStickToDpad = false;
 
     inline static Platform* platform = nullptr;
@@ -349,7 +362,7 @@ class Application
     inline static bool muteSounds            = false;
 
     inline static std::string commonFooter;
-    inline static NVGcolor backgroundColor{};
+    inline static NVGcolor backgroundColor {};
 
     inline static bool globalQuitEnabled                = false;
     inline static ActionIdentifier gloablQuitIdentifier = ACTION_NONE;

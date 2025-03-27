@@ -37,7 +37,7 @@ const std::string buttonXML = R"xml(
         paddingBottom="@style/brls/button/padding_top_bottom"
         paddingLeft="@style/brls/button/padding_sides"
         cornerRadius="@style/brls/button/corner_radius"
-        highlightCornerRadius="@style/brls/button/corner_radius">
+        highlightCornerRadius="@style/brls/button/highlight/corner_radius">
 
     <brls:Label
         id="brls/button/label"
@@ -62,9 +62,8 @@ Button::Button()
     this->forwardXMLAttribute("autoAnimate", this->label);
     this->forwardXMLAttribute("textHorizontalAlign", this->label, "horizontalAlign");
 
-    this->registerColorXMLAttribute("textColor", [this](NVGcolor color) {
-        this->setTextColor(color);
-    });
+    this->registerColorXMLAttribute("textColor", [this](NVGcolor color)
+        { this->setTextColor(color); });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
         "style", const ButtonStyle*, this->setStyle,

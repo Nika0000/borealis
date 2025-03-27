@@ -35,6 +35,7 @@
 #include <borealis/views/cells/cell_radio.hpp>
 #include <borealis/views/cells/cell_selector.hpp>
 #include <borealis/views/cells/cell_slider.hpp>
+#include <borealis/views/debug_layer.hpp>
 #include <borealis/views/h_scrolling_frame.hpp>
 #include <borealis/views/header.hpp>
 #include <borealis/views/hint.hpp>
@@ -48,7 +49,6 @@
 #include <borealis/views/widgets/account.hpp>
 #include <borealis/views/widgets/battery.hpp>
 #include <borealis/views/widgets/wireless.hpp>
-#include <borealis/views/debug_layer.hpp>
 #include <stdexcept>
 #include <string>
 
@@ -61,7 +61,7 @@
 #include <thread>
 
 #define BUTTOM_REPEAT_TRIGGER 250000 // 250ms
-#define BUTTON_REPEAT_DELAY   100000 // 100 ms
+#define BUTTON_REPEAT_DELAY 100000 // 100 ms
 
 namespace brls
 {
@@ -77,7 +77,7 @@ bool Application::init()
         Application::ORIGINAL_WINDOW_HEIGHT = 720;
 
     // Init platform
-    Application::platform = Platform::createPlatform();
+    Application::platform            = Platform::createPlatform();
     Application::notificationManager = new NotificationManager();
 
     if (!Application::platform)
@@ -135,7 +135,7 @@ void Application::createWindow(std::string windowTitle)
     Application::title        = windowTitle;
 
     // Init yoga
-    YGConfig* defaultConfig       = YGConfigGetDefault();
+    YGConfig* defaultConfig = YGConfigGetDefault();
     defaultConfig->setUseWebDefaults(true);
     using namespace facebook;
 
@@ -229,15 +229,16 @@ bool Application::internalMainLoop()
 
 void Application::updateFPS()
 {
-    static Time start = getCPUTimeUsec();
+    static Time start   = getCPUTimeUsec();
     static size_t index = 0;
 
     index++;
     // update FPS every second
-    if (Application::frameStartTime - start > 1000000) {
+    if (Application::frameStartTime - start > 1000000)
+    {
         Application::globalFPS = index;
-        start = Application::frameStartTime;
-        index = 0;
+        start                  = Application::frameStartTime;
+        index                  = 0;
     }
 }
 
@@ -367,8 +368,8 @@ void Application::processInput()
     }
 
     // Trigger controller events
-    bool repeating                  = false;
-    Time cpuTime = getCPUTimeUsec();
+    bool repeating = false;
+    Time cpuTime   = getCPUTimeUsec();
 
     for (int i = 0; i < _BUTTON_MAX; i++)
     {
@@ -384,7 +385,9 @@ void Application::processInput()
 
             if (!oldControllerState.buttons[i] || repeating)
                 Application::onControllerButtonPressed((enum ControllerButton)i, repeating);
-        } else {
+        }
+        else
+        {
             controllerState.repeatingButtonStop[i] = 0;
         }
     }
@@ -813,9 +816,9 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
     if (Application::activitiesStack.size() > 1)
     {
         toShow = Application::activitiesStack[Application::activitiesStack.size() - 2];
-        toShow->hide([]() {}, false, 0);
+        toShow->hide([]() { }, false, 0);
         toShow->onResume();
-        toShow->show([]() {}, false, 0);
+        toShow->show([]() { }, false, 0);
     }
 
     // Focus
@@ -901,7 +904,7 @@ void Application::pushActivity(Activity* activity, TransitionAnimation animation
     }
     else
     {
-        activity->hide([]() {}, false, 0);
+        activity->hide([]() { }, false, 0);
 
         brls::Logger::debug("push activity to the stack");
         Application::activitiesStack.push_back(activity);
@@ -910,6 +913,19 @@ void Application::pushActivity(Activity* activity, TransitionAnimation animation
             { Application::unblockInputs(); },
             duration > 0, duration);
     }
+}
+
+void Application::replaceActivity(Activity* activity, TransitionAnimation animation)
+{
+    // Remove the current activity from the stack if exists
+    if (!Application::activitiesStack.empty())
+    {
+        Activity* currentActivity = Application::activitiesStack.front();
+        Application::activitiesStack.pop_back();
+        delete currentActivity;
+    }
+
+    Application::pushActivity(activity, animation);
 }
 
 void Application::clear()
@@ -1085,8 +1101,7 @@ void Application::onWindowResized(int width, int height)
             Logger::info("Window size changed to {}x{}, content size: {}x{} windowScale: {}",
                 width, height, contentWidth, contentHeight, Application::windowScale);
             brls::Logger::info("scale factor: {}",
-                Application::getPlatform()->getVideoContext()->getScaleFactor());
-        });
+                Application::getPlatform()->getVideoContext()->getScaleFactor()); });
 }
 
 void Application::setWindowPosition(int x, int y)

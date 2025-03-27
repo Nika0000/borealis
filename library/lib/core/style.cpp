@@ -108,6 +108,7 @@ static StyleValues styleValues = {
     { "brls/button/text_size", 18.0f },
     { "brls/button/primary_highlight_padding", 2.0f },
     { "brls/button/border_thickness", 2.0f },
+    { "brls/button/highlight/corner_radius", 7.0f },
 
     // Generic shadow
     { "brls/shadow/width", 2.0f },
@@ -168,7 +169,8 @@ void StyleValues::addMetric(const std::string& name, float metric)
 
 float StyleValues::getMetric(const std::string& name)
 {
-    if (this->values.count(name) == 0) {
+    if (this->values.count(name) == 0)
+    {
         brls::Logger::error("Unknown style metric {} in size: {}", name, std::to_string(this->values.size()));
         return 0;
     }
