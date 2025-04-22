@@ -19,6 +19,7 @@
 #include <borealis/core/application.hpp>
 #include <borealis/core/i18n.hpp>
 #include <borealis/core/logger.hpp>
+#include <borealis/platforms/sdl/sdl_audio.hpp>
 #include <borealis/platforms/sdl/sdl_platform.hpp>
 #include <unordered_map>
 
@@ -52,7 +53,7 @@ SDLPlatform::SDLPlatform()
 #elif defined(__APPLE__)
     // Same behavior as GLFW, change to the app's Resources directory if run in a ".app" bundle
     // Or to the executable's directory if run from other ways
-    const char *base_path = SDL_GetBasePath();
+    const char* base_path = SDL_GetBasePath();
     if (base_path)
     {
         chdir(base_path);
@@ -67,12 +68,12 @@ SDLPlatform::SDLPlatform()
     }
 
     // Platform impls
-    this->audioPlayer = new NullAudioPlayer();
+    this->audioPlayer = new SDLAudioPlayer();
 
     // override local
     if (Platform::APP_LOCALE_DEFAULT == LOCALE_AUTO)
     {
-        int numLocales;
+        int numLocales       = 0;
         SDL_Locale** locales = SDL_GetPreferredLocales(&numLocales);
 
         if (locales != nullptr && numLocales > 0)
@@ -86,16 +87,15 @@ SDLPlatform::SDLPlatform()
                 { "ru", LOCALE_RU }
             };
 
-
             for (int i = 0; i < numLocales; ++i)
             {
                 std::string lang = std::string { locales[i]->language };
-                if(locales[i]->country)
+                if (locales[i]->country)
                 {
                     lang += "_" + std::string { locales[i]->country };
                 }
 
-                if(localeMap.count(lang) > 0)
+                if (localeMap.contains(lang))
                 {
                     this->locale = localeMap[lang];
                     Logger::info("Set app localeMM: {}", this->locale);
@@ -104,7 +104,7 @@ SDLPlatform::SDLPlatform()
             }
         }
 
-        if(this->locale.empty())
+        if (this->locale.empty())
         {
             this->locale = LOCALE_EN_US;
             Logger::info("Set app locale to default: {}", this->locale);
@@ -116,7 +116,7 @@ SDLPlatform::SDLPlatform()
 
 void SDLPlatform::createWindow(std::string windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos)
 {
-    appTitle = windowTitle;
+    appTitle           = windowTitle;
     this->videoContext = new SDLVideoContext(windowTitle, windowWidth, windowHeight, windowXPos, windowYPos);
     this->inputManager = new SDLInputManager(this->videoContext->getSDLWindow());
     this->imeManager   = new SDLImeManager(&this->otherEvent);
@@ -129,12 +129,13 @@ void SDLPlatform::restoreWindow()
 
 void SDLPlatform::setWindowAlwaysOnTop(bool enable)
 {
-    SDL_SetWindowAlwaysOnTop(this->videoContext->getSDLWindow(), enable ? true : false);
+    SDL_SetWindowAlwaysOnTop(this->videoContext->getSDLWindow(), enable);
 }
 
 void SDLPlatform::setWindowSize(uint32_t windowWidth, uint32_t windowHeight)
 {
-    if (windowWidth > 0 && windowHeight > 0) {
+    if (windowWidth > 0 && windowHeight > 0)
+    {
         SDL_SetWindowSize(this->videoContext->getSDLWindow(), windowWidth, windowHeight);
     }
 }
@@ -163,7 +164,7 @@ void SDLPlatform::setWindowState(uint32_t windowWidth, uint32_t windowHeight, in
     }
 }
 
-void SDLPlatform::disableScreenDimming(bool disable, const std::string& reason, const std::string& app)
+void SDLPlatform::disableScreenDimming(bool disable, const std::string& /* reason */, const std::string& /* app */)
 {
     if (disable)
     {
@@ -187,10 +188,10 @@ void SDLPlatform::pasteToClipboard(const std::string& text)
 
 std::string SDLPlatform::pasteFromClipboard()
 {
-    char *str = SDL_GetClipboardText();
+    char* str = SDL_GetClipboardText();
     if (!str)
         return "";
-    return std::string{str};
+    return std::string { str };
 }
 
 std::string SDLPlatform::getName()
@@ -204,7 +205,8 @@ bool SDLPlatform::processEvent(SDL_Event* event)
     {
         return false;
     }
-    else if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP)
+
+    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP)
     {
         auto* manager = this->inputManager;
         if (manager)
@@ -242,7 +244,6 @@ bool SDLPlatform::processEvent(SDL_Event* event)
     else if (event->type == SDL_EVENT_WILL_ENTER_FOREGROUND)
     {
         brls::Application::getWindowFocusChangedEvent()->fire(true);
-
     }
 #endif
     else if (event->type != SDL_EVENT_POLL_SENTINEL)
@@ -292,14 +293,16 @@ InputManager* SDLPlatform::getInputManager()
     return this->inputManager;
 }
 
-ImeManager* SDLPlatform::getImeManager() {
+ImeManager* SDLPlatform::getImeManager()
+{
     return this->imeManager;
 }
 
-std::string SDLPlatform::getHomeDirectory(std::string appName) 
+std::string SDLPlatform::getHomeDirectory(std::string appName)
 {
     auto name = appTitle;
-    if (!appName.empty()) name = appName;
+    if (!appName.empty())
+        name = appName;
 
     return { SDL_GetPrefPath(nullptr, appName.c_str()) };
 }

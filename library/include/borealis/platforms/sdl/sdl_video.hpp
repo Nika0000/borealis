@@ -19,6 +19,7 @@
 #include <SDL3/SDL.h>
 
 #include <borealis/core/video.hpp>
+#include <string>
 
 namespace brls
 {

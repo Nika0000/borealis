@@ -19,6 +19,7 @@
 #include <nanovg.h>
 
 #include <cmath>
+#include <cstdint>
 
 // A VideoContext is responsible for providing a nanovg context for the app
 // (so by extension it manages all the graphics state as well as the window / context).

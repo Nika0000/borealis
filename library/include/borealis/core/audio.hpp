@@ -44,7 +44,7 @@ enum Sound
 class AudioPlayer
 {
   public:
-    virtual ~AudioPlayer() {};
+    virtual ~AudioPlayer() { };
 
     /**
      * Preemptively loads the given sound so that it's ready to be played

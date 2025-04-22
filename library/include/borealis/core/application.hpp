@@ -35,7 +35,6 @@
 #include <deque>
 #include <vector>
 
-
 #ifdef __WINRT__
 #ifdef main
 #undef main
