@@ -210,6 +210,21 @@ class Application
 
     static bool isInputBlocks();
 
+    /**
+     * Checks if the application is currently in an interactive state.
+     */
+    static bool isInteractive();
+
+    /**
+     * Sets the application's foreground mode.
+     *
+     * When set to `true`, the application operates in the foreground, allowing
+     * inputs, animations, and the renderer to be executed in the main loop.
+     * When set to `false`, the application enters background mode, and these
+     * processes are not executed in the main loop.
+     */
+    static void setForegroundMode(bool mode = true);
+
     static void setCommonFooter(std::string footer);
     static std::string* getCommonFooter();
 
@@ -332,6 +347,7 @@ class Application
     inline static bool swapInputKeys             = false;
     inline static bool drawCoursor               = false;
     inline static bool swapHalfJoyconStickToDpad = false;
+    inline static bool interactive               = false;
 
     inline static Platform* platform = nullptr;
 

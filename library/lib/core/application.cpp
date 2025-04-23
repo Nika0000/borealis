@@ -69,6 +69,7 @@ namespace brls
 bool Application::init()
 {
     Application::inited        = false;
+    Application::interactive   = false;
     Application::quitRequested = false;
 
     if (Application::ORIGINAL_WINDOW_WIDTH == 0)
@@ -93,7 +94,8 @@ bool Application::init()
 
     Threading::start();
 
-    Application::inited = true;
+    Application::interactive = true;
+    Application::inited      = true;
 
     return true;
 }
@@ -179,17 +181,20 @@ bool Application::internalMainLoop()
         return false;
     }
 
-    // Mouse and touch
-    Application::processInput();
+    if (Application::interactive)
+    {
+        // Mouse and touch
+        Application::processInput();
 
-    // Animations
+        // Animations
 #ifndef SIMPLE_HIGHLIGHT
-    updateHighlightAnimation();
+        updateHighlightAnimation();
 #endif
-    Ticking::updateTickings();
+        Ticking::updateTickings();
 
-    // Render
-    Application::frame();
+        // Render
+        Application::frame();
+    }
 
     // Run sync functions
     Threading::performSyncTasks();
@@ -1049,6 +1054,16 @@ void Application::unblockInputs()
 bool Application::isInputBlocks()
 {
     return Application::blockInputsTokens > 0;
+}
+
+bool Application::isInteractive()
+{
+    return Application::interactive;
+}
+
+void Application::setForegroundMode(bool mode)
+{
+    Application::interactive = mode;
 }
 
 void Application::setSwapInputKeys(bool swap)

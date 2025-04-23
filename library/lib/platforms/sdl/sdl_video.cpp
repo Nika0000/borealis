@@ -54,7 +54,9 @@ std::unique_ptr<brls::D3D11Context> D3D11_CONTEXT;
 
 #ifdef __SWITCH__
 #include <switch.h>
+
 #include "sdl_video.hpp"
+
 #endif
 
 namespace brls
@@ -130,6 +132,22 @@ static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
                 break;
         }
     }
+
+#if defined(ANDROID) || defined(IOS)
+    if (event->type == SDL_EVENT_WILL_ENTER_BACKGROUND)
+    {
+        brls::Application::getWindowFocusChangedEvent()->fire(false);
+        brls::Application::setForegroundMode(false);
+        brls::Logger::info("Enter background mode");
+    }
+    else if (event->type == SDL_EVENT_WILL_ENTER_FOREGROUND)
+    {
+        brls::Application::getWindowFocusChangedEvent()->fire(true);
+        brls::Logger::info("Enter foreground mode");
+        brls::Application::setForegroundMode(true);
+    }
+#endif
+
     return true;
 }
 
@@ -237,8 +255,8 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 #ifdef __WINRT__
         windowFlags |= SDL_WINDOW_FULLSCREEN;
 #else
-    ///TODO:
-    windowFlags |= SDL_WINDOW_FULLSCREEN;
+        /// TODO:
+        windowFlags |= SDL_WINDOW_FULLSCREEN;
 #endif
     }
     SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "1");
@@ -258,12 +276,12 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     else
     {
         SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, windowXPos > 0 ? windowXPos : SDL_WINDOWPOS_UNDEFINED);
-        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER,  windowYPos > 0 ? windowYPos : SDL_WINDOWPOS_UNDEFINED);
+        SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, windowYPos > 0 ? windowYPos : SDL_WINDOWPOS_UNDEFINED);
         this->window = SDL_CreateWindowWithProperties(props);
     }
 
     SDL_DestroyProperties(props);
-    
+
     if (!this->window)
     {
         fatal("sdl: failed to create window");
@@ -271,8 +289,8 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 #ifdef BOREALIS_USE_OPENGL
     // Configure window
     SDL_GLContext context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, context); 
-#endif  
+    SDL_GL_MakeCurrent(window, context);
+#endif
     SDL_AddEventWatch(sdlWindowEventWatcher, window);
 #ifdef BOREALIS_USE_OPENGL
 #if !defined(__PSV__) && !defined(PS4)
@@ -319,9 +337,9 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     Application::setWindowSize(fWidth, fHeight);
     glViewport(0, 0, fWidth, fHeight);
 #elif defined(BOREALIS_USE_D3D11)
-    scaleFactor      = D3D11_CONTEXT->getScaleFactor();
-    fWidth           = width;
-    fHeight          = height;
+    scaleFactor = D3D11_CONTEXT->getScaleFactor();
+    fWidth      = width;
+    fHeight     = height;
     Application::setWindowSize(fWidth, fHeight);
     D3D11_CONTEXT->onFramebufferSize(fWidth, fHeight);
 #endif
@@ -341,7 +359,7 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 
 void SDLVideoContext::beginFrame()
 {
-#ifdef  __SWITCH__ // TODO: Not work, needs to be implemented properly to apply correct screen resolution on Switch (example in GLFW video)
+#ifdef __SWITCH__ // TODO: Not work, needs to be implemented properly to apply correct screen resolution on Switch (example in GLFW video)
     s32 width = 0, height = 0;
     static s32 oldWidth = 0, oldHeight = 0;
     appletGetDefaultDisplayResolution(&width, &height);
@@ -449,12 +467,12 @@ void SDLVideoContext::fullScreen(bool fs)
     // win32 会很模糊，而且点击事件貌似也错位了，只给 winrt 使用。
     static unsigned int flag = SDL_WINDOW_FULLSCREEN;
 #else
-    ///TODO:
+    /// TODO:
     static unsigned int flag = SDL_WINDOW_FULLSCREEN;
-    //static unsigned int flag = SDL_WINDOW_FULLSCREEN_DESKTOP;
+    // static unsigned int flag = SDL_WINDOW_FULLSCREEN_DESKTOP;
 #endif
-    ///TODO: 
-    SDL_SetWindowFullscreen(this->window, fs ? flag : 0 );
+    /// TODO:
+    SDL_SetWindowFullscreen(this->window, fs ? flag : 0);
 }
 
 } // namespace brls
