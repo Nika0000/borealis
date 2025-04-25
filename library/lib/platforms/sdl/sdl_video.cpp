@@ -107,6 +107,23 @@ static void sdlWindowPositionCallback(SDL_Window* window, int windowXPos, int wi
     }
 }
 
+static void sdlWindowSafeAreaCallback(SDL_Window* window)
+{
+    int width  = 0;
+    int height = 0;
+    SDL_GetWindowSize(window, &width, &height);
+
+    SDL_Rect safeArea;
+    SDL_GetWindowSafeArea(window, &safeArea);
+    Application::onWindowSafeAreaChanged(
+        {
+            .left   = safeArea.x,
+            .right  = width - (safeArea.x + safeArea.w),
+            .top    = safeArea.y,
+            .bottom = height - (safeArea.y + safeArea.h),
+        });
+}
+
 static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
 {
     if (event->type >= SDL_EVENT_WINDOW_FIRST && event->type <= SDL_EVENT_WINDOW_LAST)
@@ -130,20 +147,24 @@ static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
                         event->window.data2);
                 }
                 break;
+            case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
+                if (win == (SDL_Window*)data)
+                {
+                    sdlWindowSafeAreaCallback(win);
+                }
+                break;
         }
     }
 
 #if defined(ANDROID) || defined(IOS)
-    if (event->type == SDL_EVENT_WILL_ENTER_BACKGROUND)
+    if (event->type == SDL_EVENT_DID_ENTER_BACKGROUND)
     {
         brls::Application::getWindowFocusChangedEvent()->fire(false);
         brls::Application::setForegroundMode(false);
-        brls::Logger::info("Enter background mode");
     }
-    else if (event->type == SDL_EVENT_WILL_ENTER_FOREGROUND)
+    else if (event->type == SDL_EVENT_DID_ENTER_FOREGROUND)
     {
         brls::Application::getWindowFocusChangedEvent()->fire(true);
-        brls::Logger::info("Enter foreground mode");
         brls::Application::setForegroundMode(true);
     }
 #endif
@@ -355,6 +376,16 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
         VideoContext::posX  = (float)xPos;
         VideoContext::posY  = (float)yPos;
     }
+
+    SDL_Rect safeArea;
+    SDL_GetWindowSafeArea(window, &safeArea);
+    Application::onWindowSafeAreaChanged(
+        {
+            .left   = safeArea.x,
+            .right  = width - (safeArea.x + safeArea.w),
+            .top    = safeArea.y,
+            .bottom = height - (safeArea.y + safeArea.h),
+        });
 }
 
 void SDLVideoContext::beginFrame()

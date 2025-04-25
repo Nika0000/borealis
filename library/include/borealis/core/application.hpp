@@ -52,6 +52,12 @@ enum class InputType
     TOUCH, // Touch screen
 };
 
+struct SafeAreaInsets
+{
+    int top, bottom;
+    int left, right;
+};
+
 class DebugLayer;
 class EditTextDialog;
 
@@ -93,6 +99,8 @@ class Application
 
     inline static int windowXPos, windowYPos;
 
+    inline static SafeAreaInsets windowSafeArea;
+
     /**
      * Called by the video context when the content window is resized
      */
@@ -114,6 +122,18 @@ class Application
      * Called when the video context is ready (to setup the initial window position).
      */
     static void setWindowPosition(int xPos, int yPos);
+
+    /**
+     * Called by the video context when the safe area of the content window changes.
+     * Provides the new safe area dimensions and margins.
+     */
+    static void onWindowSafeAreaChanged(SafeAreaInsets safeArea);
+
+    /**
+     * Do not call this function directly, it is used internally.
+     * Called to set the initial safe area of the content window when the video context is ready.
+     */
+    static void setWindowSafeArea(SafeAreaInsets safeArea);
 
     static std::vector<Activity*> getActivitiesStack();
 
@@ -148,7 +168,7 @@ class Application
      * return false if no actifity to pop.
      */
     static bool popActivity(
-        TransitionAnimation animation = TransitionAnimation::FADE, std::function<void(void)> cb = [] { }, bool free = true);
+        TransitionAnimation animation = TransitionAnimation::FADE, std::function<void(void)> cb = [] {}, bool free = true);
 
     /**
      * Gives the focus to the given view
@@ -262,6 +282,7 @@ class Application
     static VoidEvent* getExitEvent();
     static VoidEvent* getExitDoneEvent();
     static VoidEvent* getWindowSizeChangedEvent();
+    static VoidEvent* getWindowSafeAreaChangedEvent();
     static VoidEvent* getWindowCreationDoneEvent();
     static VoidEvent* getWindowShouldCloseEvent();
     static Event<bool>* getWindowFocusChangedEvent();
@@ -401,6 +422,7 @@ class Application
     inline static VoidEvent exitEvent;
     inline static VoidEvent exitDoneEvent;
     inline static VoidEvent windowSizeChangedEvent;
+    inline static VoidEvent windowSafeAreaChangeEvent;
     inline static VoidEvent windowCreationDoneEvent;
     inline static VoidEvent windowShouldCloseEvent;
     inline static Event<bool> windowFocusChangedEvent;

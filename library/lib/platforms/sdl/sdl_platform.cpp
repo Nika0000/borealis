@@ -236,16 +236,6 @@ bool SDLPlatform::processEvent(SDL_Event* event)
         if (manager)
             manager->updateControllerSensorsUpdate(event->gsensor);
     }
-#ifdef IOS
-    else if (event->type == SDL_EVENT_WILL_ENTER_BACKGROUND)
-    {
-        brls::Application::getWindowFocusChangedEvent()->fire(false);
-    }
-    else if (event->type == SDL_EVENT_WILL_ENTER_FOREGROUND)
-    {
-        brls::Application::getWindowFocusChangedEvent()->fire(true);
-    }
-#endif
     else if (event->type != SDL_EVENT_POLL_SENTINEL)
     {
         // 其它没有处理的事件

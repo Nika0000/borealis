@@ -1,15 +1,12 @@
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_init.h>
+
+#include <borealis/core/logger.hpp>
 #include <borealis/platforms/sdl/sdl_audio.hpp>
 #include <string>
 
-#include "SDL3/SDL_error.h"
-#include "SDL3/SDL_init.h"
-#include "borealis/core/audio.hpp"
-#include "borealis/core/logger.hpp"
-
 #ifdef USE_LIBROMFS
 #include <romfs/romfs.hpp>
-#else
-#include <cstddef>
 #endif
 
 namespace brls
@@ -85,7 +82,8 @@ bool SDLAudioPlayer::load(enum Sound sound)
         return false;
     }
 #else
-    if (!SDL_LoadWAV(soundName.c_str(), &wavSpec, &wavBuffer, &wavLenght))
+    std::string soundPath = std::string(BRLS_RESOURCES) + soundName;
+    if (!SDL_LoadWAV(soundPath.c_str(), &wavSpec, &wavBuffer, &wavLenght))
     {
         Logger::warning("Failed to load audio: {}", soundName, SDL_GetError());
         return false;
@@ -95,7 +93,7 @@ bool SDLAudioPlayer::load(enum Sound sound)
     data.buffer   = wavBuffer;
     data.lenght   = wavLenght;
     sounds[sound] = data;
-    Logger::debug("Succesfuly load sound {}: {}", soundName, wavLenght);
+    Logger::debug("Succesfuly load sound {}.", soundName);
     return true;
 }
 
