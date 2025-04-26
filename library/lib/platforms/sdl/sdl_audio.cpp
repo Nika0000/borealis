@@ -1,3 +1,5 @@
+#include "SDL3/SDL_audio.h"
+
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_init.h>
 
@@ -24,7 +26,7 @@ const std::string SOUNDS_MAP[_SOUND_MAX] = {
     "none", // SOUND_HONK
     "audio/click_sidebar.wav", // SOUND_CLICK_SIDEBAR
     "audio/touch_unfocus.wav", // SOUND_TOUCH_UNFOCUS
-    "audio/click.wav", // SOUND_TOUCH
+    "audio/touch.wav", // SOUND_TOUCH
     "audio/slider_tick.wav", // SOUND_SLIDER_TICK
     "audio/touch_unfocus.wav" // SOUND_SLIDER_RELEASE
 };
@@ -110,9 +112,15 @@ bool SDLAudioPlayer::play(Sound sound, float pitch)
             return false;
     }
 
-    SDL_ClearAudioStream(audioStream);
     const AudioData& data = sounds[sound];
-    if (!SDL_PutAudioStreamData(audioStream, data.buffer, data.lenght))
+    return play(data, pitch);
+}
+
+bool SDLAudioPlayer::play(const AudioData& audio, float pitch)
+{
+    SDL_ClearAudioStream(audioStream);
+    SDL_SetAudioStreamFrequencyRatio(audioStream, pitch);
+    if (!SDL_PutAudioStreamData(audioStream, audio.buffer, audio.lenght))
     {
         Logger::error("Unable to play sound: {}", SDL_GetError());
         return false;

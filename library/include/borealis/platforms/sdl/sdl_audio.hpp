@@ -24,21 +24,24 @@ limitations under the License.
 
 namespace brls
 {
+
+struct AudioData
+{
+    uint8_t* buffer;
+    uint32_t lenght;
+    uint32_t position;
+};
+
 class SDLAudioPlayer : public AudioPlayer
 {
   public:
     SDLAudioPlayer();
     ~SDLAudioPlayer();
 
-    struct AudioData
-    {
-        uint8_t* buffer;
-        uint32_t lenght;
-        uint32_t position;
-    };
-
     bool load(enum Sound sound) override;
     bool play(enum Sound sound, float pitch) override;
+
+    bool play(const AudioData& audio, float pitch = 1.0f);
 
   private:
     bool init = false;
