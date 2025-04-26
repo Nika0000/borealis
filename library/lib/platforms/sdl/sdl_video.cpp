@@ -109,18 +109,34 @@ static void sdlWindowPositionCallback(SDL_Window* window, int windowXPos, int wi
 
 static void sdlWindowSafeAreaCallback(SDL_Window* window)
 {
-    int width  = 0;
-    int height = 0;
-    SDL_GetWindowSize(window, &width, &height);
-
     SDL_Rect safeArea;
     SDL_GetWindowSafeArea(window, &safeArea);
+
+#ifdef ANDROID
+    int width;
+    int height;
+    SDL_GetWindowSize(window, &width, &height);
+
+    float wScale   = (float)width / Application::contentWidth;
+    float contentW = Application::contentWidth;
+    float contentH = (unsigned)roundf((float)(height / wScale));
+#else
+    float wScale   = Application::windowScale;
+    float contentH = Application::contentHeight;
+    float contentW = Application::contentWidth;
+#endif
+
+    float safeX = roundf(safeArea.x / wScale);
+    float safeY = roundf(safeArea.y / wScale);
+    float safeW = roundf(safeArea.w / wScale);
+    float safeH = roundf(safeArea.h / wScale);
+
     Application::onWindowSafeAreaChanged(
         {
-            .left   = safeArea.x,
-            .right  = width - (safeArea.x + safeArea.w),
-            .top    = safeArea.y,
-            .bottom = height - (safeArea.y + safeArea.h),
+            .top    = safeY,
+            .bottom = contentH - (safeY + safeH),
+            .left   = safeX,
+            .right  = contentW - (safeX + safeW),
         });
 }
 
@@ -318,7 +334,11 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     // Load OpenGL routines using glad
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif
-    SDL_GL_SetSwapInterval(1);
+
+    if (!SDL_GL_SetSwapInterval(1))
+    {
+        Logger::warning("Unable to set VSync: {}", SDL_GetError());
+    }
 
     Logger::info("sdl: GL Vendor: {}", (const char*)glGetString(GL_VENDOR));
     Logger::info("sdl: GL Renderer: {}", (const char*)glGetString(GL_RENDERER));
@@ -377,15 +397,7 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
         VideoContext::posY  = (float)yPos;
     }
 
-    SDL_Rect safeArea;
-    SDL_GetWindowSafeArea(window, &safeArea);
-    Application::onWindowSafeAreaChanged(
-        {
-            .left   = safeArea.x,
-            .right  = width - (safeArea.x + safeArea.w),
-            .top    = safeArea.y,
-            .bottom = height - (safeArea.y + safeArea.h),
-        });
+    sdlWindowSafeAreaCallback(window);
 }
 
 void SDLVideoContext::beginFrame()
