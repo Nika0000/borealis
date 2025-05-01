@@ -112,19 +112,12 @@ static void sdlWindowSafeAreaCallback(SDL_Window* window)
     SDL_Rect safeArea;
     SDL_GetWindowSafeArea(window, &safeArea);
 
-#ifdef ANDROID
-    int width;
-    int height;
+    int width, height;
     SDL_GetWindowSize(window, &width, &height);
 
     float wScale   = (float)width / Application::contentWidth;
     float contentW = Application::contentWidth;
     float contentH = (unsigned)roundf((float)(height / wScale));
-#else
-    float wScale   = Application::windowScale;
-    float contentH = Application::contentHeight;
-    float contentW = Application::contentWidth;
-#endif
 
     float safeX = roundf(safeArea.x / wScale);
     float safeY = roundf(safeArea.y / wScale);

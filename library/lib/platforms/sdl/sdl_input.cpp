@@ -26,8 +26,8 @@ namespace brls
 extern void init_device_rumble();
 extern void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor);
 #else
-void init_device_rumble() {}
-void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor) {}
+void init_device_rumble() { }
+void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor) { }
 #endif
 
 #define SDL_GAMEPAD_BUTTON_NONE SIZE_MAX
@@ -397,22 +397,22 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
         if (controller)
         {
             SDL_Joystick* joystick = SDL_GetGamepadJoystick(controller);
-            SDL_JoystickID jid = SDL_GetJoystickID(joystick);
+            SDL_JoystickID jid     = SDL_GetJoystickID(joystick);
 
             Logger::info("Controller connected: {} | {}", jid, SDL_GetGamepadName(controller));
-           
+
             controllers.push_back({ controllers.size(), { jid, controller } });
         }
     }
     else if (event->type == SDL_EVENT_GAMEPAD_REMOVED)
     {
-        controllers.erase(std::remove_if(controllers.begin(), controllers.end(), [event](auto c) {
-            return c.second.first == event->gdevice.which;
-        }), controllers.end());
-     
+        controllers.erase(std::remove_if(controllers.begin(), controllers.end(), [event](auto c)
+                              { return c.second.first == event->gdevice.which; }),
+            controllers.end());
+
         Logger::info("Controller with id {} disconnected.", event->gdevice.which);
 
-        for(size_t i = 0; i < controllers.size(); ++i)
+        for (size_t i = 0; i < controllers.size(); ++i)
         {
             controllers[i].first = static_cast<int>(i);
         }
@@ -450,23 +450,22 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
 
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 
-    if(SDL_HasGamepad())
+    if (SDL_HasGamepad())
     {
         int numGamepads;
-        SDL_JoystickID * joysticks = SDL_GetGamepads(&numGamepads);
+        SDL_JoystickID* joysticks = SDL_GetGamepads(&numGamepads);
         Logger::info("Detected {} game controllers.", numGamepads);
 
         for (int i = 0; i < numGamepads; i++)
         {
-            if(SDL_IsGamepad(joysticks[i]))
+            if (SDL_IsGamepad(joysticks[i]))
             {
                 SDL_JoystickID jid = joysticks[i];
                 Logger::info("SDL: Controller {} | {}", jid, SDL_GetGamepadNameForID(jid));
-                controllers.push_back({ controllers.size(), { jid, SDL_OpenGamepad(jid) }});
+                controllers.push_back({ controllers.size(), { jid, SDL_OpenGamepad(jid) } });
             }
         }
     }
-    
 
     SDL_AddEventWatch(sdlEventWatcher, this->window);
 
@@ -557,7 +556,8 @@ void SDLInputManager::updateUnifiedControllerState(ControllerState* state)
 
 void SDLInputManager::updateControllerState(ControllerState* state, int controller)
 {
-    if (controllers.size() <= controller) return;
+    if (controllers.size() <= controller)
+        return;
 
     SDL_Gamepad* c = controllers[controller].second.second;
 
@@ -639,10 +639,10 @@ void SDLInputManager::updateMouseStates(RawMouseState* state)
 void SDLInputManager::setPointerLock(bool lock)
 {
     pointerLocked = lock;
-    lock? SDL_HideCursor() : SDL_ShowCursor();
+    lock ? SDL_HideCursor() : SDL_ShowCursor();
 
-    SDL_SetWindowRelativeMouseMode(window, lock? true : false);
-//    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
+    SDL_SetWindowRelativeMouseMode(window, lock ? true : false);
+    //    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
 }
 
 void SDLInputManager::runloopStart()
@@ -654,14 +654,16 @@ void SDLInputManager::runloopStart()
 
 void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor)
 {
-    if (controllers.size() <= controller) return;
+    if (controllers.size() <= controller)
+        return;
 
     SDL_Gamepad* c = controllers[controller].second.second;
 
-    auto cProps = SDL_GetGamepadProperties(c);
+    auto cProps    = SDL_GetGamepadProperties(c);
     bool hasRumble = SDL_GetBooleanProperty(cProps, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
 
-    if (!hasRumble) {
+    if (!hasRumble)
+    {
         device_rumble(lowFreqMotor, highFreqMotor);
         return;
     }
@@ -671,14 +673,16 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 
 void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor)
 {
-    if (controllers.size() <= controller) return;
-    
+    if (controllers.size() <= controller)
+        return;
+
     SDL_Gamepad* c = controllers[controller].second.second;
 
-    auto cProps = SDL_GetGamepadProperties(c);
+    auto cProps    = SDL_GetGamepadProperties(c);
     bool hasRumble = SDL_GetBooleanProperty(cProps, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
 
-    if (!hasRumble) {
+    if (!hasRumble)
+    {
         device_rumble(lowFreqMotor, highFreqMotor);
         return;
     }
@@ -689,7 +693,7 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 
 void SDLInputManager::updateMouseMotion(SDL_MouseMotionEvent event)
 {
-   if (pointerLocked && !SDL_CursorVisible())
+    if (pointerLocked && !SDL_CursorVisible())
     {
         getMouseCusorOffsetChanged()->fire(Point(float(event.xrel), float(event.yrel)));
 
@@ -699,26 +703,21 @@ void SDLInputManager::updateMouseMotion(SDL_MouseMotionEvent event)
     }
 }
 
-void SDLInputManager::updateMouseWheel(SDL_MouseWheelEvent  event)
+void SDLInputManager::updateMouseWheel(SDL_MouseWheelEvent event)
 {
-    if (event.x == 0.0f && event.y == 0.0f) return;
 
-//#ifdef APPLE
-    // HACK: Clamp the scroll values on macOS to prevent OS scroll acceleration
-    // from generating wild scroll deltas when scrolling quickly.
-//    event.preciseX = SDL_clamp(event.preciseX, -1.0f, 1.0f);
-//    event.preciseY = SDL_clamp(event.preciseY, -1.0f, 1.0f);
-//#endif
+    if (event.x == 0.0f && event.y == 0.0f)
+        return;
 
-// #if defined(_WIN32) || defined(__linux__)
-//     self->scrollOffset.x += event.preciseX * 30;
-//     self->scrollOffset.y += event.preciseY * 30;
-// #else
-    this->scrollOffset.x += event.x * 4;
-    this->scrollOffset.y += event.y * 4;
-// #endif
+#if defined(_WIN32) || defined(__linux__)
+    this->scrollOffset.x += event.x * 30;
+    this->scrollOffset.y += event.y * 30;
+#else
+    this->scrollOffset.x += event.x * 10;
+    this->scrollOffset.y += event.y * 10;
+#endif
 
-    this->getMouseScrollOffsetChanged()->fire(Point(event.x * 120, event.y * 120));
+    this->getMouseScrollOffsetChanged()->fire(Point(event.x, event.y));
 }
 
 void SDLInputManager::updateControllerSensorsUpdate(SDL_GamepadSensorEvent event)

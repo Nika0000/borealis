@@ -27,9 +27,8 @@ namespace brls
 
 struct AudioData
 {
-    uint8_t* buffer;
-    uint32_t lenght;
-    uint32_t position;
+    uint8_t* buf;
+    uint32_t len;
 };
 
 class SDLAudioPlayer : public AudioPlayer
@@ -40,8 +39,6 @@ class SDLAudioPlayer : public AudioPlayer
 
     bool load(enum Sound sound) override;
     bool play(enum Sound sound, float pitch) override;
-
-    bool play(const AudioData& audio, float pitch = 1.0f);
 
   private:
     bool init = false;

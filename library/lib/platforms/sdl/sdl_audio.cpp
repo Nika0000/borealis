@@ -17,18 +17,18 @@ namespace brls
 
 const std::string SOUNDS_MAP[_SOUND_MAX] = {
     "none", // SOUND_NONE
-    "audio/focus_change.wav", // SOUND_FOCUS_CHANGE
-    "audio/focus_error.wav", // SOUND_FOCUS_ERROR
-    "audio/click.wav", // SOUND_CLICK
-    "audio/back.wav", // SOUND_BACK
-    "audio/focus_sidebar.wav", // SOUND_FOCUS_SIDEBAR
-    "audio/click_error.wav", // SOUND_CLICK_ERROR
+    "audio/sys/focus_change.wav", // SOUND_FOCUS_CHANGE
+    "audio/sys/focus_error.wav", // SOUND_FOCUS_ERROR
+    "audio/sys/click.wav", // SOUND_CLICK
+    "audio/sys/back.wav", // SOUND_BACK
+    "audio/sys/focus_sidebar.wav", // SOUND_FOCUS_SIDEBAR
+    "audio/sys/click_error.wav", // SOUND_CLICK_ERROR
     "none", // SOUND_HONK
-    "audio/click_sidebar.wav", // SOUND_CLICK_SIDEBAR
-    "audio/touch_unfocus.wav", // SOUND_TOUCH_UNFOCUS
-    "audio/touch.wav", // SOUND_TOUCH
-    "audio/slider_tick.wav", // SOUND_SLIDER_TICK
-    "audio/touch_unfocus.wav" // SOUND_SLIDER_RELEASE
+    "audio/sys/click_sidebar.wav", // SOUND_CLICK_SIDEBAR
+    "audio/sys/touch_unfocus.wav", // SOUND_TOUCH_UNFOCUS
+    "audio/sys/touch.wav", // SOUND_TOUCH
+    "audio/sys/slider_tick.wav", // SOUND_SLIDER_TICK
+    "audio/sys/touch_unfocus.wav" // SOUND_SLIDER_RELEASE
 };
 
 SDLAudioPlayer::SDLAudioPlayer()
@@ -92,8 +92,8 @@ bool SDLAudioPlayer::load(enum Sound sound)
     }
 #endif
 
-    data.buffer   = wavBuffer;
-    data.lenght   = wavLenght;
+    data.buf      = wavBuffer;
+    data.len      = wavLenght;
     sounds[sound] = data;
     Logger::debug("Succesfuly load sound {}.", soundName);
     return true;
@@ -113,14 +113,9 @@ bool SDLAudioPlayer::play(Sound sound, float pitch)
     }
 
     const AudioData& data = sounds[sound];
-    return play(data, pitch);
-}
-
-bool SDLAudioPlayer::play(const AudioData& audio, float pitch)
-{
     SDL_ClearAudioStream(audioStream);
     SDL_SetAudioStreamFrequencyRatio(audioStream, pitch);
-    if (!SDL_PutAudioStreamData(audioStream, audio.buffer, audio.lenght))
+    if (!SDL_PutAudioStreamData(audioStream, data.buf, data.len))
     {
         Logger::error("Unable to play sound: {}", SDL_GetError());
         return false;
