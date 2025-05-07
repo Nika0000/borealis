@@ -174,12 +174,11 @@ void AppletFrame::popContentView(std::function<void(void)> cb)
         if (!Application::popActivity(TransitionAnimation::FADE, cb))
         {
 #ifndef IOS // Do not close the app in iOS
-            Application::quit();
-//            auto dialog = new brls::Dialog("hints/exit_hint"_i18n);
-//            dialog->addButton("hints/cancel"_i18n, []() {});
-//            dialog->addButton("hints/ok"_i18n, []()
-//                { Application::quit(); });
-//            dialog->open();
+            auto* dialog = new brls::Dialog("hints/exit_hint"_i18n);
+            dialog->addButton("hints/cancel"_i18n, []() { });
+            dialog->addButton("hints/ok"_i18n, []()
+                { Application::quit(); });
+            dialog->open();
 #endif
         }
         return;
