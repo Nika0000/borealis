@@ -97,6 +97,9 @@ class Label : public View
 
     void setFontSize(float value);
     void setFontQuality(float value);
+
+    void setFontFamily(const std::string& fontName);
+
     void setLineHeight(float value);
     void setTextColor(NVGcolor color);
 

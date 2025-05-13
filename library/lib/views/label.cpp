@@ -80,7 +80,8 @@ static YGSize labelMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthM
         .height = height,
     };
 
-    if (fullText.empty()) {
+    if (fullText.empty())
+    {
         if (widthMode != YGMeasureModeExactly)
         {
             size.width = 0;
@@ -194,8 +195,9 @@ static YGSize labelMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthM
     return size;
 }
 
-void Label::setCursor(int cursor) {
-    this->cursor = cursor;
+void Label::setCursor(int cursor)
+{
+    this->cursor       = cursor;
     this->cursor_blink = brls::getCPUTimeUsec();
 }
 
@@ -230,6 +232,9 @@ Label::Label()
 
     this->registerFloatXMLAttribute("fontQuality", [this](float value)
         { this->setFontQuality(value); });
+
+    this->registerStringXMLAttribute("fontFamily", [this](std::string value)
+        { this->setFontFamily(value); });
 
     this->registerColorXMLAttribute("textColor", [this](NVGcolor color)
         { this->setTextColor(color); });
@@ -388,6 +393,13 @@ void Label::setFontQuality(float value)
     this->invalidate();
 }
 
+void Label::setFontFamily(const std::string& fontName)
+{
+    this->font = Application::getFont(fontName);
+
+    this->invalidate();
+}
+
 void Label::setLineHeight(float value)
 {
     this->lineHeight = value;
@@ -492,9 +504,10 @@ void Label::draw(NVGcontext* vg, float x, float y, float width, float height, St
         float nextX = nvgText(vg, textX, textY, this->truncatedText.c_str(), nullptr);
 
         // 绘制编辑游标
-        if (this->cursor >= (int)CursorPosition::END) {
+        if (this->cursor >= (int)CursorPosition::END)
+        {
             // blink
-            auto blink = ((brls::getCPUTimeUsec() - cursor_blink) >> 10) % 1000 ;
+            auto blink = ((brls::getCPUTimeUsec() - cursor_blink) >> 10) % 1000;
             if (blink > 500)
                 return;
 
@@ -502,20 +515,29 @@ void Label::draw(NVGcontext* vg, float x, float y, float width, float height, St
             float lineh;
             nvgTextMetrics(vg, NULL, NULL, &lineh);
             float cursorX = x;
-            int textSize = this->truncatedText.size();
-            if (this->cursor == (int)CursorPosition::END) {
+            int textSize  = this->truncatedText.size();
+            if (this->cursor == (int)CursorPosition::END)
+            {
                 cursorX = nextX;
-            } else if (this->cursor > (int)CursorPosition::START) {
-                if (textSize > this->cursor) {
+            }
+            else if (this->cursor > (int)CursorPosition::START)
+            {
+                if (textSize > this->cursor)
+                {
                     std::vector<NVGglyphPosition> glyphs;
                     glyphs.resize(textSize);
                     int nglyphs = nvgTextGlyphPositions(vg, x, y, this->truncatedText.c_str(), NULL, glyphs.data(), textSize);
-                    if (nglyphs <= this->cursor) {
+                    if (nglyphs <= this->cursor)
+                    {
                         cursorX = nextX;
-                    } else {
+                    }
+                    else
+                    {
                         cursorX = glyphs.at(this->cursor).x;
                     }
-                } else if (textSize == this->cursor) {
+                }
+                else if (textSize == this->cursor)
+                {
                     cursorX = nextX;
                 }
             }
