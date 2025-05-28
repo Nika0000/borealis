@@ -18,6 +18,7 @@
 #pragma once
 
 #include <borealis/core/animation.hpp>
+#include <borealis/core/application.hpp>
 #include <borealis/core/box.hpp>
 #include <borealis/views/rectangle.hpp>
 
@@ -93,6 +94,14 @@ class ScrollingFrame : public Box
         showScrollingIndicator = visible;
     }
 
+    /**
+     * Returns the event that is triggered when the content offset changes.
+     */
+    Event<float>* getContentOffsetChanged()
+    {
+        return &contentOffsetChanged;
+    }
+
     static View* create();
 
   protected:
@@ -130,6 +139,7 @@ class ScrollingFrame : public Box
     void updateScrollingIndicatior();
 
     Event<InputType>::Subscription inputTypeSubscription;
+    Event<float> contentOffsetChanged;
 };
 
 } // namespace brls

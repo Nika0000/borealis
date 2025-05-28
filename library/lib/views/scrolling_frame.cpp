@@ -34,13 +34,17 @@ ScrollingFrame::ScrollingFrame()
             { "centered", ScrollingBehavior::CENTERED },
         });
 
+    this->registerBoolXMLAttribute("showIndicator", [this](bool value)
+        { this->setScrollingIndicatorVisible(value); });
+
     setupScrollingIndicator();
 
     input = Application::getPlatform()->getInputManager();
     this->setFocusable(true);
     this->setMaximumAllowedXMLElements(1);
 
-    addGestureRecognizer(new ScrollGestureRecognizer([this](PanGestureStatus state, Sound* soundToPlay) {
+    addGestureRecognizer(new ScrollGestureRecognizer([this](PanGestureStatus state, Sound* soundToPlay)
+        {
         if (state.state == GestureState::FAILED || state.state == GestureState::UNSURE || state.state == GestureState::INTERRUPTED)
             return;
 
@@ -74,17 +78,17 @@ ScrollingFrame::ScrollingFrame()
                 return;
 
             animateScrolling(newScroll, time);
-        }
-    },
+        } },
         PanAxis::VERTICAL));
 
     // Stop scrolling on tap
-    addGestureRecognizer(new TapGestureRecognizer([this](brls::TapGestureStatus status, Sound* soundToPlay) {
+    addGestureRecognizer(new TapGestureRecognizer([this](brls::TapGestureStatus status, Sound* soundToPlay)
+        {
         if (status.state == GestureState::UNSURE)
-            this->contentOffsetY.stop();
-    }));
+            this->contentOffsetY.stop(); }));
 
-    inputTypeSubscription = Application::getGlobalInputTypeChangeEvent()->subscribe([this](InputType type) {
+    inputTypeSubscription = Application::getGlobalInputTypeChangeEvent()->subscribe([this](InputType type)
+        {
         if (!focused && !childFocused)
             return;
 
@@ -92,8 +96,7 @@ ScrollingFrame::ScrollingFrame()
         {
             Application::giveFocus(getDefaultFocus());
             naturalScrollingCanScroll = false;
-        }
-    });
+        } });
 
     setHideHighlightBackground(true);
     setHideHighlightBorder(true);
@@ -102,7 +105,7 @@ ScrollingFrame::ScrollingFrame()
 void ScrollingFrame::setupScrollingIndicator()
 {
     Theme theme        = Application::getTheme();
-    scrollingIndicator = new Rectangle(theme["brls/text"]);
+    scrollingIndicator = new Rectangle(theme["brls/scrolling_frame/indicator"]);
     scrollingIndicator->setSize(Size(SCROLLING_INDICATOR_WIDTH, 0));
     scrollingIndicator->setCornerRadius(SCROLLING_INDICATOR_WIDTH / 2);
     scrollingIndicator->detach();
@@ -145,7 +148,7 @@ void ScrollingFrame::draw(NVGcontext* vg, float x, float y, float width, float h
     // Draw children
     Box::draw(vg, x, y, width, height, style, ctx);
 
-    //Disable scissoring
+    // Disable scissoring
     nvgRestore(vg);
 }
 
@@ -183,7 +186,7 @@ void ScrollingFrame::naturalScrollingBehaviour()
 
     if (focused || childFocused)
     {
-        ControllerState state{};
+        ControllerState state {};
         input->updateUnifiedControllerState(&state);
         float bottomLimit = this->getContentHeight() - this->getScrollingAreaHeight();
 
@@ -379,6 +382,8 @@ void ScrollingFrame::startScrolling(bool animated, float newScroll)
         this->scrollAnimationTick();
         this->invalidate();
     }
+
+    this->contentOffsetChanged.fire(newScroll);
 }
 
 void ScrollingFrame::animateScrolling(float newScroll, float time)
@@ -389,9 +394,8 @@ void ScrollingFrame::animateScrolling(float newScroll, float time)
 
     this->contentOffsetY.addStep(newScroll, time, EasingFunction::quadraticOut);
 
-    this->contentOffsetY.setTickCallback([this] {
-        this->scrollAnimationTick();
-    });
+    this->contentOffsetY.setTickCallback([this]
+        { this->scrollAnimationTick(); });
 
     this->contentOffsetY.start();
 
@@ -559,7 +563,7 @@ bool ScrollingFrame::updateScrolling(bool animated)
     if (contentHeight <= getHeight())
         newScroll = 0;
 
-    //Start animation
+    // Start animation
     this->startScrolling(animated, newScroll);
 
     return true;

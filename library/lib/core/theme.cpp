@@ -40,6 +40,9 @@ static ThemeValues lightThemeValues = {
     // AppletFrame
     { "brls/applet_frame/separator", nvgRGB(45, 45, 45) },
 
+    // ScrollingFrame
+    { "brls/scrolling_frame/indicator", nvgRGB(45, 45, 45) },
+
     // Sidebar
     { "brls/sidebar/background", nvgRGB(240, 240, 240) },
     { "brls/sidebar/active_item", nvgRGB(49, 79, 235) },
@@ -69,6 +72,8 @@ static ThemeValues lightThemeValues = {
 
     // List
     { "brls/list/listItem_value_color", nvgRGB(43, 81, 226) },
+    { "brls/list/listItem_border_color", nvgRGB(200, 200, 200) },
+    { "brls/list/listItem_background_color", nvgRGBA(0, 0, 0, 0) },
 
     // Slider
     { "brls/slider/pointer_color", nvgRGB(255, 255, 255) },
@@ -99,6 +104,9 @@ static ThemeValues darkThemeValues = {
     // AppletFrame
     { "brls/applet_frame/separator", nvgRGB(255, 255, 255) },
 
+    // ScrollingFrame
+    { "brls/scrolling_frame/indicator", nvgRGB(255, 255, 255) },
+
     // Sidebar
     { "brls/sidebar/background", nvgRGB(50, 50, 50) },
     { "brls/sidebar/active_item", nvgRGB(0, 255, 204) },
@@ -128,6 +136,8 @@ static ThemeValues darkThemeValues = {
 
     // List
     { "brls/list/listItem_value_color", nvgRGB(88, 195, 169) },
+    { "brls/list/listItem_border_color", nvgRGB(120, 120, 120) },
+    { "brls/list/listItem_background_color", nvgRGBA(0, 0, 0, 0) },
 
     // Slider
     { "brls/slider/pointer_color", nvgRGB(80, 80, 80) },
@@ -147,7 +157,7 @@ ThemeValues::ThemeValues(std::initializer_list<std::pair<std::string, NVGcolor>>
 
 void ThemeValues::addColor(const std::string& name, NVGcolor color)
 {
-        this->values[name] = color;
+    this->values[name] = color;
 }
 
 NVGcolor ThemeValues::getColor(const std::string& name)
