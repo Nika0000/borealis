@@ -23,22 +23,25 @@ namespace brls
 
 RecyclerCell::RecyclerCell()
 {
-    this->setLineBottom(1);
-    this->setLineColor(Application::getTheme()["brls/sidebar/separator"]);
+    if (Application::getStyle()["brls/recycler_cell/seperator"])
+    {
+        this->setLineBottom(1);
+        this->setLineColor(Application::getTheme()["brls/sidebar/separator"]);
+    }
 
     setHeight(Application::getStyle()["brls/dropdown/listItemHeight"]);
 
-    this->registerClickAction([this](View* view) {
+    this->registerClickAction([this](View* view)
+        {
         RecyclerFrame* recycler = dynamic_cast<RecyclerFrame*>(getParent()->getParent());
         if (recycler)
             recycler->getDataSource()->didSelectRowAt(recycler, indexPath);
-        return true;
-    });
+        return true; });
 
-    subscription = Application::getGlobalInputTypeChangeEvent()->subscribe([this](InputType type) {
+    subscription = Application::getGlobalInputTypeChangeEvent()->subscribe([this](InputType type)
+        {
         bool isTouch = type == InputType::TOUCH;
-        this->setLineColor((!isTouch && this->focused) ? TRANSPARENT : Application::getTheme()["brls/sidebar/separator"]);
-    });
+        this->setLineColor((!isTouch && this->focused) ? TRANSPARENT : Application::getTheme()["brls/sidebar/separator"]); });
 
     this->addGestureRecognizer(new TapGestureRecognizer(this));
 }
@@ -173,28 +176,24 @@ View* RecyclerFrame::getNextCellFocus(FocusDirection direction, View* currentVie
 
 RecyclerFrame::RecyclerFrame()
 {
-    registerCell("brls::Header", []() { return RecyclerHeader::create(); });
+    registerCell("brls::Header", []()
+        { return RecyclerHeader::create(); });
 
     // Padding
-    this->registerFloatXMLAttribute("paddingTop", [this](float value) {
-        this->setPaddingTop(value);
-    });
+    this->registerFloatXMLAttribute("paddingTop", [this](float value)
+        { this->setPaddingTop(value); });
 
-    this->registerFloatXMLAttribute("paddingRight", [this](float value) {
-        this->setPaddingRight(value);
-    });
+    this->registerFloatXMLAttribute("paddingRight", [this](float value)
+        { this->setPaddingRight(value); });
 
-    this->registerFloatXMLAttribute("paddingBottom", [this](float value) {
-        this->setPaddingBottom(value);
-    });
+    this->registerFloatXMLAttribute("paddingBottom", [this](float value)
+        { this->setPaddingBottom(value); });
 
-    this->registerFloatXMLAttribute("paddingLeft", [this](float value) {
-        this->setPaddingLeft(value);
-    });
+    this->registerFloatXMLAttribute("paddingLeft", [this](float value)
+        { this->setPaddingLeft(value); });
 
-    this->registerFloatXMLAttribute("padding", [this](float value) {
-        this->setPadding(value);
-    });
+    this->registerFloatXMLAttribute("padding", [this](float value)
+        { this->setPadding(value); });
 
     this->setScrollingBehavior(ScrollingBehavior::CENTERED);
 
@@ -221,7 +220,7 @@ void RecyclerFrame::setDataSource(RecyclerDataSource* source, bool deleteDataSou
     if (this->dataSource && this->deleteDataSource)
         delete this->dataSource;
 
-    this->dataSource = source;
+    this->dataSource       = source;
     this->deleteDataSource = deleteDataSource;
     if (layouted)
         reloadData();
@@ -307,7 +306,7 @@ RecyclerCell* RecyclerFrame::dequeueReusableCell(std::string identifier)
 // TODO: Implement it normally
 void RecyclerFrame::selectRowAt(IndexPath indexPath, bool animated)
 {
-    size_t count    = 0;
+    size_t count = 0;
     float offset = 0;
 
     for (size_t j = 0; j < indexPath.section; j++)

@@ -26,8 +26,10 @@ const std::string detailCellXML = R"xml(
         focusable="true"
         paddingTop="12.5"
         paddingBottom="12.5"
+        backgroundColor="@theme/brls/list/listItem_background_color"
         paddingLeft="@style/brls/listitem/descriptionIndent"
         paddingRight="@style/brls/listitem/descriptionIndent"
+        cornerRadius="@style/brls/listitem/corner_radius"
         alignItems="center">
 
         <brls:Label
@@ -53,6 +55,12 @@ const std::string detailCellXML = R"xml(
 DetailCell::DetailCell()
 {
     this->inflateFromXMLString(detailCellXML);
+
+    if (Application::getStyle()["brls/listitem/bordered"])
+    {
+        this->setBorderColor(Application::getTheme()["brls/list/listItem_border_color"]);
+        this->setBorderThickness(Application::getStyle()["brls/listitem/border_thickness"]);
+    }
 
     this->registerStringXMLAttribute("title", [this](std::string value)
         { this->title->setText(value); });

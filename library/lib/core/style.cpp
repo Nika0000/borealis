@@ -81,6 +81,9 @@ static StyleValues styleValues = {
     { "brls/sidebar/item_font_size", 22.0f },
     { "brls/sidebar/separator_height", 30.0f },
 
+    // RecyclerCell
+    { "brls/recycler_cell/seperator", true },
+
     // Tab Details
     { "brls/tab_details/padding_top", 32.0f },
     { "brls/tab_details/padding_bottom", 47.0f },
@@ -129,6 +132,9 @@ static StyleValues styleValues = {
     { "brls/listitem/descriptionIndent", 16.0f },
     { "brls/listitem/indent", 40.0f },
     { "brls/listitem/selectRadius", 15.0f },
+    { "brls/listitem/bordered", true },
+    { "brls/listitem/corner_radius", 5.0f },
+    { "brls/listitem/border_thickness", 2.0f },
 
     // Hints
     { "brls/hints/footer_margin_sides", 30.0f },
