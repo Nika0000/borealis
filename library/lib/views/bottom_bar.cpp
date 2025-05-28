@@ -31,8 +31,10 @@ const std::string bottomBarXML = R"xml(
 
 <brls:Box
     width="auto"
+    axis="column"
     height="@style/brls/applet_frame/footer_height"
-    axis="column">
+    lineColor="@theme/brls/applet_frame/seperator"
+    lineTop="1px">
     <brls:Box
         width="auto"
         height="@style/brls/applet_frame/footer_height"
@@ -40,8 +42,6 @@ const std::string bottomBarXML = R"xml(
         marginRight="@style/brls/hints/footer_margin_sides"
         paddingLeft="@style/brls/hints/footer_padding_sides"
         paddingRight="@style/brls/hints/footer_padding_sides"
-        lineColor="@theme/brls/applet_frame/separator"
-        lineTop="1px"
         alignItems="stretch">
         <brls:Box
             width="auto"
@@ -92,9 +92,18 @@ BottomBar::BottomBar()
 {
     this->inflateFromXMLString(bottomBarXML);
 
+    this->setPaddingLeft(Application::windowSafeArea.left);
+    this->setPaddingRight(Application::windowSafeArea.right);
+
     Platform* platform = Application::getPlatform();
     battery->setVisibility(platform->canShowBatteryLevel() ? Visibility::VISIBLE : Visibility::GONE);
     wireless->setVisibility(platform->canShowWirelessLevel() ? Visibility::VISIBLE : Visibility::GONE);
+
+    safearea = Application::getWindowSafeAreaChangedEvent()->subscribe([this](SafeAreaInsets safearea)
+        {
+            this->setPaddingLeft(safearea.left);
+            this->setPaddingRight(safearea.right); //
+        });
 }
 
 void BottomBar::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
@@ -106,17 +115,17 @@ void BottomBar::draw(NVGcontext* vg, float x, float y, float width, float height
 void BottomBar::updateText()
 {
 #ifdef PS4
-    OrbisDateTime lt{};
+    OrbisDateTime lt {};
     if (sceRtcGetCurrentClockLocalTime)
         sceRtcGetCurrentClockLocalTime(&lt);
-    tm tm{};
+    tm tm {};
     tm.tm_hour = lt.hour;
-    tm.tm_min = lt.minute;
-    tm.tm_sec = lt.second;
+    tm.tm_min  = lt.minute;
+    tm.tm_sec  = lt.second;
 #else
-    auto timeNow   = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(timeNow);
-    auto tm = *std::localtime(&in_time_t);
+    auto timeNow = std::chrono::system_clock::now();
+    auto inTimeT = std::chrono::system_clock::to_time_t(timeNow);
+    auto tm      = *std::localtime(&inTimeT);
 #endif
     std::stringstream ss;
     ss << std::put_time(&tm, "%H:%M:%S");
@@ -137,6 +146,11 @@ void BottomBar::updateText()
 View* BottomBar::create()
 {
     return new BottomBar();
+}
+
+BottomBar::~BottomBar()
+{
+    Application::getWindowSafeAreaChangedEvent()->unsubscribe(safearea);
 }
 
 } // namespace brls

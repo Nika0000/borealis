@@ -282,7 +282,7 @@ class Application
     static VoidEvent* getExitEvent();
     static VoidEvent* getExitDoneEvent();
     static VoidEvent* getWindowSizeChangedEvent();
-    static VoidEvent* getWindowSafeAreaChangedEvent();
+    static Event<SafeAreaInsets>* getWindowSafeAreaChangedEvent();
     static VoidEvent* getWindowCreationDoneEvent();
     static VoidEvent* getWindowShouldCloseEvent();
     static Event<bool>* getWindowFocusChangedEvent();
@@ -422,7 +422,7 @@ class Application
     inline static VoidEvent exitEvent;
     inline static VoidEvent exitDoneEvent;
     inline static VoidEvent windowSizeChangedEvent;
-    inline static VoidEvent windowSafeAreaChangeEvent;
+    inline static Event<SafeAreaInsets> windowSafeAreaChangeEvent;
     inline static VoidEvent windowCreationDoneEvent;
     inline static VoidEvent windowShouldCloseEvent;
     inline static Event<bool> windowFocusChangedEvent;

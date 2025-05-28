@@ -821,9 +821,9 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
     if (Application::activitiesStack.size() > 1)
     {
         toShow = Application::activitiesStack[Application::activitiesStack.size() - 2];
-        toShow->hide([]() {}, false, 0);
+        toShow->hide([]() { }, false, 0);
         toShow->onResume();
-        toShow->show([]() {}, false, 0);
+        toShow->show([]() { }, false, 0);
     }
 
     // Focus
@@ -909,7 +909,7 @@ void Application::pushActivity(Activity* activity, TransitionAnimation animation
     }
     else
     {
-        activity->hide([]() {}, false, 0);
+        activity->hide([]() { }, false, 0);
 
         brls::Logger::debug("push activity to the stack");
         Application::activitiesStack.push_back(activity);
@@ -1136,7 +1136,7 @@ void Application::onWindowSafeAreaChanged(SafeAreaInsets safearea)
     brls::cancelDelay(iter);
     iter = brls::delay(100, [safearea]()
         { Application::setWindowSafeArea(safearea);
-        Application::getWindowSafeAreaChangedEvent()->fire(); });
+        Application::getWindowSafeAreaChangedEvent()->fire(safearea); });
 }
 
 void Application::onWindowReposition(int x, int y)
@@ -1189,7 +1189,7 @@ VoidEvent* Application::getWindowSizeChangedEvent()
     return &Application::windowSizeChangedEvent;
 }
 
-VoidEvent* Application::getWindowSafeAreaChangedEvent()
+Event<SafeAreaInsets>* Application::getWindowSafeAreaChangedEvent()
 {
     return &Application::windowSafeAreaChangeEvent;
 }
