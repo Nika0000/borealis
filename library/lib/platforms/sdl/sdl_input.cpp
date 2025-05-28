@@ -46,19 +46,19 @@ static const BrlsKeyboardScancode sdlToBrlsKeyboardScancode(SDL_Scancode scancod
 
     // 1 - 9
     if (scancode >= SDL_SCANCODE_1 && scancode <= SDL_SCANCODE_9)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_1 + scancode - SDL_SCANCODE_1);
+        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_1 + static_cast<int>(scancode) - SDL_SCANCODE_1);
 
     // KP1 - KP9
     if (scancode >= SDL_SCANCODE_KP_1 && scancode <= SDL_SCANCODE_KP_9)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_KP_1 + scancode - SDL_SCANCODE_KP_1);
+        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_KP_1 + static_cast<int>(scancode) - SDL_SCANCODE_KP_1);
 
     // A - Z
     if (scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_Z)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_A + scancode - SDL_SCANCODE_A);
+        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_A + static_cast<int>(scancode) - SDL_SCANCODE_A);
 
     // F1 - F12
     if (scancode >= SDL_SCANCODE_F1 && scancode <= SDL_SCANCODE_F12)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_F1 + scancode - SDL_SCANCODE_F1);
+        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_F1 + static_cast<int>(scancode) - SDL_SCANCODE_F1);
 
     switch (scancode)
     {
@@ -180,19 +180,19 @@ static const SDL_Scancode brlsToSdlKeyboardScancode(BrlsKeyboardScancode scancod
 
     // 1 - 9
     if (scancode >= BRLS_KBD_KEY_1 && scancode <= BRLS_KBD_KEY_9)
-        return (SDL_Scancode)(SDL_SCANCODE_1 + scancode - BRLS_KBD_KEY_1);
+        return (SDL_Scancode)(SDL_SCANCODE_1 + static_cast<int>(scancode) - BRLS_KBD_KEY_1);
 
     // KP1 - KP9
     if (scancode >= BRLS_KBD_KEY_KP_1 && scancode <= BRLS_KBD_KEY_KP_9)
-        return (SDL_Scancode)(SDL_SCANCODE_KP_1 + scancode - BRLS_KBD_KEY_KP_1);
+        return (SDL_Scancode)(SDL_SCANCODE_KP_1 + static_cast<int>(scancode) - BRLS_KBD_KEY_KP_1);
 
     // A - Z
     if (scancode >= BRLS_KBD_KEY_A && scancode <= BRLS_KBD_KEY_Z)
-        return (SDL_Scancode)(SDL_SCANCODE_A + scancode - BRLS_KBD_KEY_A);
+        return (SDL_Scancode)(SDL_SCANCODE_A + static_cast<int>(scancode) - BRLS_KBD_KEY_A);
 
     // F1 - F12
     if (scancode >= BRLS_KBD_KEY_F1 && scancode <= BRLS_KBD_KEY_F12)
-        return (SDL_Scancode)(SDL_SCANCODE_F1 + scancode - BRLS_KBD_KEY_F1);
+        return (SDL_Scancode)(SDL_SCANCODE_F1 + static_cast<int>(scancode) - BRLS_KBD_KEY_F1);
 
     switch (scancode)
     {

@@ -33,7 +33,7 @@ const std::string bottomBarXML = R"xml(
     width="auto"
     axis="column"
     height="@style/brls/applet_frame/footer_height"
-    lineColor="@theme/brls/applet_frame/seperator"
+    lineColor="@theme/brls/applet_frame/separator"
     lineTop="1px">
     <brls:Box
         width="auto"
