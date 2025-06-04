@@ -16,10 +16,7 @@
     limitations under the License.
 */
 
-#include <math.h>
-
 #include <algorithm>
-#include <sstream>
 #include <borealis/core/animation.hpp>
 #include <borealis/core/application.hpp>
 #include <borealis/core/box.hpp>
@@ -28,7 +25,9 @@
 #include <borealis/core/util.hpp>
 #include <borealis/core/view.hpp>
 #include <borealis/views/applet_frame.hpp>
+#include <cmath>
 #include <fstream>
+#include <sstream>
 
 // Avoid conflicts with macro definitions in windows.h
 #undef RGB
@@ -49,7 +48,8 @@ void AppletFrameItem::setHintView(View* hintView)
 
 AppletFrameItem::~AppletFrameItem()
 {
-    if (hintView) {
+    if (hintView)
+    {
         if (!hintView->isPtrLocked())
             delete hintView;
         else
@@ -205,7 +205,7 @@ void View::frame(FrameContext* ctx)
         if (this->wireframeEnabled)
             this->drawWireframe(ctx, frame);
 
-        //Reset clipping
+        // Reset clipping
         if (this->collapseState < 1.0f || this->clipsToBounds)
             nvgRestore(ctx->vg);
     }
@@ -244,12 +244,12 @@ void View::playClickAnimation(bool reverse, bool animateBack, bool force)
         style["brls/animations/highlight"],
         reverse ? EasingFunction::quadraticOut : EasingFunction::quadraticIn);
 
-    this->clickAlpha.setEndCallback([this, reverse, animateBack](bool finished) {
+    this->clickAlpha.setEndCallback([this, reverse, animateBack](bool finished)
+        {
         if (reverse || !animateBack || Application::getInputType() == InputType::TOUCH)
             return;
 
-        this->playClickAnimation(true);
-    });
+        this->playClickAnimation(true); });
 
     this->clickAlpha.start();
 }
@@ -437,10 +437,10 @@ void View::collapse(bool animated)
 
         this->collapseState.addStep(0.0f, style["brls/animations/collapse"], EasingFunction::quadraticOut);
 
-        this->collapseState.setTickCallback([this] {
+        this->collapseState.setTickCallback([this]
+            {
             if (this->hasParent())
-                this->getParent()->invalidate();
-        });
+                this->getParent()->invalidate(); });
 
         this->collapseState.start();
     }
@@ -465,10 +465,10 @@ void View::expand(bool animated)
 
         this->collapseState.addStep(1.0f, style["brls/animations/collapse"], EasingFunction::quadraticOut);
 
-        this->collapseState.setTickCallback([this] {
+        this->collapseState.setTickCallback([this]
+            {
             if (this->hasParent())
-                this->getParent()->invalidate();
-        });
+                this->getParent()->invalidate(); });
 
         this->collapseState.start();
     }
@@ -643,8 +643,8 @@ void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect f
             nvgRect(vg, x, y + backdropHeight, width, height - backdropHeight * 2);
             nvgFill(vg);
 
-            //Borders gradient
-            // Top
+            // Borders gradient
+            //  Top
             NVGpaint topGradient = nvgLinearGradient(vg, x, y + backdropHeight, x, y, a(sidebarColor), TRANSPARENT);
             nvgBeginPath(vg);
             nvgFillPaint(vg, topGradient);
@@ -664,7 +664,8 @@ void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect f
             NVGpaint gradient = nvgLinearGradient(vg, x, y, x, y + height, a(backgroundStartColor), a(backgroundEndColor));
             nvgBeginPath(vg);
             nvgFillPaint(vg, gradient);
-            if (std::all_of(this->backgroundRadius.begin(), this->backgroundRadius.end(), [](float i) { return i == 0.0f; }))
+            if (std::all_of(this->backgroundRadius.begin(), this->backgroundRadius.end(), [](float i)
+                    { return i == 0.0f; }))
                 nvgRect(vg, x, y, width, height);
             else
                 nvgRoundedRectVarying(vg, x, y, width, height, backgroundRadius[0], backgroundRadius[1], backgroundRadius[2], backgroundRadius[3]);
@@ -711,7 +712,8 @@ ActionIdentifier View::registerAction(std::string hintText, enum ControllerButto
 
 void View::unregisterAction(ActionIdentifier identifier)
 {
-    auto is_matched_action = [identifier](Action action) {
+    auto is_matched_action = [identifier](Action action)
+    {
         return action.identifier == identifier;
     };
     if (auto it = std::find_if(this->actions.begin(), this->actions.end(), is_matched_action); it != this->actions.end())
@@ -1252,7 +1254,8 @@ void View::setInFadeAnimation(bool inFadeAnimation)
     this->inFadeAnimation = inFadeAnimation;
 }
 
-void View::removeFromSuperView(bool free) {
+void View::removeFromSuperView(bool free)
+{
     if (parent)
         parent->removeView(this, free);
 }
@@ -1288,11 +1291,11 @@ void View::show(std::function<void(void)> cb, bool animate, float animationDurat
 
         this->alpha.addStep(1.0f, animationDuration, EasingFunction::quadraticOut);
 
-        this->alpha.setEndCallback([this, cb](bool finished) {
+        this->alpha.setEndCallback([this, cb](bool finished)
+            {
             this->fadeIn = false;
             this->onShowAnimationEnd();
-            cb();
-        });
+            cb(); });
 
         this->alpha.start();
     }
@@ -1329,9 +1332,9 @@ void View::hide(std::function<void(void)> cb, bool animated, float animationDura
 
         this->alpha.addStep(0.0f, animationDuration, EasingFunction::quadraticOut);
 
-        this->alpha.setEndCallback([cb](bool finished) {
-            if (finished) cb();
-        });
+        this->alpha.setEndCallback([cb](bool finished)
+            {
+            if (finished) cb(); });
 
         this->alpha.start();
     }
@@ -1425,9 +1428,6 @@ View::~View()
     // Focus sanity check
     if (Application::getCurrentFocus() == this)
         Application::giveFocus(nullptr);
-
-    for (tinyxml2::XMLDocument* document : this->boundDocuments)
-        delete document;
 
     Application::tryDeinitFirstResponder(this);
     for (GestureRecognizer* recognizer : this->gestureRecognizers)
@@ -1603,11 +1603,11 @@ bool View::applyXMLAttribute(std::string name, std::string value)
         if (value.size() == 7)
         {
             unsigned int r = 0, g = 0, b = 0;
-            std::stringstream sr{value.substr(1,2)};
+            std::stringstream sr { value.substr(1, 2) };
             sr >> std::hex >> r;
-            std::stringstream sg{value.substr(3,2)};
+            std::stringstream sg { value.substr(3, 2) };
             sg >> std::hex >> g;
-            std::stringstream sb{value.substr(5,2)};
+            std::stringstream sb { value.substr(5, 2) };
             sb >> std::hex >> b;
 
             if (sr.fail() || sg.fail() || sb.fail())
@@ -1628,13 +1628,13 @@ bool View::applyXMLAttribute(std::string name, std::string value)
         else if (value.size() == 9)
         {
             unsigned int r = 0, g = 0, b = 0, a = 0;
-            std::stringstream sr{value.substr(1,2)};
+            std::stringstream sr { value.substr(1, 2) };
             sr >> std::hex >> r;
-            std::stringstream sg{value.substr(3,2)};
+            std::stringstream sg { value.substr(3, 2) };
             sg >> std::hex >> g;
-            std::stringstream sb{value.substr(5,2)};
+            std::stringstream sb { value.substr(5, 2) };
             sb >> std::hex >> b;
-            std::stringstream sa{value.substr(7,2)};
+            std::stringstream sa { value.substr(7, 2) };
             sa >> std::hex >> a;
 
             if (sr.fail() || sg.fail() || sb.fail() || sa.fail())
@@ -1746,37 +1746,47 @@ View* View::createFromXMLResource(std::string name)
 
 View* View::createFromXMLString(std::string_view xml)
 {
-    tinyxml2::XMLDocument* document = new tinyxml2::XMLDocument();
-    tinyxml2::XMLError error        = document->Parse(xml.data());
+    std::shared_ptr<tinyxml2::XMLDocument> document = getXMLCache(xml);
 
-    if (error != tinyxml2::XMLError::XML_SUCCESS)
-        fatal("Invalid XML when creating View from XML: error " + std::to_string(error));
+    tinyxml2::XMLElement* element = document->RootElement();
 
-    tinyxml2::XMLElement* root = document->RootElement();
+    if (!element)
+    {
+        tinyxml2::XMLError error = document->Parse(xml.data());
 
-    if (!root)
-        fatal("Invalid XML: no element found");
+        if (error != tinyxml2::XMLError::XML_SUCCESS)
+            fatal("Invalid XML when creating View from XML: error " + std::to_string(error));
 
-    View* view = View::createFromXMLElement(root);
-    view->bindXMLDocument(document);
+        element = document->RootElement();
+
+        if (!element)
+            fatal("Invalid XML: no element found");
+    }
+
+    View* view = View::createFromXMLElement(element);
     return view;
 }
 
 View* View::createFromXMLFile(std::string path)
 {
-    tinyxml2::XMLDocument* document = new tinyxml2::XMLDocument();
-    tinyxml2::XMLError error        = document->LoadFile(path.c_str());
-
-    if (error != tinyxml2::XMLError::XML_SUCCESS)
-        fatal("Unable to load XML file \"" + path + "\": error " + std::to_string(error));
+    std::shared_ptr<tinyxml2::XMLDocument> document = getXMLCache(path);
 
     tinyxml2::XMLElement* element = document->RootElement();
 
     if (!element)
-        fatal("Unable to load XML file \"" + path + "\": no root element found, is the file empty?");
+    {
+        tinyxml2::XMLError error = document->LoadFile(path.c_str());
+
+        if (error != tinyxml2::XMLError::XML_SUCCESS)
+            fatal("Unable to load XML file \"" + path + "\": error " + std::to_string(error));
+
+        element = document->RootElement();
+
+        if (!element)
+            fatal("Unable to load XML file \"" + path + "\": no root element found, is the file empty?");
+    }
 
     View* view = View::createFromXMLElement(element);
-    view->bindXMLDocument(document);
     return view;
 }
 
@@ -1855,91 +1865,71 @@ unsigned View::getMaximumAllowedXMLElements()
 void View::registerCommonAttributes()
 {
     // Width
-    this->registerAutoXMLAttribute("width", [this] {
-        this->setWidth(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("width", [this]
+        { this->setWidth(View::AUTO); });
 
-    this->registerFloatXMLAttribute("width", [this](float value) {
-        this->setWidth(value);
-    });
+    this->registerFloatXMLAttribute("width", [this](float value)
+        { this->setWidth(value); });
 
-    this->registerPercentageXMLAttribute("width", [this](float value) {
-        this->setWidthPercentage(value);
-    });
+    this->registerPercentageXMLAttribute("width", [this](float value)
+        { this->setWidthPercentage(value); });
 
     // Height
-    this->registerAutoXMLAttribute("height", [this] {
-        this->setHeight(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("height", [this]
+        { this->setHeight(View::AUTO); });
 
-    this->registerFloatXMLAttribute("height", [this](float value) {
-        this->setHeight(value);
-    });
+    this->registerFloatXMLAttribute("height", [this](float value)
+        { this->setHeight(value); });
 
-    this->registerPercentageXMLAttribute("height", [this](float value) {
-        this->setHeightPercentage(value);
-    });
+    this->registerPercentageXMLAttribute("height", [this](float value)
+        { this->setHeightPercentage(value); });
 
     // Min width
-    this->registerAutoXMLAttribute("minWidth", [this] {
-        this->setMinWidth(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("minWidth", [this]
+        { this->setMinWidth(View::AUTO); });
 
-    this->registerFloatXMLAttribute("minWidth", [this](float value) {
-        this->setMinWidth(value);
-    });
+    this->registerFloatXMLAttribute("minWidth", [this](float value)
+        { this->setMinWidth(value); });
 
-    this->registerPercentageXMLAttribute("minWidth", [this](float percentage) {
-        this->setMinWidthPercentage(percentage);
-    });
+    this->registerPercentageXMLAttribute("minWidth", [this](float percentage)
+        { this->setMinWidthPercentage(percentage); });
 
     // Min height
-    this->registerAutoXMLAttribute("minHeight", [this] {
-        this->setMinHeight(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("minHeight", [this]
+        { this->setMinHeight(View::AUTO); });
 
-    this->registerFloatXMLAttribute("minHeight", [this](float value) {
-        this->setMinHeight(value);
-    });
+    this->registerFloatXMLAttribute("minHeight", [this](float value)
+        { this->setMinHeight(value); });
 
-    this->registerPercentageXMLAttribute("minHeight", [this](float percentage) {
-        this->setMinHeightPercentage(percentage);
-    });
+    this->registerPercentageXMLAttribute("minHeight", [this](float percentage)
+        { this->setMinHeightPercentage(percentage); });
 
     // Max width
-    this->registerAutoXMLAttribute("maxWidth", [this] {
-        this->setMaxWidth(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("maxWidth", [this]
+        { this->setMaxWidth(View::AUTO); });
 
-    this->registerFloatXMLAttribute("maxWidth", [this](float value) {
-        this->setMaxWidth(value);
-    });
+    this->registerFloatXMLAttribute("maxWidth", [this](float value)
+        { this->setMaxWidth(value); });
 
-    this->registerPercentageXMLAttribute("maxWidth", [this](float percentage) {
-        this->setMaxWidthPercentage(percentage);
-    });
+    this->registerPercentageXMLAttribute("maxWidth", [this](float percentage)
+        { this->setMaxWidthPercentage(percentage); });
 
     // Max height
-    this->registerAutoXMLAttribute("maxHeight", [this] {
-        this->setMaxHeight(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("maxHeight", [this]
+        { this->setMaxHeight(View::AUTO); });
 
-    this->registerFloatXMLAttribute("maxHeight", [this](float value) {
-        this->setMaxHeight(value);
-    });
+    this->registerFloatXMLAttribute("maxHeight", [this](float value)
+        { this->setMaxHeight(value); });
 
-    this->registerPercentageXMLAttribute("maxHeight", [this](float percentage) {
-        this->setMaxHeightPercentage(percentage);
-    });
+    this->registerPercentageXMLAttribute("maxHeight", [this](float percentage)
+        { this->setMaxHeightPercentage(percentage); });
 
     // Grow and shrink
-    this->registerFloatXMLAttribute("grow", [this](float value) {
-        this->setGrow(value);
-    });
+    this->registerFloatXMLAttribute("grow", [this](float value)
+        { this->setGrow(value); });
 
-    this->registerFloatXMLAttribute("shrink", [this](float value) {
-        this->setShrink(value);
-    });
+    this->registerFloatXMLAttribute("shrink", [this](float value)
+        { this->setShrink(value); });
 
     // Alignment
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
@@ -1956,103 +1946,80 @@ void View::registerCommonAttributes()
         });
 
     // Margins all
-    this->registerFloatXMLAttribute("margin", [this](float value) {
-        this->setMargins(value, value, value, value);
-    });
+    this->registerFloatXMLAttribute("margin", [this](float value)
+        { this->setMargins(value, value, value, value); });
 
-    this->registerAutoXMLAttribute("margin", [this] {
-        this->setMargins(View::AUTO, View::AUTO, View::AUTO, View::AUTO);
-    });
+    this->registerAutoXMLAttribute("margin", [this]
+        { this->setMargins(View::AUTO, View::AUTO, View::AUTO, View::AUTO); });
 
     // Margin top
-    this->registerFloatXMLAttribute("marginTop", [this](float value) {
-        this->setMarginTop(value);
-    });
+    this->registerFloatXMLAttribute("marginTop", [this](float value)
+        { this->setMarginTop(value); });
 
-    this->registerAutoXMLAttribute("marginTop", [this] {
-        this->setMarginTop(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("marginTop", [this]
+        { this->setMarginTop(View::AUTO); });
 
     // Margin right
-    this->registerFloatXMLAttribute("marginRight", [this](float value) {
-        this->setMarginRight(value);
-    });
+    this->registerFloatXMLAttribute("marginRight", [this](float value)
+        { this->setMarginRight(value); });
 
-    this->registerAutoXMLAttribute("marginRight", [this] {
-        this->setMarginRight(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("marginRight", [this]
+        { this->setMarginRight(View::AUTO); });
 
     // Margin bottom
-    this->registerFloatXMLAttribute("marginBottom", [this](float value) {
-        this->setMarginBottom(value);
-    });
+    this->registerFloatXMLAttribute("marginBottom", [this](float value)
+        { this->setMarginBottom(value); });
 
-    this->registerAutoXMLAttribute("marginBottom", [this] {
-        this->setMarginBottom(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("marginBottom", [this]
+        { this->setMarginBottom(View::AUTO); });
 
     // Margin left
-    this->registerFloatXMLAttribute("marginLeft", [this](float value) {
-        this->setMarginLeft(value);
-    });
+    this->registerFloatXMLAttribute("marginLeft", [this](float value)
+        { this->setMarginLeft(value); });
 
-    this->registerAutoXMLAttribute("marginLeft", [this] {
-        this->setMarginLeft(View::AUTO);
-    });
+    this->registerAutoXMLAttribute("marginLeft", [this]
+        { this->setMarginLeft(View::AUTO); });
 
     // Line
-    this->registerColorXMLAttribute("lineColor", [this](NVGcolor color) {
-        this->setLineColor(color);
-    });
+    this->registerColorXMLAttribute("lineColor", [this](NVGcolor color)
+        { this->setLineColor(color); });
 
-    this->registerFloatXMLAttribute("lineTop", [this](float value) {
-        this->setLineTop(value);
-    });
+    this->registerFloatXMLAttribute("lineTop", [this](float value)
+        { this->setLineTop(value); });
 
-    this->registerFloatXMLAttribute("lineRight", [this](float value) {
-        this->setLineRight(value);
-    });
+    this->registerFloatXMLAttribute("lineRight", [this](float value)
+        { this->setLineRight(value); });
 
-    this->registerFloatXMLAttribute("lineBottom", [this](float value) {
-        this->setLineBottom(value);
-    });
+    this->registerFloatXMLAttribute("lineBottom", [this](float value)
+        { this->setLineBottom(value); });
 
-    this->registerFloatXMLAttribute("lineLeft", [this](float value) {
-        this->setLineLeft(value);
-    });
+    this->registerFloatXMLAttribute("lineLeft", [this](float value)
+        { this->setLineLeft(value); });
 
     // Position
-    this->registerFloatXMLAttribute("positionTop", [this](float value) {
-        this->setPositionTop(value);
-    });
+    this->registerFloatXMLAttribute("positionTop", [this](float value)
+        { this->setPositionTop(value); });
 
-    this->registerFloatXMLAttribute("positionRight", [this](float value) {
-        this->setPositionRight(value);
-    });
+    this->registerFloatXMLAttribute("positionRight", [this](float value)
+        { this->setPositionRight(value); });
 
-    this->registerFloatXMLAttribute("positionBottom", [this](float value) {
-        this->setPositionBottom(value);
-    });
+    this->registerFloatXMLAttribute("positionBottom", [this](float value)
+        { this->setPositionBottom(value); });
 
-    this->registerFloatXMLAttribute("positionLeft", [this](float value) {
-        this->setPositionLeft(value);
-    });
+    this->registerFloatXMLAttribute("positionLeft", [this](float value)
+        { this->setPositionLeft(value); });
 
-    this->registerPercentageXMLAttribute("positionTop", [this](float value) {
-        this->setPositionTopPercentage(value);
-    });
+    this->registerPercentageXMLAttribute("positionTop", [this](float value)
+        { this->setPositionTopPercentage(value); });
 
-    this->registerPercentageXMLAttribute("positionRight", [this](float value) {
-        this->setPositionRightPercentage(value);
-    });
+    this->registerPercentageXMLAttribute("positionRight", [this](float value)
+        { this->setPositionRightPercentage(value); });
 
-    this->registerPercentageXMLAttribute("positionBottom", [this](float value) {
-        this->setPositionBottomPercentage(value);
-    });
+    this->registerPercentageXMLAttribute("positionBottom", [this](float value)
+        { this->setPositionBottomPercentage(value); });
 
-    this->registerPercentageXMLAttribute("positionLeft", [this](float value) {
-        this->setPositionLeftPercentage(value);
-    });
+    this->registerPercentageXMLAttribute("positionLeft", [this](float value)
+        { this->setPositionLeftPercentage(value); });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
         "positionType", PositionType, this->setPositionType,
@@ -2062,38 +2029,30 @@ void View::registerCommonAttributes()
         });
 
     // Custom focus routes
-    this->registerStringXMLAttribute("focusUp", [this](std::string value) {
-        this->setCustomNavigationRoute(FocusDirection::UP, value);
-    });
+    this->registerStringXMLAttribute("focusUp", [this](std::string value)
+        { this->setCustomNavigationRoute(FocusDirection::UP, value); });
 
-    this->registerStringXMLAttribute("focusRight", [this](std::string value) {
-        this->setCustomNavigationRoute(FocusDirection::RIGHT, value);
-    });
+    this->registerStringXMLAttribute("focusRight", [this](std::string value)
+        { this->setCustomNavigationRoute(FocusDirection::RIGHT, value); });
 
-    this->registerStringXMLAttribute("focusDown", [this](std::string value) {
-        this->setCustomNavigationRoute(FocusDirection::DOWN, value);
-    });
+    this->registerStringXMLAttribute("focusDown", [this](std::string value)
+        { this->setCustomNavigationRoute(FocusDirection::DOWN, value); });
 
-    this->registerStringXMLAttribute("focusLeft", [this](std::string value) {
-        this->setCustomNavigationRoute(FocusDirection::LEFT, value);
-    });
+    this->registerStringXMLAttribute("focusLeft", [this](std::string value)
+        { this->setCustomNavigationRoute(FocusDirection::LEFT, value); });
 
     // Shape
-    this->registerColorXMLAttribute("backgroundColor", [this](NVGcolor value) {
-        this->setBackgroundColor(value);
-    });
+    this->registerColorXMLAttribute("backgroundColor", [this](NVGcolor value)
+        { this->setBackgroundColor(value); });
 
-    this->registerColorXMLAttribute("borderColor", [this](NVGcolor value) {
-        this->setBorderColor(value);
-    });
+    this->registerColorXMLAttribute("borderColor", [this](NVGcolor value)
+        { this->setBorderColor(value); });
 
-    this->registerFloatXMLAttribute("borderThickness", [this](float value) {
-        this->setBorderThickness(value);
-    });
+    this->registerFloatXMLAttribute("borderThickness", [this](float value)
+        { this->setBorderThickness(value); });
 
-    this->registerFloatXMLAttribute("cornerRadius", [this](float value) {
-        this->setCornerRadius(value);
-    });
+    this->registerFloatXMLAttribute("cornerRadius", [this](float value)
+        { this->setCornerRadius(value); });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
         "shadowType", ShadowType, this->setShadowType,
@@ -2121,9 +2080,8 @@ void View::registerCommonAttributes()
             { "gone", Visibility::GONE },
         });
 
-    this->registerStringXMLAttribute("id", [this](std::string value) {
-        this->setId(value);
-    });
+    this->registerStringXMLAttribute("id", [this](std::string value)
+        { this->setId(value); });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
         "background", ViewBackground, this->setBackground,
@@ -2134,97 +2092,77 @@ void View::registerCommonAttributes()
         });
 
     // background start and end color for vertical linear style
-    this->registerColorXMLAttribute("backgroundStartColor", [this](NVGcolor value) {
-        this->backgroundStartColor = value;
-    });
-    this->registerColorXMLAttribute("backgroundEndColor", [this](NVGcolor value) {
-        this->backgroundEndColor = value;
-    });
+    this->registerColorXMLAttribute("backgroundStartColor", [this](NVGcolor value)
+        { this->backgroundStartColor = value; });
+    this->registerColorXMLAttribute("backgroundEndColor", [this](NVGcolor value)
+        { this->backgroundEndColor = value; });
 
     // background corner radius for vertical linear style
-    this->registerFloatXMLAttribute("backgroundTopLeftRadius", [this](float value) {
-        this->backgroundRadius[0] = value;
-    });
-    this->registerFloatXMLAttribute("backgroundTopRightRadius", [this](float value) {
-        this->backgroundRadius[1] = value;
-    });
-    this->registerFloatXMLAttribute("backgroundBottomRightRadius", [this](float value) {
-        this->backgroundRadius[2] = value;
-    });
-    this->registerFloatXMLAttribute("backgroundBottomLeftRadius", [this](float value) {
-        this->backgroundRadius[3] = value;
-    });
+    this->registerFloatXMLAttribute("backgroundTopLeftRadius", [this](float value)
+        { this->backgroundRadius[0] = value; });
+    this->registerFloatXMLAttribute("backgroundTopRightRadius", [this](float value)
+        { this->backgroundRadius[1] = value; });
+    this->registerFloatXMLAttribute("backgroundBottomRightRadius", [this](float value)
+        { this->backgroundRadius[2] = value; });
+    this->registerFloatXMLAttribute("backgroundBottomLeftRadius", [this](float value)
+        { this->backgroundRadius[3] = value; });
 
-    this->registerBoolXMLAttribute("focusable", [this](bool value) {
-        this->setFocusable(value);
-    });
+    this->registerBoolXMLAttribute("focusable", [this](bool value)
+        { this->setFocusable(value); });
 
-    this->registerBoolXMLAttribute("wireframe", [this](bool value) {
-        this->setWireframeEnabled(value);
-    });
+    this->registerBoolXMLAttribute("wireframe", [this](bool value)
+        { this->setWireframeEnabled(value); });
 
     // Highlight
-    this->registerBoolXMLAttribute("hideHighlightBackground", [this](bool value) {
-        this->setHideHighlightBackground(value);
-    });
+    this->registerBoolXMLAttribute("hideHighlightBackground", [this](bool value)
+        { this->setHideHighlightBackground(value); });
 
     // Highlight
-    this->registerBoolXMLAttribute("hideHighlightBorder", [this](bool value) {
-        this->setHideHighlightBorder(value);
-    });
+    this->registerBoolXMLAttribute("hideHighlightBorder", [this](bool value)
+        { this->setHideHighlightBorder(value); });
 
     // Highlight
-    this->registerBoolXMLAttribute("hideClickAnimation", [this](bool value) {
-        this->setHideClickAnimation(value);
-    });
+    this->registerBoolXMLAttribute("hideClickAnimation", [this](bool value)
+        { this->setHideClickAnimation(value); });
 
     // Highlight
-    this->registerBoolXMLAttribute("hideHighlight", [this](bool value) {
-        this->setHideHighlight(value);
-    });
+    this->registerBoolXMLAttribute("hideHighlight", [this](bool value)
+        { this->setHideHighlight(value); });
 
-    this->registerFloatXMLAttribute("highlightPadding", [this](float value) {
-        this->setHighlightPadding(value);
-    });
+    this->registerFloatXMLAttribute("highlightPadding", [this](float value)
+        { this->setHighlightPadding(value); });
 
-    this->registerFloatXMLAttribute("highlightCornerRadius", [this](float value) {
-        this->setHighlightCornerRadius(value);
-    });
+    this->registerFloatXMLAttribute("highlightCornerRadius", [this](float value)
+        { this->setHighlightCornerRadius(value); });
 
     // Misc
-    this->registerStringXMLAttribute("title", [this](std::string value) {
-        this->getAppletFrameItem()->title = value;
-    });
+    this->registerStringXMLAttribute("title", [this](std::string value)
+        { this->getAppletFrameItem()->title = value; });
 
-    this->registerFilePathXMLAttribute("icon", [this](std::string value) {
-        this->getAppletFrameItem()->setIconFromFile(value);
-    });
+    this->registerFilePathXMLAttribute("icon", [this](std::string value)
+        { this->getAppletFrameItem()->setIconFromFile(value); });
 
-    this->registerFloatXMLAttribute("detachedX", [this](float value) {
+    this->registerFloatXMLAttribute("detachedX", [this](float value)
+        {
         this->detach();
-        this->setDetachedPositionX(value);
-    });
+        this->setDetachedPositionX(value); });
 
-    this->registerFloatXMLAttribute("detachedY", [this](float value) {
+    this->registerFloatXMLAttribute("detachedY", [this](float value)
+        {
         this->detach();
-        this->setDetachedPositionY(value);
-    });
+        this->setDetachedPositionY(value); });
 
-    this->registerFloatXMLAttribute("alpha", [this](float value) {
-        this->setAlpha(value);
-    });
+    this->registerFloatXMLAttribute("alpha", [this](float value)
+        { this->setAlpha(value); });
 
-    this->registerBoolXMLAttribute("clipsToBounds", [this](float value) {
-        this->setClipsToBounds(value);
-    });
+    this->registerBoolXMLAttribute("clipsToBounds", [this](float value)
+        { this->setClipsToBounds(value); });
 
-    this->registerBoolXMLAttribute("culled", [this](float value) {
-        this->setCulled(value);
-    });
+    this->registerBoolXMLAttribute("culled", [this](float value)
+        { this->setCulled(value); });
 
-    this->registerFloatXMLAttribute("aspectRatio", [this](float value) {
-        this->setAspectRatio(value);
-    });
+    this->registerFloatXMLAttribute("aspectRatio", [this](float value)
+        { this->setAspectRatio(value); });
 }
 
 void View::setTranslationY(float translationY)
@@ -2380,9 +2318,15 @@ View* View::hitTest(Point point)
     return nullptr;
 }
 
-void View::bindXMLDocument(tinyxml2::XMLDocument* document)
+std::shared_ptr<tinyxml2::XMLDocument> View::getXMLCache(std::string_view path)
 {
-    this->boundDocuments.push_back(document);
+    static std::unordered_map<size_t, std::shared_ptr<tinyxml2::XMLDocument>> xmlCache;
+    const size_t hash = std::hash<std::string> {}(path.data());
+    if (!xmlCache.contains(hash))
+    {
+        xmlCache[hash] = std::make_shared<tinyxml2::XMLDocument>();
+    }
+    return xmlCache[hash];
 }
 
 void View::setWireframeEnabled(bool wireframe)
@@ -2412,7 +2356,8 @@ AppletFrame* View::getAppletFrame()
 void View::updateAppletFrameItem()
 {
     AppletFrame* appletFrame = this->getAppletFrame();
-    if (appletFrame) {
+    if (appletFrame)
+    {
         appletFrame->updateAppletFrameItem();
         appletFrame->setTitle(getAppletFrameItem()->title);
         appletFrame->setIcon(getAppletFrameItem()->iconPath);
