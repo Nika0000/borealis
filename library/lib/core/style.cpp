@@ -132,7 +132,7 @@ static StyleValues styleValues = {
     { "brls/listitem/descriptionIndent", 16.0f },
     { "brls/listitem/indent", 40.0f },
     { "brls/listitem/selectRadius", 15.0f },
-    { "brls/listitem/bordered", true },
+    { "brls/listitem/bordered", false },
     { "brls/listitem/corner_radius", 5.0f },
     { "brls/listitem/border_thickness", 2.0f },
 
@@ -151,6 +151,9 @@ static StyleValues styleValues = {
     // Dialog
     { "brls/dialog/paddingTopBottom", 65 },
     { "brls/dialog/paddingLeftRight", 115 },
+    { "brls/dialog/paddingContent", 20 },
+    { "brls/dialog/width", 700 },
+    { "brls/dialog/cornerRadius", 4.0f },
 
     { "brls/dialog/fontSize", 24 },
 };

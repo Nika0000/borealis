@@ -1,7 +1,7 @@
 #pragma once
+#include <borealis/core/bind.hpp>
 #include <borealis/core/box.hpp>
 #include <borealis/views/label.hpp>
-#include <borealis/core/bind.hpp>
 
 namespace brls
 {
@@ -11,6 +11,7 @@ class EditTextDialog : public Box
     EditTextDialog();
     ~EditTextDialog() override;
     void open();
+    void show(std::function<void(void)> cb, bool animate, float animationDuration) override;
     void setText(const std::string& value);
     void setHeaderText(const std::string& value);
     void setHintText(const std::string& value);
@@ -24,6 +25,7 @@ class EditTextDialog : public Box
     Event<>* getSubmitEvent();
     Event<std::string>* getClipboardEvent();
     void updateUI();
+
   private:
     std::string content;
     std::string hint;
@@ -33,9 +35,12 @@ class EditTextDialog : public Box
     Event<KeyState>::Subscription keyEvent;
     bool init = false;
 
+    Animatable showOffset = 0;
+    void offsetTick() { container->setTranslationY(showOffset); }
+
     BRLS_BIND(brls::Label, header, "brls/dialog/header");
     BRLS_BIND(brls::Label, label, "brls/dialog/label");
     BRLS_BIND(brls::Label, count, "brls/dialog/count");
-    BRLS_BIND(brls::Box, container, "brls/container");
+    BRLS_BIND(brls::Box, container, "brls/dialog/container");
 };
 }

@@ -34,6 +34,8 @@ const std::string hintXML = R"xml(
         axis="row"
         paddingTop="4"
         paddingBottom="4"
+        alignSelf="center"
+        alignItems="center"
         paddingLeft="16"
         paddingRight="16"
         cornerRadius="6">
@@ -41,13 +43,13 @@ const std::string hintXML = R"xml(
                 id="icon"
                 width="auto"
                 height="auto"
-                fontSize="25.5"/>
+                fontSize="24"/>
 
             <brls:Label
                 id="hint"
                 width="auto"
                 height="auto"
-                fontSize="21.5"
+                fontSize="16"
                 marginLeft="8"/>
 
     </brls:Box>
@@ -191,13 +193,15 @@ void Hints::refillHints(View* focusView)
     }
 }
 
-int buttonToSortableVal(ControllerButton button) {
+int buttonToSortableVal(ControllerButton button)
+{
     // From left to right:
     //  - first +
     //  - then all hints that are not B and A in original order
     //  - finally B and A
 
-    switch (button) {
+    switch (button)
+    {
         case BUTTON_START:
             return 0;
         case BUTTON_B:
