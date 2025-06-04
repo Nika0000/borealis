@@ -44,6 +44,7 @@ const std::string editTextDialogXML = R"xml(
                     id="brls/dialog/header"
                     visibility="gone"
                     fontSize="@style/brls/dialog/fontSize"
+                    marginBottom="20"
                     textColor="#FFFFFF"/>
 
                 <brls:Box

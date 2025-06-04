@@ -31,7 +31,7 @@ class InputCell : public DetailCell
   public:
     InputCell();
 
-    void init(std::string title, std::string value, Event<std::string>::Callback callback = [](std::string text){}, std::string placeholder = "", std::string hint = "", int maxInputLength = 32, int kbdDisableBitmask = 0);
+    void init(std::string title, std::string value, Event<std::string>::Callback callback = [](std::string text) { }, std::string placeholder = "", std::string hint = "", int maxInputLength = 32, int kbdDisableBitmask = 0);
 
     void setValue(std::string value);
     std::string getValue()
@@ -44,6 +44,14 @@ class InputCell : public DetailCell
     {
         return placeholder;
     }
+
+    /**
+     * Sets input dialog header visibility.
+     */
+    void setHeaderVisible(bool visible)
+    {
+        this->headerVisible = visible;
+    };
 
     void setHint(std::string hint)
     {
@@ -68,6 +76,7 @@ class InputCell : public DetailCell
     std::string placeholder;
     int maxInputLength;
     int kbdDisableBitmask;
+    bool headerVisible;
 
     Event<std::string> event;
     void updateUI();
@@ -85,6 +94,11 @@ class InputNumericCell : public DetailCell
     {
         return value;
     }
+
+    void setHeaderVisible(bool visible)
+    {
+        this->headerVisible = visible;
+    };
 
     void setHint(std::string hint)
     {
@@ -108,6 +122,7 @@ class InputNumericCell : public DetailCell
     std::string hint;
     int maxInputLength;
     int kbdDisableBitmask;
+    bool headerVisible;
 
     Event<long> event;
     void updateUI();

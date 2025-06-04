@@ -16,8 +16,6 @@
 
 #include "borealis/views/cells/cell_input.hpp"
 
-#include "borealis/views/dropdown.hpp"
-
 namespace brls
 {
 
@@ -28,9 +26,9 @@ InputCell::InputCell()
     this->registerClickAction([this](View* view)
         {
             Application::getImeManager()->openForText([&](std::string text) {
-            this->setValue(text);
+            this->setValue(std::move(text));
         },
-            this->title->getFullText(), this->hint, this->maxInputLength, this->value, this->kbdDisableBitmask);
+           this->headerVisible? this->title->getFullText() : "", this->hint, this->maxInputLength, this->value, this->kbdDisableBitmask);
 
         return true; });
 }
@@ -43,6 +41,7 @@ void InputCell::init(std::string title, std::string value, Event<std::string>::C
     this->placeholder       = placeholder;
     this->maxInputLength    = maxInputLength;
     this->kbdDisableBitmask = kbdDisableBitmask;
+    this->headerVisible     = true;
     this->event.subscribe(callback);
     updateUI();
 }
@@ -89,7 +88,7 @@ InputNumericCell::InputNumericCell()
         Application::getImeManager()->openForNumber([&](long number) {
             this->setValue(number);
         },
-            this->title->getFullText(), this->hint, this->maxInputLength, std::to_string(this->value), "", "", this->kbdDisableBitmask);
+           this->headerVisible? this->title->getFullText() : "", this->hint, this->maxInputLength, std::to_string(this->value), "", "", this->kbdDisableBitmask);
 
         return true; });
 }
@@ -101,6 +100,7 @@ void InputNumericCell::init(std::string title, long value, Event<long>::Callback
     this->title->setText(title);
     this->maxInputLength    = maxInputLength;
     this->kbdDisableBitmask = kbdDisableBitmask;
+    this->headerVisible     = true;
     this->event.subscribe(callback);
     updateUI();
 }
