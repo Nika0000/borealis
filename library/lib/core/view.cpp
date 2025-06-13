@@ -672,6 +672,19 @@ void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect f
             nvgFill(vg);
             break;
         }
+        case ViewBackground::HORIZONTAL_LINEAR:
+        {
+            NVGpaint gradient = nvgLinearGradient(vg, x, y, x + width, y, a(backgroundStartColor), a(backgroundEndColor));
+            nvgBeginPath(vg);
+            nvgFillPaint(vg, gradient);
+            if (std::all_of(this->backgroundRadius.begin(), this->backgroundRadius.end(), [](float i)
+                    { return i == 0.0f; }))
+                nvgRect(vg, x, y, width, height);
+            else
+                nvgRoundedRectVarying(vg, x, y, width, height, backgroundRadius[0], backgroundRadius[1], backgroundRadius[2], backgroundRadius[3]);
+            nvgFill(vg);
+            break;
+        }
         case ViewBackground::BACKDROP:
         {
             nvgFillColor(vg, a(theme["brls/backdrop"]));
@@ -979,6 +992,11 @@ void View::setMarginLeft(float left)
         YGNodeStyleSetMargin(this->ygNode, YGEdgeLeft, left);
 
     this->invalidate();
+}
+
+void View::setMargins(float margins)
+{
+    this->setMargins(margins, margins, margins, margins);
 }
 
 void View::setMargins(float top, float right, float bottom, float left)
@@ -2089,6 +2107,7 @@ void View::registerCommonAttributes()
             { "sidebar", ViewBackground::SIDEBAR },
             { "backdrop", ViewBackground::BACKDROP },
             { "vertical_linear", ViewBackground::VERTICAL_LINEAR },
+            { "horizontal_linear", ViewBackground::HORIZONTAL_LINEAR },
         });
 
     // background start and end color for vertical linear style

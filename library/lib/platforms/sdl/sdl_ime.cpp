@@ -136,7 +136,7 @@ void SDLImeManager::openInputDialog(
             Application::blockInputs(true);
             static size_t iter = 0;
             cancelDelay(iter);
-            iter = delay(1000, []()
+            iter = delay(500, []()
                 { Application::unblockInputs(); });
         }
     };
@@ -179,9 +179,11 @@ void SDLImeManager::openInputDialog(
     dialog->setHeaderText(headerText);
     dialog->setHintText(subText);
     cursor = -1;
-    updateText();
     if (!initialText.empty())
+    {
+        updateText();
         updateTextCursor();
+    }
 #if defined(BOREALIS_USE_D3D11)
     float scale = Application::windowScale;
 #else

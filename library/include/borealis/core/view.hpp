@@ -120,6 +120,7 @@ enum class ViewBackground
     BACKDROP,
     SHAPE_COLOR,
     VERTICAL_LINEAR,
+    HORIZONTAL_LINEAR,
 };
 
 enum class AlignSelf
@@ -573,6 +574,20 @@ class View
      * Default is 1.0f;
      */
     void setShrink(float shrink);
+
+    /**
+     * Sets the margin of the view, aka the space that separates
+     * this view and the surrounding ones in all 4 directions.
+     *
+     * Use brls::View::AUTO to have the layout automatically select the
+     * margin.
+     *
+     * Only works with views that have parents - top level views that are pushed
+     * on the stack don't have parents.
+     *
+     * Only does one layout pass instead of four when using the four methods separately.
+     */
+    void setMargins(float margin);
 
     /**
      * Sets the margin of the view, aka the space that separates
