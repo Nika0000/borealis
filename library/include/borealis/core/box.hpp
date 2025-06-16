@@ -153,6 +153,17 @@ class Box : public View
     float getPaddingLeft();
 
     /**
+     * Sets the gap between child elements inside this view.
+     * This is typically used in layouts like grids or lists.
+     */
+    virtual void setGap(float gap);
+
+    /**
+     * Returns the current gap between child elements inside this view.
+     */
+    float getGap();
+
+    /**
      * Sets the children alignment along the Box axis.
      *
      * Default is FLEX_START.
