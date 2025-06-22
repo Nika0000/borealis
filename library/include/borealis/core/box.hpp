@@ -50,6 +50,13 @@ enum class Axis
     COLUMN,
 };
 
+enum class Wrap
+{
+    NO_WRAP,
+    WRAP,
+    WRAP_REVERSE,
+};
+
 enum class Direction
 {
     INHERIT,
@@ -187,6 +194,16 @@ class Box : public View
 
     void setAxis(Axis axis);
     Axis getAxis() const;
+
+    /**
+     * Sets the wrapping behavior for the children inside this view.
+     */
+    void setWrap(Wrap wrap);
+
+    /**
+     * Returns the wrapping behavior for the children inside this view.
+     */
+    Wrap getWrap() const;
 
     std::vector<View*>& getChildren();
 

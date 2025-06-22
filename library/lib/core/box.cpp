@@ -38,6 +38,19 @@ static YGFlexDirection getYGFlexDirection(Axis axis)
     }
 }
 
+static YGWrap getYGWrap(Wrap wrap)
+{
+    switch (wrap)
+    {
+        case Wrap::WRAP:
+            return YGWrapWrap;
+        case Wrap::WRAP_REVERSE:
+            return YGWrapWrapReverse;
+        default:
+            return YGWrapNoWrap;
+    }
+}
+
 Box::Box(Axis axis)
     : axis(axis)
 {
@@ -51,6 +64,14 @@ Box::Box(Axis axis)
         {
             { "row", Axis::ROW },
             { "column", Axis::COLUMN },
+        });
+
+    BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
+        "flexWrap", Wrap, this->setWrap,
+        {
+            { "wrap", Wrap::WRAP },
+            { "noWrap", Wrap::NO_WRAP },
+            { "wrapReverse", Wrap::WRAP_REVERSE },
         });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
@@ -575,6 +596,12 @@ void Box::setAxis(Axis axis)
 Axis Box::getAxis() const
 {
     return axis;
+}
+
+void Box::setWrap(Wrap wrap)
+{
+    YGNodeStyleSetFlexWrap(this->ygNode, getYGWrap(wrap));
+    this->invalidate();
 }
 
 void Box::setDirection(Direction direction)
