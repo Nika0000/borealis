@@ -119,17 +119,25 @@ static void sdlWindowSafeAreaCallback(SDL_Window* window)
     float contentW = Application::contentWidth;
     float contentH = (unsigned)roundf((float)(height / wScale));
 
-    float safeX = roundf(safeArea.x / wScale);
-    float safeY = roundf(safeArea.y / wScale);
-    float safeW = roundf(safeArea.w / wScale);
-    float safeH = roundf(safeArea.h / wScale);
+    float mp = brls::getStyle()["brls/safe_area/multiplier"];
+
+    float safeX = safeArea.x / wScale;
+    float safeY = safeArea.y / wScale;
+    float safeW = safeArea.w / wScale;
+    float safeH = safeArea.h / wScale;
+
+    // Calculate insets
+    float left   = safeX * mp;
+    float top    = safeY * mp;
+    float right  = (contentW - (safeX + safeW)) * mp;
+    float bottom = (contentH - (safeY + safeH)) * mp;
 
     Application::onWindowSafeAreaChanged(
         {
-            .top    = safeY,
-            .bottom = contentH - (safeY + safeH),
-            .left   = safeX,
-            .right  = contentW - (safeX + safeW),
+            .top    = roundf(top),
+            .bottom = roundf(bottom),
+            .left   = roundf(left),
+            .right  = roundf(right),
         });
 }
 

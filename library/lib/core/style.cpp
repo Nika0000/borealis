@@ -156,6 +156,8 @@ static StyleValues styleValues = {
     { "brls/dialog/cornerRadius", 4.0f },
 
     { "brls/dialog/fontSize", 24 },
+
+    { "brls/safe_area/multiplier", 1.0f },
 };
 
 static Style style(&styleValues);
