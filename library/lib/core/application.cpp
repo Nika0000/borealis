@@ -922,15 +922,21 @@ void Application::pushActivity(Activity* activity, TransitionAnimation animation
 
 void Application::replaceActivity(Activity* activity, TransitionAnimation animation)
 {
-    // Remove the current activity from the stack if exists
+    Application::pushActivity(activity, animation);
+
     if (!Application::activitiesStack.empty())
     {
-        Activity* currentActivity = Application::activitiesStack.front();
-        Application::activitiesStack.pop_back();
-        delete currentActivity;
-    }
+        if (Application::activitiesStack.size() > 1)
+        {
+            auto it = Application::activitiesStack.end();
+            --it; // now points to last (new activity)
+            --it; // now points to second-to-last (previous activity)
 
-    Application::pushActivity(activity, animation);
+            Activity* previousActivity = *it;
+            Application::activitiesStack.erase(it);
+            delete previousActivity;
+        }
+    }
 }
 
 void Application::clear()
