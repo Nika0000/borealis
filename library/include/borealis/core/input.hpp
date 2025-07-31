@@ -19,6 +19,7 @@
 
 #include <nanovg.h>
 
+#include <borealis/core/assets.hpp>
 #include <borealis/core/event.hpp>
 #include <borealis/core/geometry.hpp>
 #include <borealis/core/time.hpp>
@@ -343,11 +344,13 @@ class InputManager
      * Called once every runloop cycle to perform some cleanup before new one.
      * For internal call only
      */
-    virtual void runloopStart() {};
+    virtual void runloopStart() { };
 
-    virtual void drawCursor(NVGcontext* vg) {};
+    virtual void drawCursor(NVGcontext* vg) { };
 
-    virtual void setPointerLock(bool lock) {};
+    virtual void setPointerLock(bool lock) { };
+
+    inline static std::string GAMEPAD_DB = BRLS_ASSET("gamepad/gamecontrollerdb.txt");
 
     inline Event<Point>* getMouseCusorOffsetChanged()
     {
@@ -359,7 +362,8 @@ class InputManager
         return &mouseScrollOffsetChanged;
     }
 
-    inline Event<SensorEvent>* getControllerSensorStateChanged() {
+    inline Event<SensorEvent>* getControllerSensorStateChanged()
+    {
         return &controllerSensorStateChanged;
     }
 

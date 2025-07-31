@@ -69,8 +69,7 @@ class DesktopPlatform : public Platform
     void openBrowser(std::string url) override;
     std::string getHomeDirectory(std::string appName) override;
 
-    inline static bool RESTART_APP       = false;
-    inline static std::string GAMEPAD_DB = BRLS_ASSET("gamepad/gamecontrollerdb.txt");
+    inline static bool RESTART_APP = false;
 
   protected:
     DesktopFontLoader* fontLoader = nullptr;

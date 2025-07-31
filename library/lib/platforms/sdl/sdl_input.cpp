@@ -448,6 +448,33 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
         brls::fatal("Couldn't initialize joystick: " + std::string(SDL_GetError()));
     }
 
+#ifdef USE_LIBROMFS
+    if (GAMEPAD_DB.starts_with("@res/"))
+    {
+        try
+        {
+            SDL_IOStream* rawDb = nullptr;
+            const auto& db      = romfs::get(GAMEPAD_DB.substr(5));
+
+            if (!db.valid())
+                throw;
+
+            rawDb = SDL_IOFromMem(const_cast<void*>(static_cast<const void*>(db.data())), db.size());
+            if (!rawDb && SDL_AddGamepadMappingsFromIO(rawDb, true) == -1)
+                throw;
+        }
+        catch (...)
+        {
+            Logger::warning("SDL: Input: Unable to load gamepad mappings from resource: {}", GAMEPAD_DB);
+        }
+    }
+#else
+    if (SDL_AddGamepadMappingsFromFile(GAMEPAD_DB.c_str()) == -1)
+    {
+        Logger::warning("SDL: Input: Unable to load gamepad mappings from file path: {}.", GAMEPAD_DB);
+    }
+#endif
+
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 
     if (SDL_HasGamepad())

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <borealis/core/input.hpp>
-
 #include <SDL3/SDL.h>
+
+#include <borealis/core/input.hpp>
 
 namespace brls
 {
 
-// Input manager for GLFW gamepad and keyboard
+// Input manager for SDL gamepad and keyboard
 class SDLInputManager : public InputManager
 {
   public:
