@@ -38,6 +38,7 @@ class SDLVideoContext : public VideoContext
     void endFrame() override;
     void resetState() override;
     void fullScreen(bool fs) override;
+    void setSwapInterval(int interval) override;
 
     SDL_Window* getSDLWindow();
 

@@ -54,6 +54,9 @@
 
             <brls:BooleanCell
                 id="fps"/>
+                
+            <brls:SelectorCell
+                id="swapInterval"/>
 
             <brls:SliderCell
                     id="slider"/>

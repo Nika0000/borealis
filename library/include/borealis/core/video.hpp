@@ -63,9 +63,22 @@ class VideoContext
      */
     virtual void fullScreen(bool fs) { }
 
+    /**
+     * Returns the NanoVG context used for rendering.
+     * This context can be used to issue NanoVG draw calls.
+     */
     virtual NVGcontext* getNVGContext() = 0;
 
+    /**
+     * Returns the index of the monitor where the window is currently displayed.
+     */
     virtual int getCurrentMonitorIndex() { return 0; };
+
+    /**
+     * Sets the swap interval for buffer swapping.
+     * The effect depends on the underlying windowing system.
+     */
+    virtual void setSwapInterval(int interval) = 0;
 
     static inline bool FULLSCREEN = false;
 
@@ -74,4 +87,6 @@ class VideoContext
     static inline uint32_t sizeW = 0, sizeH = 0;
 
     static inline int monitorIndex = 0;
+
+    static inline int swapInterval = 1;
 };

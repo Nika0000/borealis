@@ -55,9 +55,9 @@ SwitchVideoContext::SwitchVideoContext()
     // Init deko
     this->device = dk::DeviceMaker {}.create();
     this->queue  = dk::QueueMaker(this->device)
-        // Give this queue a high priority to help render the ui smoothly even if libmpv is hogging the gpu
-        .setFlags(DkQueueFlags_Graphics | DkQueueFlags_DisableZcull | DkQueueFlags_HighPrio)
-        .create();
+                      // Give this queue a high priority to help render the ui smoothly even if libmpv is hogging the gpu
+                      .setFlags(DkQueueFlags_Graphics | DkQueueFlags_DisableZcull | DkQueueFlags_HighPrio)
+                      .create();
 
     this->imagesPool.emplace(device, DkMemBlockFlags_GpuCached | DkMemBlockFlags_Image, IMAGES_POOL_SIZE);
     this->codePool.emplace(device, DkMemBlockFlags_CpuUncached | DkMemBlockFlags_GpuCached | DkMemBlockFlags_Code, CODE_POOL_SIZE);
@@ -75,6 +75,8 @@ SwitchVideoContext::SwitchVideoContext()
     this->nvgContext = nvgCreateDk(&*this->renderer, NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 
     Application::setWindowSize(this->framebufferWidth, this->framebufferHeight);
+
+    setSwapInterval(VideoContext::swapInterval);
 }
 
 void SwitchVideoContext::createFramebufferResources()
@@ -231,6 +233,12 @@ void SwitchVideoContext::endFrame()
     queue.presentImage(this->swapchain, this->imageSlot);
 }
 
+void SwitchVideoContext::setSwapInterval(int interval)
+{
+    VideoContext::swapInterval = interval;
+    swapchain.setSwapInterval(interval);
+}
+
 void SwitchVideoContext::destroyFramebufferResources()
 {
     // Return early if we have nothing to destroy
@@ -292,7 +300,7 @@ dk::Image* SwitchVideoContext::getFramebuffer()
     return &framebuffers[imageSlot];
 }
 
-CDescriptorSet<4096U> *SwitchVideoContext::getImageDescriptor() { return renderer->GetImageDescriptor(); }
+CDescriptorSet<4096U>* SwitchVideoContext::getImageDescriptor() { return renderer->GetImageDescriptor(); }
 
 int SwitchVideoContext::allocateImageIndex() { return renderer->AllocateImageIndex(); }
 

@@ -310,9 +310,9 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
             // When the window size is too large, reduce the size and center it
             float maxAllowedWidth  = (float)mode->width * 0.8f;
             float maxAllowedHeight = (float)mode->height * 0.8f;
-            float scale     = std::min(maxAllowedWidth / (float)windowWidth, maxAllowedHeight / (float)windowHeight);
-            float newWidth  = (float)windowWidth * scale;
-            float newHeight = (float)windowHeight * scale;
+            float scale            = std::min(maxAllowedWidth / (float)windowWidth, maxAllowedHeight / (float)windowHeight);
+            float newWidth         = (float)windowWidth * scale;
+            float newHeight        = (float)windowHeight * scale;
 
             glfwSetWindowSize(this->window, (int)newWidth, (int)newHeight);
 
@@ -375,6 +375,8 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
         return;
     }
 
+    setSwapInterval(VideoContext::swapInterval);
+
     // Setup window state
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -433,6 +435,16 @@ void GLFWVideoContext::endFrame()
     glfwSwapBuffers(this->window);
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->endFrame();
+#endif
+}
+
+void GLFWVideoContext::setSwapInterval(int interval)
+{
+    VideoContext::swapInterval = interval;
+#ifdef BOREALIS_USE_D3D11
+    D3D11_CONTEXT->setSwapInterval(interval);
+#else
+    glfwSwapInterval(interval);
 #endif
 }
 
@@ -552,7 +564,7 @@ void GLFWVideoContext::fullScreen(bool fs)
     }
     else
     {
-        GLFWmonitor* monitor    = glfwGetWindowMonitor(this->window);
+        GLFWmonitor* monitor = glfwGetWindowMonitor(this->window);
         // already in windowed mode
         if (monitor == nullptr)
             return;
@@ -576,7 +588,7 @@ void GLFWVideoContext::fullScreen(bool fs)
         }
     }
 #ifdef BOREALIS_USE_OPENGL
-    glfwSwapInterval(1);
+    glfwSwapInterval(VideoContext::swapInterval);
 #endif
 }
 

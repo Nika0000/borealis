@@ -18,6 +18,7 @@
 #include <borealis/core/logger.hpp>
 #include <borealis/core/thread.hpp>
 #include <borealis/platforms/sdl/sdl_video.hpp>
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -336,11 +337,6 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif
 
-    if (!SDL_GL_SetSwapInterval(1))
-    {
-        Logger::warning("Unable to set VSync: {}", SDL_GetError());
-    }
-
     Logger::info("sdl: GL Vendor: {}", (const char*)glGetString(GL_VENDOR));
     Logger::info("sdl: GL Renderer: {}", (const char*)glGetString(GL_RENDERER));
     Logger::info("sdl: GL Version: {}", (const char*)glGetString(GL_VERSION));
@@ -367,6 +363,8 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     {
         brls::fatal("sdl: unable to init nanovg");
     }
+
+    setSwapInterval(VideoContext::swapInterval);
 
     // Setup window state
     int width, height;
@@ -429,6 +427,16 @@ void SDLVideoContext::endFrame()
     SDL_GL_SwapWindow(this->window);
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->endFrame();
+#endif
+}
+
+void SDLVideoContext::setSwapInterval(int interval)
+{
+    VideoContext::swapInterval = interval;
+#ifdef BOREALIS_USE_OPENGL
+    SDL_GL_SetSwapInterval(interval);
+#elif defined(BOREALIS_USE_D3D11)
+    D3D11_CONTEXT->setSwapInterval(interval);
 #endif
 }
 

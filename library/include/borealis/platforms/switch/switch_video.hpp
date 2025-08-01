@@ -44,6 +44,7 @@ class SwitchVideoContext : public VideoContext
     void resetState() override;
     void beginFrame() override;
     void endFrame() override;
+    void setSwapInterval(int interval) override;
     double getScaleFactor() override;
     NVGcontext* getNVGContext() override;
 
@@ -57,7 +58,7 @@ class SwitchVideoContext : public VideoContext
 
     dk::Image* getFramebuffer();
 
-    CDescriptorSet<4096U> *getImageDescriptor();
+    CDescriptorSet<4096U>* getImageDescriptor();
 
     int allocateImageIndex();
 

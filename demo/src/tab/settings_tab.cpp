@@ -16,7 +16,7 @@
 
 #include "tab/settings_tab.hpp"
 
-using namespace brls::literals;  // for _i18n
+using namespace brls::literals; // for _i18n
 
 bool radioSelected = false;
 
@@ -39,22 +39,23 @@ SettingsTab::SettingsTab()
 
     radio->title->setText("Radio cell");
     radio->setSelected(radioSelected);
-    radio->registerClickAction([this](brls::View* view) {
+    radio->registerClickAction([this](brls::View* view)
+        {
         radioSelected = !radioSelected;
         this->radio->setSelected(radioSelected);
-        return true;
-    });
+        return true; });
 
     boolean->title->setText("Switcher");
 
-    debug->init("Debug Layer", brls::Application::isDebuggingViewEnabled(), [](bool value){
+    debug->init("Debug Layer", brls::Application::isDebuggingViewEnabled(), [](bool value)
+        {
         brls::Application::enableDebuggingView(value);
         brls::sync([value](){
             brls::Logger::info("{} the debug layer", value ? "Open" : "Close");
-        });
-    });
+        }); });
 
-    bottomBar->init("Bottom Bar", !brls::AppletFrame::HIDE_BOTTOM_BAR, [](bool value){
+    bottomBar->init("Bottom Bar", !brls::AppletFrame::HIDE_BOTTOM_BAR, [](bool value)
+        {
         brls::AppletFrame::HIDE_BOTTOM_BAR = !value;
         auto stack = brls::Application::getActivitiesStack();
         for (auto& activity : stack) {
@@ -63,23 +64,22 @@ SettingsTab::SettingsTab()
             if (!frame) continue;
             frame->setFooterVisibility(!value ? brls::Visibility::GONE
                                              : brls::Visibility::VISIBLE);
-        }
-    });
+        } });
 
-    fps->init("FPS", brls::Application::getFPSStatus(), [](bool value){
-        brls::Application::setFPSStatus(value);
-    });
+    fps->init("FPS", brls::Application::getFPSStatus(), [](bool value)
+        { brls::Application::setFPSStatus(value); });
 
-    alwaysOnTop->init("Always On Top", false, [](bool value){
-        brls::Application::getPlatform()->setWindowAlwaysOnTop(value);
-    });
+    swapInterval->init("Swap Interval", { "0", "1", "2", "3", "4" }, 1, [](int selected) {}, [](int selected)
+        { brls::Application::setSwapInterval(selected); });
 
-    selector->init("Selector", { "Test 1", "Test 2", "Test 3", "Test 4", "Test 5", "Test 6", "Test 7", "Test 8", "Test 9", "Test 10", "Test 11", "Test 12", "Test 13" }, 0, [](int selected) {
-    }, [](int selected) {
+    alwaysOnTop->init("Always On Top", false, [](bool value)
+        { brls::Application::getPlatform()->setWindowAlwaysOnTop(value); });
+
+    selector->init("Selector", { "Test 1", "Test 2", "Test 3", "Test 4", "Test 5", "Test 6", "Test 7", "Test 8", "Test 9", "Test 10", "Test 11", "Test 12", "Test 13" }, 0, [](int selected) {}, [](int selected)
+        {
         auto dialog = new brls::Dialog(fmt::format("selected {}", selected));
         dialog->addButton("hints/ok"_i18n, []() {});
-        dialog->open();
-    });
+        dialog->open(); });
 
     input->init(
         "Input text", "https://github.com", [](std::string text) {
@@ -96,24 +96,24 @@ SettingsTab::SettingsTab()
     ipAddress->setDetailText(brls::Application::getPlatform()->getIpAddress());
     dnsServer->setDetailText(brls::Application::getPlatform()->getDnsServer());
 
-    input->registerAction("hints/open"_i18n, brls::BUTTON_X, [](brls::View* view) {
+    input->registerAction("hints/open"_i18n, brls::BUTTON_X, [](brls::View* view)
+        {
         brls::DetailCell *cell = dynamic_cast<brls::DetailCell *>(view);
         brls::Application::getPlatform()->openBrowser(cell->detail->getFullText());
-        return true;
-    }, false, false, brls::SOUND_CLICK);
+        return true; }, false, false, brls::SOUND_CLICK);
 
     float brightness = brls::Application::getPlatform()->getBacklightBrightness();
-    slider->init("Brightness", brightness, [this](float value){
+    slider->init("Brightness", brightness, [this](float value)
+        {
         brls::Application::getPlatform()->setBacklightBrightness(value);
-        slider->setDetailText(fmt::format("{:.2f}", value));
-    });
+        slider->setDetailText(fmt::format("{:.2f}", value)); });
     slider->setDetailText(fmt::format("{:.2f}", brightness));
 
-    notify->registerClickAction([](...){
+    notify->registerClickAction([](...)
+        {
         std::string notification = NOTIFICATIONS[std::rand() % NOTIFICATIONS.size()];
         brls::Application::notify(notification);
-        return true;
-    });
+        return true; });
 }
 
 brls::View* SettingsTab::create()
