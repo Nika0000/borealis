@@ -103,8 +103,8 @@ static void glfwJoystickCallback(int jid, int event)
 
 #define GLFW_STICKY 4
 static RawTouchState touchState = { 0, 0, { 0, 0 } };
-static int touchStateStatus = GLFW_RELEASE;
-static bool touchUpdate = false;
+static int touchStateStatus     = GLFW_RELEASE;
+static bool touchUpdate         = false;
 
 static inline int getTouchState()
 {
@@ -112,7 +112,7 @@ static inline int getTouchState()
     {
         touchStateStatus = GLFW_RELEASE;
         // Try to ignore the touch end event as this can lead to a smaller calculation of scrolling acceleration
-        int res = touchUpdate ? GLFW_PRESS : GLFW_RELEASE;
+        int res     = touchUpdate ? GLFW_PRESS : GLFW_RELEASE;
         touchUpdate = false;
         return res;
     }
@@ -135,7 +135,7 @@ static void glfwTouchCallback(GLFWwindow* window, int touch, int action, double 
     touchState.position.x = (float)(xpos * scaleFactor);
     touchState.position.y = (float)(ypos * scaleFactor);
     touchStateStatus      = touchState.pressed ? GLFW_PRESS : GLFW_STICKY;
-    touchUpdate          |= touchState.pressed;
+    touchUpdate |= touchState.pressed;
     Application::setActiveEvent(true);
 }
 
@@ -196,15 +196,15 @@ void GLFWInputManager::cursorCallback(GLFWwindow* window, double x, double y)
 GLFWInputManager::GLFWInputManager(GLFWwindow* window)
     : window(window)
 {
-    if (access(DesktopPlatform::GAMEPAD_DB.c_str(), F_OK) == -1)
+    if (access(InputManager::GAMEPAD_DB.c_str(), F_OK) == -1)
     {
         brls::Logger::warning("Cannot find custom gamepad db, (Searched at: {})",
-            DesktopPlatform::GAMEPAD_DB);
+            InputManager::GAMEPAD_DB);
     }
     else
     {
-        const std::string mappings = loadFileContents(DesktopPlatform::GAMEPAD_DB);
-        brls::Logger::info("Load custom gamepad db: {}", DesktopPlatform::GAMEPAD_DB);
+        const std::string mappings = loadFileContents(InputManager::GAMEPAD_DB);
+        brls::Logger::info("Load custom gamepad db: {}", InputManager::GAMEPAD_DB);
         glfwUpdateGamepadMappings(mappings.c_str());
     }
 
@@ -290,12 +290,15 @@ void GLFWInputManager::updateUnifiedControllerState(ControllerState* state)
             state->buttons[brlsButton] |= glfwGetKey(this->window, key) != 0;
     }
 
-    if (Application::isSwapInputKeys()) {
+    if (Application::isSwapInputKeys())
+    {
         state->buttons[BUTTON_B] |= glfwGetKey(this->window, GLFW_KEY_KP_ENTER) != 0;
         state->buttons[BUTTON_B] |= glfwGetKey(this->window, GLFW_KEY_ENTER) != 0;
         state->buttons[BUTTON_A] |= glfwGetKey(this->window, GLFW_KEY_ESCAPE) != 0;
         state->buttons[BUTTON_A] |= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-    } else {
+    }
+    else
+    {
         state->buttons[BUTTON_A] |= glfwGetKey(this->window, GLFW_KEY_KP_ENTER) != 0;
         state->buttons[BUTTON_A] |= glfwGetKey(this->window, GLFW_KEY_ENTER) != 0;
         state->buttons[BUTTON_B] |= glfwGetKey(this->window, GLFW_KEY_ESCAPE) != 0;
@@ -343,7 +346,8 @@ bool GLFWInputManager::getKeyboardKeyState(BrlsKeyboardScancode key)
 
 void GLFWInputManager::updateTouchStates(std::vector<RawTouchState>* states)
 {
-    if (getTouchState()) {
+    if (getTouchState())
+    {
         touchState.pressed = true;
         states->push_back(touchState);
     }
