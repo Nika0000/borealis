@@ -399,23 +399,34 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
             SDL_Joystick* joystick = SDL_GetGamepadJoystick(controller);
             SDL_JoystickID jid     = SDL_GetJoystickID(joystick);
 
-            Logger::info("Controller connected: {} | {}", jid, SDL_GetGamepadName(controller));
+            auto it = std::find_if(controllers.begin(), controllers.end(),
+                [jid](const auto& c)
+                { return c.second.first == jid; });
 
-            controllers.push_back({ controllers.size(), { jid, controller } });
+            if (it == controllers.end())
+            {
+                controllers.push_back({ controllers.size(), { jid, controller } });
+            }
+            else
+            {
+                SDL_CloseGamepad(it->second.second); // Close old one
+                it->second.second = controller;
+            }
         }
     }
     else if (event->type == SDL_EVENT_GAMEPAD_REMOVED)
     {
-        controllers.erase(std::remove_if(controllers.begin(), controllers.end(), [event](auto c)
-                              { return c.second.first == event->gdevice.which; }),
-            controllers.end());
+        for (auto it = controllers.begin(); it != controllers.end(); ++it)
+        {
+            if (it->second.first == event->gdevice.which)
+            {
+                SDL_CloseGamepad(it->second.second);
+                controllers.erase(it);
+                break;
+            }
+        }
 
         Logger::info("Controller with id {} disconnected.", event->gdevice.which);
-
-        for (size_t i = 0; i < controllers.size(); ++i)
-        {
-            controllers[i].first = static_cast<int>(i);
-        }
     }
     else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN)
     {
@@ -605,7 +616,7 @@ void SDLInputManager::updateControllerState(ControllerState* state, int controll
 
     for (size_t i = 0; i < SDL_GAMEPAD_AXIS_MAX; i++)
     {
-        state->axes[SDL_AXIS_MAPPING[i]] = SDL_GetGamepadAxis(c, (SDL_GamepadAxis)i) / 32767.0;
+        state->axes[SDL_AXIS_MAPPING[i]] = SDL_GetGamepadAxis(c, (SDL_GamepadAxis)i) / 32768.0;
     }
 }
 
