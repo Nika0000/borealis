@@ -40,10 +40,14 @@ class SDLAudioPlayer : public AudioPlayer
     bool load(enum Sound sound) override;
     bool play(enum Sound sound, float pitch) override;
 
+    [[nodiscard]] SDL_AudioDeviceID getDevice() const { return audioDevice; }
+
   private:
     bool init = false;
     std::unordered_map<Sound, AudioData> sounds;
+
     SDL_AudioStream* audioStream;
+    SDL_AudioDeviceID audioDevice;
 };
 
 }

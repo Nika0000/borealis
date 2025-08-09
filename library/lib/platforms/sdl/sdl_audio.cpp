@@ -41,25 +41,44 @@ SDLAudioPlayer::SDLAudioPlayer()
 
     const SDL_AudioSpec spec = { SDL_AUDIO_S16, 2, 44100 };
 
-    audioStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
-    SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audioStream));
+    // Main (UI/system) audio stream
+    audioStream = SDL_CreateAudioStream(&spec, nullptr);
+    if (!audioStream)
+    {
+        Logger::error("Failed to create main audio stream: {}", SDL_GetError());
+        return;
+    }
+
+    audioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if (!audioDevice)
+    {
+        Logger::error("Failed to open audio device: {}", SDL_GetError());
+        return;
+    }
+
+    // Bind both streams to the same output device
+    if (!SDL_BindAudioStream(audioDevice, audioStream) || !SDL_ResumeAudioStreamDevice(audioStream))
+    {
+        Logger::error("Failed to initialize AudioPlayer: {}", SDL_GetError());
+        return;
+    }
+
+    init = true;
 }
 
 bool SDLAudioPlayer::load(enum Sound sound)
 {
-    if (this->init)
+    if (!init)
         return false;
 
     if (sound == SOUND_NONE)
         return true;
 
     const std::string soundName = SOUNDS_MAP[sound];
-
     AudioData data {};
     SDL_AudioSpec wavSpec;
-
     uint8_t* wavBuffer = nullptr;
-    uint32_t wavLenght = 0;
+    uint32_t wavLength = 0;
 
 #ifdef USE_LIBROMFS
     const auto& soundData = romfs::get(soundName);
@@ -70,43 +89,39 @@ bool SDLAudioPlayer::load(enum Sound sound)
         return false;
     }
 
-    // Convert raw ROMFS data to an SDL audio buffer
     SDL_IOStream* rw = SDL_IOFromMem(const_cast<void*>(static_cast<const void*>(soundData.data())), soundData.size());
     if (!rw)
     {
         Logger::warning("Failed to create IOStream for sound {}: {}", soundName, SDL_GetError());
         return false;
     }
-    if (!SDL_LoadWAV_IO(rw, true, &wavSpec, &wavBuffer, &wavLenght))
+    if (!SDL_LoadWAV_IO(rw, true, &wavSpec, &wavBuffer, &wavLength))
     {
         Logger::warning("Failed to load WAV from ROMFS {}: {}", soundName, SDL_GetError());
-        // destroy iostream
         return false;
     }
 #else
     std::string soundPath = std::string(BRLS_RESOURCES) + soundName;
-    if (!SDL_LoadWAV(soundPath.c_str(), &wavSpec, &wavBuffer, &wavLenght))
+    if (!SDL_LoadWAV(soundPath.c_str(), &wavSpec, &wavBuffer, &wavLength))
     {
-        Logger::warning("Failed to load audio: {}", soundName, SDL_GetError());
+        Logger::warning("Failed to load audio: {} {}", soundName, SDL_GetError());
         return false;
     }
 #endif
 
     data.buf      = wavBuffer;
-    data.len      = wavLenght;
+    data.len      = wavLength;
     sounds[sound] = data;
-    Logger::debug("Succesfuly load sound {}.", soundName);
+    Logger::debug("Successfully loaded sound {}.", soundName);
     return true;
 }
 
 bool SDLAudioPlayer::play(Sound sound, float pitch)
 {
     if (sound == SOUND_NONE)
-    {
         return true;
-    }
 
-    if (sounds.find(sound) == sounds.end())
+    if (!sounds.contains(sound))
     {
         if (!this->load(sound))
             return false;
@@ -115,6 +130,7 @@ bool SDLAudioPlayer::play(Sound sound, float pitch)
     const AudioData& data = sounds[sound];
     SDL_ClearAudioStream(audioStream);
     SDL_SetAudioStreamFrequencyRatio(audioStream, pitch);
+
     if (!SDL_PutAudioStreamData(audioStream, data.buf, data.len))
     {
         Logger::error("Unable to play sound: {}", SDL_GetError());
@@ -129,6 +145,7 @@ SDLAudioPlayer::~SDLAudioPlayer()
     if (!this->init)
         return;
 
+    SDL_CloseAudioDevice(audioDevice);
     SDL_DestroyAudioStream(audioStream);
 }
 }
