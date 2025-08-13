@@ -38,11 +38,14 @@ class ProgressSpinner : public View
     void willAppear(bool resetState = false) override;
     void willDisappear(bool resetState = false) override;
 
+    void setColor(NVGcolor color);
+
     void animate(bool animate);
 
     static brls::View* create();
 
   private:
+    NVGcolor barColor;
     Animatable animationValue = 0.0f;
     ProgressSpinnerSize size;
     void setSize(ProgressSpinnerSize size)

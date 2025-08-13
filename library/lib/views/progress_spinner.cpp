@@ -24,6 +24,11 @@ namespace brls
 ProgressSpinner::ProgressSpinner(ProgressSpinnerSize size)
     : size(size)
 {
+    barColor = Application::getTheme()["brls/spinner/bar_color"];
+
+    registerColorXMLAttribute("barColor", [this](NVGcolor color)
+        { this->setColor(color); });
+
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE("size", ProgressSpinnerSize, this->setSize,
         {
             { "normal", ProgressSpinnerSize::NORMAL },
@@ -37,10 +42,10 @@ void ProgressSpinner::restartAnimation()
 
     this->animationValue.reset(0);
     this->animationValue.stop();
-    this->animationValue.setEndCallback([this](bool done) {
+    this->animationValue.setEndCallback([this](bool done)
+        {
         if (done)
-            this->restartAnimation();
-    });
+            this->restartAnimation(); });
     float animationLength = size == NORMAL ? 8.0f : 12.0f;
     this->animationValue.addStep(animationLength, style["brls/spinner/animation_duration"], EasingFunction::linear);
     this->animationValue.start();
@@ -60,8 +65,7 @@ void ProgressSpinner::animate(bool animate)
 
 void ProgressSpinner::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
 {
-    Theme theme       = Application::getTheme();
-    NVGcolor barColor = a(theme["brls/spinner/bar_color"]);
+    NVGcolor rawColor = barColor;
 
     // Each bar of the spinner
     switch (size)
@@ -69,14 +73,14 @@ void ProgressSpinner::draw(NVGcontext* vg, float x, float y, float width, float 
         case NORMAL:
             for (int i = 0 + animationValue; i < 8 + animationValue; i++)
             {
-                barColor.a = fmax((i - animationValue) / 8.0f, theme["brls/spinner/bar_color"].a) * this->getAlpha();
+                rawColor.a = fmax((i - animationValue) / 8.0f, barColor.a) * this->getAlpha();
                 nvgSave(vg);
                 nvgTranslate(vg, x + width / 2, y + height / 2);
                 nvgRotate(vg, nvgDegToRad(i * 45)); // Internal angle of octagon
                 nvgBeginPath(vg);
                 nvgMoveTo(vg, height * style["brls/spinner/center_gap_multiplier"], 0);
                 nvgLineTo(vg, height / 2 - height * style["brls/spinner/center_gap_multiplier"], 0);
-                nvgStrokeColor(vg, barColor);
+                nvgStrokeColor(vg, rawColor);
                 nvgStrokeWidth(vg, height * style["brls/spinner/bar_width_multiplier"]);
                 nvgLineCap(vg, NVG_SQUARE);
                 nvgStroke(vg);
@@ -86,14 +90,14 @@ void ProgressSpinner::draw(NVGcontext* vg, float x, float y, float width, float 
         case LARGE:
             for (int i = 0 + animationValue; i < 12 + animationValue; i++)
             {
-                barColor.a = fmax((i - animationValue) / 12.0f, theme["brls/spinner/bar_color"].a) * this->getAlpha();
+                rawColor.a = fmax((i - animationValue) / 12.0f, barColor.a) * this->getAlpha();
                 nvgSave(vg);
                 nvgTranslate(vg, x + width / 2, y + height / 2);
                 nvgRotate(vg, nvgDegToRad(i * 30)); // Internal angle of octagon
                 nvgBeginPath(vg);
                 nvgMoveTo(vg, height * style["brls/spinner/center_gap_multiplier_large"], 0);
                 nvgLineTo(vg, height / 2 - height * style["brls/spinner/center_gap_multiplier_large"], 0);
-                nvgStrokeColor(vg, barColor);
+                nvgStrokeColor(vg, rawColor);
                 nvgStrokeWidth(vg, height * style["brls/spinner/bar_width_multiplier_large"]);
                 nvgLineCap(vg, NVG_SQUARE);
                 nvgStroke(vg);
@@ -111,6 +115,11 @@ void ProgressSpinner::willAppear(bool resetState)
 void ProgressSpinner::willDisappear(bool resetState)
 {
     this->animationValue.stop();
+}
+
+void ProgressSpinner::setColor(NVGcolor color)
+{
+    this->barColor = color;
 }
 
 brls::View* ProgressSpinner::create()
