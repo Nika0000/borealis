@@ -146,20 +146,9 @@ class Application
      * The view will gain focus if applicable.
      *
      * The first activity to be pushed cannot be popped.
+     * @param replace If true, the previous activity will be removed.
      */
-    static void pushActivity(Activity* view, TransitionAnimation animation = TransitionAnimation::FADE);
-
-    /**
-     * Replaces the current activity with a new one on the application's view stack.
-     *
-     * The new view will automatically be resized to take
-     * the whole screen.
-     *
-     * The view will gain focus if applicable.
-     *
-     * The previous activity will be removed from the stack.
-     */
-    static void replaceActivity(Activity* view, TransitionAnimation animation = TransitionAnimation::FADE);
+    static void pushActivity(Activity* view, bool replace = false, TransitionAnimation animation = TransitionAnimation::FADE);
 
     /**
      * Pops the last pushed activity from the stack

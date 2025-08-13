@@ -875,7 +875,7 @@ std::vector<Activity*> Application::getActivitiesStack()
     return activitiesStack;
 }
 
-void Application::pushActivity(Activity* activity, TransitionAnimation animation)
+void Application::pushActivity(Activity* activity, bool replace, TransitionAnimation animation)
 {
     Application::blockInputs();
 
@@ -906,10 +906,26 @@ void Application::pushActivity(Activity* activity, TransitionAnimation animation
     activity->willAppear(true);
     Application::giveFocus(activity->getDefaultFocus());
 
+    // replace activity
+    auto replaceActivity = [replace]()
+    {
+        if (replace && Application::activitiesStack.size() > 1)
+        {
+            auto it = Application::activitiesStack.end();
+            --it; // points to last
+            --it; // points to second-to-last
+
+            Activity* previousActivity = *it;
+            Application::activitiesStack.erase(it);
+            delete previousActivity;
+        }
+    };
+
     if (!fadeIn) // No animations
     {
         brls::Logger::debug("push activity to the stack");
         Application::activitiesStack.push_back(activity);
+        replaceActivity();
         Application::unblockInputs();
     }
     else
@@ -919,28 +935,12 @@ void Application::pushActivity(Activity* activity, TransitionAnimation animation
         brls::Logger::debug("push activity to the stack");
         Application::activitiesStack.push_back(activity);
         float duration = activity->getShowAnimationDuration(animation);
-        activity->show([]()
-            { Application::unblockInputs(); },
+        activity->show([replaceActivity]()
+            {
+                replaceActivity();
+                Application::unblockInputs(); //
+            },
             duration > 0, duration);
-    }
-}
-
-void Application::replaceActivity(Activity* activity, TransitionAnimation animation)
-{
-    Application::pushActivity(activity, animation);
-
-    if (!Application::activitiesStack.empty())
-    {
-        if (Application::activitiesStack.size() > 1)
-        {
-            auto it = Application::activitiesStack.end();
-            --it; // now points to last (new activity)
-            --it; // now points to second-to-last (previous activity)
-
-            Activity* previousActivity = *it;
-            Application::activitiesStack.erase(it);
-            delete previousActivity;
-        }
     }
 }
 
