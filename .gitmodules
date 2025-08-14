@@ -7,3 +7,6 @@
 [submodule "resources/gamepad"]
 	path = resources/gamepad
 	url = https://github.com/mdqinc/SDL_GameControllerDB.git
+[submodule "library/lib/extern/fmt"]
+	path = library/lib/extern/fmt
+	url = https://github.com/fmtlib/fmt

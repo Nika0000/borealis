@@ -52,8 +52,9 @@ DebugLayer::DebugLayer()
                 sceRtcGetCurrentClockLocalTime(&lt);
             std::string timeBase = fmt::format("{:02d}:{:02d}:{:02d}.{:03d}", lt.hour, lt.minute, lt.second, (int)ms);
 #else
-            std::tm time_tm = fmt::localtime(std::chrono::system_clock::to_time_t(now));
-            std::string timeBase = fmt::format("{:%H:%M:%S}.{:03d}", time_tm, (int)ms);
+            std::time_t t = std::chrono::system_clock::to_time_t(now);
+            std::tm* time_tm = std::localtime(&t);
+            std::string timeBase = fmt::format("{:%H:%M:%S}.{:03d}", *time_tm, (int)ms);
 #endif
 
             auto box = new Box(Axis::ROW);

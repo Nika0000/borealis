@@ -27,11 +27,13 @@
 
 #ifdef PS4
 #include <orbis/libkernel.h>
+
 #include <borealis/platforms/ps4/ps4_sysmodule.hpp>
+
 #endif
 
-#include <fmt/core.h>
 #include <fmt/chrono.h>
+#include <fmt/core.h>
 
 #include <borealis/core/event.hpp>
 #include <mutex>
@@ -78,7 +80,7 @@ class Logger
 
     static LogLevel getLogLevel();
 
-    static void setLogOutput(std::FILE *logOut);
+    static void setLogOutput(std::FILE* logOut);
 
     /**
      * If sets to true, each log operation will lock a mutex, making the Logger thread-safe.
@@ -92,14 +94,17 @@ class Logger
             return;
 
         TimePoint now = std::chrono::system_clock::now();
-        uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now.time_since_epoch()).count() % 1000;
+        uint64_t ms   = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          now.time_since_epoch())
+                          .count()
+            % 1000;
 #ifdef PS4
-        OrbisDateTime lt{};
+        OrbisDateTime lt {};
         if (sceRtcGetCurrentClockLocalTime)
             sceRtcGetCurrentClockLocalTime(&lt);
 #else
-        std::tm time_tm = fmt::localtime(std::chrono::system_clock::to_time_t(now));
+        std::time_t t    = std::chrono::system_clock::to_time_t(now);
+        std::tm* time_tm = std::localtime(&t);
 #endif
         std::string log = fmt::format(format, std::forward<Args>(args)...);
 
@@ -110,7 +115,7 @@ class Logger
         try
         {
 #ifdef PLATFORM_APPLE
-            fmt::print(logOut, "{:%H:%M:%S}.{:03d} {} {}\n", time_tm, (int)ms, color, log);
+            fmt::print(logOut, "{:%H:%M:%S}.{:03d} {} {}\n", *time_tm, (int)ms, color, log);
 #elif defined(ANDROID)
             __android_log_print(6 - (int)level, "borealis", "%02d:%02d:%02d.%03d %s\n", time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec, (int)ms, log.c_str());
 #elif defined(__PSV__)
@@ -118,7 +123,7 @@ class Logger
 #elif defined(PS4)
             sceKernelDebugOutText(0, fmt::format("{:02d}:{:02d}:{:02d}.{:03d}\033{}[{}]\033[0m {}\n", lt.hour, lt.minute, lt.second, (int)ms, color, prefix, log).c_str());
 #else
-            fmt::print(logOut, "{:%H:%M:%S}.{:03d}\033{}[{}]\033[0m {}\n", time_tm, (int)ms, color, prefix, log);
+            fmt::print(logOut, "{:%H:%M:%S}.{:03d}\033{}[{}]\033[0m {}\n", *time_tm, (int)ms, color, prefix, log);
 #endif
 
             logEvent.fire(now, level, log);
@@ -173,7 +178,7 @@ class Logger
     inline static std::mutex logMtx;
     inline static bool threadSafeLogging = true;
     inline static Event<TimePoint, LogLevel, std::string> logEvent;
-    inline static std::FILE *logOut = stdout;
+    inline static std::FILE* logOut = stdout;
     inline static LogLevel logLevel = LogLevel::LOG_INFO;
 };
 
