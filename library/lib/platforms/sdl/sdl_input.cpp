@@ -19,6 +19,9 @@
 #include <borealis/core/logger.hpp>
 #include <borealis/platforms/sdl/sdl_input.hpp>
 
+#include "SDL3/SDL_hints.h"
+
+
 namespace brls
 {
 
@@ -487,6 +490,7 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
 #endif
 
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
 
     if (SDL_HasGamepad())
     {
