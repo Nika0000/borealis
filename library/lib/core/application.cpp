@@ -306,12 +306,13 @@ void Application::processInput()
 
     for (auto& i : touchState)
     {
-        if (i.phase == TouchPhase::NONE)
+        if (i.phase == TouchPhase::NONE || Application::blockInputsTokens != 0)
         {
             i.view = nullptr;
             break;
         }
-        else if (!i.view || i.phase == TouchPhase::START)
+
+        if (!i.view || i.phase == TouchPhase::START)
         {
             Point position = i.position;
             Application::setInputType(InputType::TOUCH);
@@ -339,24 +340,36 @@ void Application::processInput()
     currentTouchState = touchState;
 
     MouseState mouseState = InputManager::computeMouseState(rawMouse, currentMouseState);
-
-    if (mouseState.offset.x != 0 || mouseState.offset.y != 0 || mouseState.scroll.x != 0 || mouseState.scroll.y != 0 || mouseState.leftButton != TouchPhase::NONE || mouseState.middleButton != TouchPhase::NONE || mouseState.rightButton != TouchPhase::NONE)
+    if (Application::blockInputsTokens != 0)
     {
-        Application::setInputType(InputType::TOUCH);
-        Application::setDrawCoursor(true);
+        Logger::verbose("Mouse input blocked (mask={})", Application::blockInputsTokens);
+        mouseState.view         = nullptr;
+        mouseState.leftButton   = TouchPhase::NONE;
+        mouseState.middleButton = TouchPhase::NONE;
+        mouseState.rightButton  = TouchPhase::NONE;
+        mouseState.offset       = { 0, 0 };
+        mouseState.scroll       = { 0, 0 };
     }
-
-    if (mouseState.scroll.x == 0 && mouseState.scroll.y == 0 && mouseState.leftButton == TouchPhase::NONE && mouseState.middleButton == TouchPhase::NONE && mouseState.rightButton == TouchPhase::NONE)
-        mouseState.view = nullptr;
-    else if (mouseState.view == nullptr)
+    else
     {
-        Point position = mouseState.position;
+        if (mouseState.offset.x != 0 || mouseState.offset.y != 0 || mouseState.scroll.x != 0 || mouseState.scroll.y != 0 || mouseState.leftButton != TouchPhase::NONE || mouseState.middleButton != TouchPhase::NONE || mouseState.rightButton != TouchPhase::NONE)
+        {
+            Application::setInputType(InputType::TOUCH);
+            Application::setDrawCoursor(true);
+        }
 
-        // Search for first responder, which will be the root of recognition tree
-        if (!Application::activitiesStack.empty())
-            mouseState.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
-                                  ->getContentView()
-                                  ->hitTest(position);
+        if (mouseState.scroll.x == 0 && mouseState.scroll.y == 0 && mouseState.leftButton == TouchPhase::NONE && mouseState.middleButton == TouchPhase::NONE && mouseState.rightButton == TouchPhase::NONE)
+            mouseState.view = nullptr;
+        else if (mouseState.view == nullptr)
+        {
+            Point position = mouseState.position;
+
+            // Search for first responder, which will be the root of recognition tree
+            if (!Application::activitiesStack.empty())
+                mouseState.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
+                                      ->getContentView()
+                                      ->hitTest(position);
+        }
     }
     currentMouseState = mouseState;
 
@@ -486,7 +499,7 @@ void Application::onControllerButtonPressed(enum ControllerButton button, bool r
 {
     if (Application::blockInputsTokens != 0)
     {
-        Logger::debug("button press blocked (tokens={})", Application::blockInputsTokens);
+        Logger::verbose("button press blocked (tokens={})", Application::blockInputsTokens);
         if (!muteSounds)
             Application::getAudioPlayer()->play(Sound::SOUND_CLICK_ERROR);
         return;
@@ -800,7 +813,7 @@ void Application::giveFocus(View* view)
         if (newFocus)
         {
             newFocus->onFocusGained();
-            Logger::debug("Giving focus to {}", newFocus->describe());
+            Logger::verbose("Giving focus to {}", newFocus->describe());
         }
 
         Application::globalHintsUpdateEvent.fire();
@@ -838,7 +851,7 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
 
         if (!toShow || newFocus->getParentActivity() == toShow)
         {
-            Logger::debug("Giving focus to {}, and removing it from the focus stack", newFocus->describe());
+            Logger::verbose("Giving focus to {}, and removing it from the focus stack", newFocus->describe());
             Application::giveFocus(newFocus);
         }
         else if (toShow)
@@ -882,7 +895,7 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
     // Focus
     if (!Application::activitiesStack.empty() && Application::currentFocus != nullptr)
     {
-        Logger::debug("Pushing {} to the focus stack", Application::currentFocus->describe());
+        Logger::verbose("Pushing {} to the focus stack", Application::currentFocus->describe());
         Application::focusStack.push_back(Application::currentFocus);
     }
 
