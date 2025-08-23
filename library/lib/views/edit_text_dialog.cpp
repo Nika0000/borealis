@@ -6,13 +6,13 @@
 #ifdef __PSV__
 #define EDIT_TEXT_DIALOG_POP_ANIMATION TransitionAnimation::NONE
 #define EDIT_TEXT_DIALOG_BACKGROUND_TRANSLUCENT false
-#include <SDL3/SDL.h>
-
-#include "borealis/platforms/sdl/sdl_video.hpp"
-
 #else
 #define EDIT_TEXT_DIALOG_POP_ANIMATION TransitionAnimation::FADE
 #define EDIT_TEXT_DIALOG_BACKGROUND_TRANSLUCENT true
+#endif
+
+#if defined(__PSV__) || defined(IOS) || defined(ANDROID)
+#include <borealis/platforms/sdl/sdl_video.hpp>
 #endif
 
 namespace brls
@@ -87,6 +87,12 @@ EditTextDialog::EditTextDialog()
 {
     this->inflateFromXMLString(editTextDialogXML);
 
+    this->registerAction(
+        "hints/paste"_i18n, BUTTON_X, [this](...)
+        { 
+            this->clipboardEvent.fire(Application::getPlatform()->pasteFromClipboard());
+            return true; });
+
     // submit text
     this->registerAction(
         "hints/ok"_i18n, BUTTON_A, [this](...)
@@ -139,16 +145,17 @@ EditTextDialog::EditTextDialog()
                     });
                 return true; });
 
-#ifdef __PSV__
+#if defined(__PSV__) || defined(IOS) || defined(ANDROID)
     // After turning off the on-screen keyboard, tap on the input area to reopen
     this->addGestureRecognizer(new brls::TapGestureRecognizer([](brls::TapGestureStatus status, brls::Sound*)
         {
             if (status.state == brls::GestureState::END) {
                 auto* videoContext = (SDLVideoContext*)Application::getPlatform()->getVideoContext();
-                if (!SDL_IsScreenKeyboardShown(videoContext->getSDLWindow()))
+                auto* window = videoContext->getSDLWindow();
+                if (!SDL_ScreenKeyboardShown(window))
                 {
-                    SDL_StopTextInput();
-                    SDL_StartTextInput();
+                    SDL_StopTextInput(window);
+                    SDL_StartTextInput(window);
                 }
                 Application::setInputType(InputType::GAMEPAD);
             } }));

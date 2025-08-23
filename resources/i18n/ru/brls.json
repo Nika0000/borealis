@@ -4,13 +4,12 @@
         "back": "Назад",
         "exit": "Закрыть",
         "on": "Вкл.",
-        "off": "Выкл."
+        "off": "Выкл.",
+        "paste": "Вставить"
     },
-
     "crash_frame": {
         "button": "OK"
     },
-
     "thumbnail_sidebar": {
         "save": "Save"
     }
