@@ -306,7 +306,7 @@ void Application::processInput()
 
     for (auto& i : touchState)
     {
-        if (i.phase == TouchPhase::NONE || Application::blockInputsTokens != 0)
+        if (i.phase == TouchPhase::NONE || Application::isInputBlocked(InputType::TOUCH))
         {
             i.view = nullptr;
             break;
@@ -340,9 +340,8 @@ void Application::processInput()
     currentTouchState = touchState;
 
     MouseState mouseState = InputManager::computeMouseState(rawMouse, currentMouseState);
-    if (Application::blockInputsTokens != 0)
+    if (Application::isInputBlocked(InputType::TOUCH))
     {
-        Logger::verbose("Mouse input blocked (mask={})", Application::blockInputsTokens);
         mouseState.view         = nullptr;
         mouseState.leftButton   = TouchPhase::NONE;
         mouseState.middleButton = TouchPhase::NONE;
@@ -497,9 +496,8 @@ void Application::navigate(FocusDirection direction, bool repeating)
 
 void Application::onControllerButtonPressed(enum ControllerButton button, bool repeating)
 {
-    if (Application::blockInputsTokens != 0)
+    if (Application::isInputBlocked(InputType::GAMEPAD))
     {
-        Logger::verbose("button press blocked (tokens={})", Application::blockInputsTokens);
         if (!muteSounds)
             Application::getAudioPlayer()->play(Sound::SOUND_CLICK_ERROR);
         return;
@@ -865,19 +863,22 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
     // Hide animation (and show previous activity, if any)
     last->hide([last, cb, free]()
         {
-        // last is not always the top of the stack, for example, during the animation, another activity is pushed
-        for (auto i = activitiesStack.begin(); i != activitiesStack.end(); ++i) {
-            if ( *i == last ) {
-                Application::activitiesStack.erase(i);
-                break;
+            // last is not always the top of the stack, for example, during the animation, another activity is pushed
+            for (auto i = activitiesStack.begin(); i != activitiesStack.end(); ++i)
+            {
+                if (*i == last)
+                {
+                    Application::activitiesStack.erase(i);
+                    break;
+                }
             }
-        }
-        cb();
-        brls::Logger::debug("Start delete top activity");
-        if(free) delete last;
-        brls::Logger::debug("Top activity deleted");
+            cb();
+            brls::Logger::debug("Start delete top activity");
+            if (free)
+                delete last;
+            brls::Logger::debug("Top activity deleted");
 
-        Application::unblockInputs(); },
+            Application::unblockInputs(); },
         fade, last->getShowAnimationDuration(animation));
 
     return true;
@@ -917,7 +918,6 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
 
     // Layout and prepare activity
     activity->willAppear(true);
-    Application::giveFocus(activity->getDefaultFocus());
 
     // replace activity
     auto replaceActivity = [replace]()
@@ -955,6 +955,8 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
             },
             duration > 0, duration);
     }
+
+    Application::giveFocus(activity->getDefaultFocus());
 }
 
 void Application::clear()
@@ -1056,28 +1058,34 @@ void Application::crash(std::string text)
     // To be implemented
 }
 
-void Application::blockInputs(bool muteSounds)
+void Application::blockInputs(InputType type, bool muteSounds)
 {
     Application::muteSounds |= muteSounds;
-    Application::blockInputsTokens += 1;
+    Application::blockInputsMask.push_back(static_cast<uint8_t>(type));
+
     getGlobalHintsUpdateEvent()->fire();
-    Logger::debug("Adding an inputs block token (tokens={})", Application::blockInputsTokens);
 }
 
 void Application::unblockInputs()
 {
-    Application::blockInputsTokens -= 1;
-
-    if (Application::blockInputsTokens <= 0)
-        muteSounds = false;
+    if (!Application::blockInputsMask.empty())
+    {
+        Application::blockInputsMask.pop_back();
+    }
+    else
+    {
+        Application::muteSounds = false;
+    }
 
     getGlobalHintsUpdateEvent()->fire();
-    Logger::debug("Removing an inputs block token (tokens={})", Application::blockInputsTokens);
 }
 
-bool Application::isInputBlocks()
+bool Application::isInputBlocked(InputType type)
 {
-    return Application::blockInputsTokens > 0;
+    if (Application::blockInputsMask.empty())
+        return false;
+
+    return ((Application::blockInputsMask.back() & static_cast<uint8_t>(type)) != 0);
 }
 
 bool Application::isInteractive()

@@ -46,10 +46,12 @@ namespace brls
 {
 
 // Input types for entire app
-enum class InputType
+enum class InputType : uint8_t
 {
-    GAMEPAD, // Gamepad or keyboard
-    TOUCH, // Touch screen
+    NONE    = 0,
+    GAMEPAD = 1 << 0, // Gamepad or keyboard
+    TOUCH   = 1 << 1, // Touch screen
+    ALL     = GAMEPAD | TOUCH,
 };
 
 struct SafeAreaInsets
@@ -209,7 +211,7 @@ class Application
     /**
      * Blocks any and all user inputs
      */
-    static void blockInputs(bool muteSounds = false);
+    static void blockInputs(InputType type = InputType::ALL, bool muteSounds = false);
 
     /**
      * Unblocks inputs after a call to
@@ -217,7 +219,7 @@ class Application
      */
     static void unblockInputs();
 
-    static bool isInputBlocks();
+    static bool isInputBlocked(InputType type = InputType::ALL);
 
     /**
      * Checks if the application is currently in an interactive state.
@@ -424,8 +426,8 @@ class Application
 
     inline static void updateFPS();
 
-    inline static unsigned blockInputsTokens = 0; // any value > 0 means inputs are blocked
-    inline static bool muteSounds            = false;
+    inline static std::vector<uint8_t> blockInputsMask = {};
+    inline static bool muteSounds                      = false;
 
     inline static std::string commonFooter;
     inline static NVGcolor backgroundColor {};

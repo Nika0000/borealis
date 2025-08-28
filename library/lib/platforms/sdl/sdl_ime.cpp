@@ -131,9 +131,9 @@ void SDLImeManager::openInputDialog(
         dialog->setText(text);
         dialog->setCountText(fmt::format("{}/{}", utf8_len(this->inputBuffer), maxStringLength));
 
-        if (!Application::isInputBlocks())
+        if (!Application::isInputBlocked())
         {
-            Application::blockInputs(true);
+            Application::blockInputs(InputType::GAMEPAD, true);
             static size_t iter = 0;
             cancelDelay(iter);
             iter = delay(500, []()
