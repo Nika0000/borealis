@@ -73,6 +73,7 @@ View::View()
     Style style = Application::getStyle();
 
     this->highlightCornerRadius = style["brls/highlight/corner_radius"];
+    this->scale                 = Point(1.0f, 1.0f);
 }
 
 static int shakeAnimation(float t, float a) // a = amplitude
@@ -168,6 +169,15 @@ void View::frame(FrameContext* ctx)
     float y      = frame.getMinY();
     float width  = frame.getWidth();
     float height = frame.getHeight();
+
+    if (this->scale.x != 1.0f || this->scale.y != 1.0f)
+    {
+        float cx = x + width / 2.0f;
+        float cy = y + height / 2.0f;
+        nvgTranslate(ctx->vg, cx, cy);
+        nvgScale(ctx->vg, this->scale.x, this->scale.y);
+        nvgTranslate(ctx->vg, -cx, -cy);
+    }
 
     if (this->alpha > 0.0f && this->collapseState != 0.0f)
     {
@@ -499,6 +509,15 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
     float y      = this->getY() - padding - strokeWidth / 2;
     float width  = this->getWidth() + padding * 2 + strokeWidth;
     float height = this->getHeight() + padding * 2 + strokeWidth;
+
+    if (this->scale.x != 1.0f || this->scale.y != 1.0f)
+    {
+        float cx = x + width / 2.0f;
+        float cy = y + height / 2.0f;
+        nvgTranslate(vg, cx, cy);
+        nvgScale(vg, this->scale.x, this->scale.y);
+        nvgTranslate(vg, -cx, -cy);
+    }
 
     // Shake animation
     if (this->highlightShaking)
@@ -2192,6 +2211,22 @@ void View::setTranslationY(float translationY)
 void View::setTranslationX(float translationX)
 {
     this->translation.x = translationX;
+}
+
+void View::setScaleX(float scaleX)
+{
+    this->scale.x = scaleX;
+}
+
+void View::setScaleY(float scaleY)
+{
+    this->scale.y = scaleY;
+}
+
+void View::setScale(float scale)
+{
+    this->scale.x = scale;
+    this->scale.y = scale;
 }
 
 void View::setVisibility(Visibility visibility)

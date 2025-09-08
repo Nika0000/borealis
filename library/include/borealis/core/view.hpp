@@ -274,6 +274,7 @@ class View
     Point detachedOrigin;
 
     Point translation;
+    Point scale;
 
     bool wireframeEnabled = false;
     bool clipsToBounds    = false;
@@ -1542,6 +1543,28 @@ class View
      * and setPosition methods if possible instead.
      */
     void setTranslationX(float translateX);
+
+    /**
+     * Sets the horizontal scale of this view.
+     *
+     * Use setScale to apply uniform scaling on both axes instead.
+     */
+    void setScaleX(float scaleX);
+
+    /**
+     * Sets the vertical scale of this view.
+     *
+     * Use setScale to apply uniform scaling on both axes instead.
+     */
+    void setScaleY(float scaleY);
+
+    /**
+     * Sets a uniform scale factor for both the X and Y axes of this view.
+     *
+     * This is a convenience method equivalent to calling setScaleX and
+     * setScaleY with the same value.
+     */
+    void setScale(float scale);
 
     /**
      * Wireframe mode allows you to see the view size and margins (and
