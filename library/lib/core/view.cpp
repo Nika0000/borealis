@@ -230,7 +230,22 @@ void View::frame(FrameContext* ctx)
 void View::frameHighlight(FrameContext* ctx)
 {
     if (this->alpha > 0.0f && this->collapseState != 0.0f && this->highlightAlpha > 0.0f && !this->hideHighlightBorder && !this->hideHighlight)
+    {
+        nvgSave(ctx->vg);
+        // Apply the same scaling pivot as in frame()
+        if (this->scale.x != 1.0f || this->scale.y != 1.0f)
+
+        {
+            Rect frame = getFrame();
+            float cx   = frame.getMinX() + frame.getWidth() / 2.0f;
+            float cy   = frame.getMinY() + frame.getHeight() / 2.0f;
+            nvgTranslate(ctx->vg, cx, cy);
+            nvgScale(ctx->vg, this->scale.x, this->scale.y);
+            nvgTranslate(ctx->vg, -cx, -cy);
+        }
         this->drawHighlight(ctx->vg, ctx->theme, this->highlightAlpha, Application::getStyle(), false);
+        nvgRestore(ctx->vg);
+    }
 }
 
 void View::resetClickAnimation()
@@ -509,15 +524,6 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
     float y      = this->getY() - padding - strokeWidth / 2;
     float width  = this->getWidth() + padding * 2 + strokeWidth;
     float height = this->getHeight() + padding * 2 + strokeWidth;
-
-    if (this->scale.x != 1.0f || this->scale.y != 1.0f)
-    {
-        float cx = x + width / 2.0f;
-        float cy = y + height / 2.0f;
-        nvgTranslate(vg, cx, cy);
-        nvgScale(vg, this->scale.x, this->scale.y);
-        nvgTranslate(vg, -cx, -cy);
-    }
 
     // Shake animation
     if (this->highlightShaking)
