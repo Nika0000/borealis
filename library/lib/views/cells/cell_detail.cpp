@@ -56,12 +56,6 @@ DetailCell::DetailCell()
 {
     this->inflateFromXMLString(detailCellXML);
 
-    if (Application::getStyle()["brls/listitem/bordered"])
-    {
-        this->setBorderColor(Application::getTheme()["brls/list/listItem_border_color"]);
-        this->setBorderThickness(Application::getStyle()["brls/listitem/border_thickness"]);
-    }
-
     this->registerStringXMLAttribute("title", [this](std::string value)
         { this->title->setText(value); });
 }

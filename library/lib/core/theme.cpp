@@ -72,7 +72,6 @@ static ThemeValues lightThemeValues = {
 
     // List
     { "brls/list/listItem_value_color", nvgRGB(43, 81, 226) },
-    { "brls/list/listItem_border_color", nvgRGB(200, 200, 200) },
     { "brls/list/listItem_background_color", nvgRGBA(0, 0, 0, 0) },
 
     // Slider
@@ -136,7 +135,6 @@ static ThemeValues darkThemeValues = {
 
     // List
     { "brls/list/listItem_value_color", nvgRGB(88, 195, 169) },
-    { "brls/list/listItem_border_color", nvgRGB(120, 120, 120) },
     { "brls/list/listItem_background_color", nvgRGBA(0, 0, 0, 0) },
 
     // Slider

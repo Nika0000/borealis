@@ -132,9 +132,7 @@ static StyleValues styleValues = {
     { "brls/listitem/descriptionIndent", 16.0f },
     { "brls/listitem/indent", 40.0f },
     { "brls/listitem/selectRadius", 15.0f },
-    { "brls/listitem/bordered", false },
     { "brls/listitem/corner_radius", 5.0f },
-    { "brls/listitem/border_thickness", 2.0f },
 
     // Hints
     { "brls/hints/footer_margin_sides", 30.0f },
