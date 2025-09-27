@@ -827,7 +827,6 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
 
     Activity* last = Application::activitiesStack[Application::activitiesStack.size() - 1];
     last->willDisappear(true);
-
     last->setInFadeAnimation(true);
 
     bool fade = animation == TransitionAnimation::FADE;
@@ -842,24 +841,6 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
         toShow->show([]() { }, false, 0);
     }
 
-    // Focus
-    if (!Application::focusStack.empty())
-    {
-        View* newFocus = Application::focusStack[Application::focusStack.size() - 1];
-
-        if (!toShow || newFocus->getParentActivity() == toShow)
-        {
-            Logger::verbose("Giving focus to {}, and removing it from the focus stack", newFocus->describe());
-            Application::giveFocus(newFocus);
-        }
-        else if (toShow)
-        {
-            Application::giveFocus(toShow->getContentView());
-        }
-
-        Application::focusStack.pop_back();
-    }
-
     // Hide animation (and show previous activity, if any)
     last->hide([last, cb, free]()
         {
@@ -872,13 +853,34 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
                     break;
                 }
             }
-            cb();
+
             brls::Logger::debug("Start delete top activity");
             if (free)
                 delete last;
             brls::Logger::debug("Top activity deleted");
 
-            Application::unblockInputs(); },
+            Application::unblockInputs();
+            
+            cb();
+        
+            // Then, give focus after pop is fully completed
+            if (!Application::focusStack.empty())
+            {
+                View* newFocus = Application::focusStack.back();
+                Activity* top = Application::activitiesStack.empty() ? nullptr : Application::activitiesStack.back();
+
+                if (!top || newFocus->getParentActivity() == top)
+                {
+                    Logger::verbose("Giving focus to {}, and removing it from the focus stack", newFocus->describe());
+                    Application::giveFocus(newFocus);
+                }
+                else if (top)
+                {
+                    Application::giveFocus(top->getContentView());
+                }
+
+                Application::focusStack.pop_back();
+            } },
         fade, last->getShowAnimationDuration(animation));
 
     return true;
@@ -893,8 +895,8 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
 {
     Application::blockInputs();
 
-    // Focus
-    if (!Application::activitiesStack.empty() && Application::currentFocus != nullptr)
+    // Focus: only stash current focus if we are NOT replacing the current activity
+    if (!replace && !Application::activitiesStack.empty() && Application::currentFocus != nullptr)
     {
         Logger::verbose("Pushing {} to the focus stack", Application::currentFocus->describe());
         Application::focusStack.push_back(Application::currentFocus);
@@ -911,7 +913,7 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
         last->onPause();
     }
 
-    bool fadeIn = animation == TransitionAnimation::FADE || animation == TransitionAnimation::SLIDE_LEFT || animation == TransitionAnimation::SLIDE_RIGHT; // wait for the old activity animation to be done before showing the new one?
+    bool fadeIn = animation == TransitionAnimation::FADE || animation == TransitionAnimation::SLIDE_LEFT || animation == TransitionAnimation::SLIDE_RIGHT;
 
     if (Application::globalQuitEnabled)
         Application::gloablQuitIdentifier = activity->registerExitAction();
