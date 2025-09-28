@@ -117,9 +117,9 @@ class Logger
 #ifdef PLATFORM_APPLE
             fmt::print(logOut, "{:%H:%M:%S}.{:03d} {} {}\n", *time_tm, (int)ms, color, log);
 #elif defined(ANDROID)
-            __android_log_print(6 - (int)level, "borealis", "%02d:%02d:%02d.%03d %s\n", time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec, (int)ms, log.c_str());
+            __android_log_print(6 - (int)level, "borealis", "%02d:%02d:%02d.%03d %s\n", time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec, (int)ms, log.c_str());
 #elif defined(__PSV__)
-            sceClibPrintf("%02d:%02d:%02d.%03d\033%s[%s]\033[0m %s\n", time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec, (int)ms, color.c_str(), prefix.c_str(), log.c_str());
+            sceClibPrintf("%02d:%02d:%02d.%03d\033%s[%s]\033[0m %s\n", time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec, (int)ms, color.c_str(), prefix.c_str(), log.c_str());
 #elif defined(PS4)
             sceKernelDebugOutText(0, fmt::format("{:02d}:{:02d}:{:02d}.{:03d}\033{}[{}]\033[0m {}\n", lt.hour, lt.minute, lt.second, (int)ms, color, prefix, log).c_str());
 #else
