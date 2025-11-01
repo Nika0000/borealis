@@ -43,7 +43,7 @@ GestureState HoverGestureRecognizer::recognitionLoop(TouchState touch, MouseStat
     {
         this->state = GestureState::END;
         if (lastState != this->state)
-            this->hoverEvent.fire(getCurrentStatus(), soundToPlay);
+            this->hoverEvent.fire(getCurrentStatus());
         lastState = this->state;
         return this->state;
     }
@@ -75,7 +75,7 @@ GestureState HoverGestureRecognizer::recognitionLoop(TouchState touch, MouseStat
     }
 
     // Fire event each active frame
-    this->hoverEvent.fire(getCurrentStatus(), soundToPlay);
+    this->hoverEvent.fire(getCurrentStatus());
 
     lastState = this->state;
     return this->state;

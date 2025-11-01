@@ -362,13 +362,17 @@ void Application::processInput()
         // Determine hovered view each frame to support hover enter/leave and idle hover
         Point position = mouseState.position;
 
-        // Search for first responder, which will be the root of recognition tree
-        if (!Application::activitiesStack.empty())
-            mouseState.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
-                                  ->getContentView()
-                                  ->hitTest(position);
-        else
-            mouseState.view = nullptr;
+        bool hasActiveButtonGesture = (mouseState.leftButton == TouchPhase::STAY || mouseState.middleButton == TouchPhase::STAY || mouseState.rightButton == TouchPhase::STAY);
+        if (!hasActiveButtonGesture || mouseState.view == nullptr)
+        {
+            // Search for first responder, which will be the root of recognition tree
+            if (!Application::activitiesStack.empty())
+            {
+                mouseState.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
+                                      ->getContentView()
+                                      ->hitTest(position);
+            }
+        }
     }
 
     // Notify previous hovered view about leave (interrupt gestures) if it changed
@@ -386,8 +390,7 @@ void Application::processInput()
         leaveState.rightButton  = TouchPhase::NONE;
         leaveState.middleButton = TouchPhase::END;
 
-        Sound snd = oldHover->gestureRecognizerRequest(TouchState(), leaveState, oldHover);
-        Application::getAudioPlayer()->play(snd, 1.0f);
+        oldHover->gestureRecognizerRequest(TouchState(), leaveState, oldHover);
     }
 
     currentMouseState = mouseState;

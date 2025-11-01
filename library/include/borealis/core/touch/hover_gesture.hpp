@@ -13,7 +13,7 @@ struct HoverGestureStatus
     Point delta; // Difference between current and previous positions
 };
 
-typedef Event<HoverGestureStatus, Sound*> HoverGestureEvent;
+typedef Event<HoverGestureStatus> HoverGestureEvent;
 
 // Mouse hover recognizer
 // START: first frame when the cursor is over the view without any buttons pressed
