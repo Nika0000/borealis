@@ -49,6 +49,7 @@
 #include <borealis/views/button.hpp>
 #include <borealis/views/dialog.hpp>
 #include <borealis/views/dropdown.hpp>
+#include <borealis/views/h_scrolling_frame.hpp>
 #include <borealis/views/header.hpp>
 #include <borealis/views/image.hpp>
 #include <borealis/views/label.hpp>
@@ -56,7 +57,6 @@
 #include <borealis/views/rectangle.hpp>
 #include <borealis/views/recycler.hpp>
 #include <borealis/views/scrolling_frame.hpp>
-#include <borealis/views/h_scrolling_frame.hpp>
 #include <borealis/views/sidebar.hpp>
 #include <borealis/views/slider.hpp>
 #include <borealis/views/tab_frame.hpp>
@@ -73,6 +73,7 @@
 #include <borealis/views/cells/cell_slider.hpp>
 
 // Gestures
+#include <borealis/core/touch/hover_gesture.hpp>
 #include <borealis/core/touch/pan_gesture.hpp>
 #include <borealis/core/touch/scroll_gesture.hpp>
 #include <borealis/core/touch/tap_gesture.hpp>

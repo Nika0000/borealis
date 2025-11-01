@@ -351,25 +351,45 @@ void Application::processInput()
     }
     else
     {
-        if (mouseState.offset.x != 0 || mouseState.offset.y != 0 || mouseState.scroll.x != 0 || mouseState.scroll.y != 0 || mouseState.leftButton != TouchPhase::NONE || mouseState.middleButton != TouchPhase::NONE || mouseState.rightButton != TouchPhase::NONE)
+        bool hasActivity = (mouseState.offset.x != 0 || mouseState.offset.y != 0 || mouseState.scroll.x != 0 || mouseState.scroll.y != 0 || mouseState.leftButton != TouchPhase::NONE || mouseState.middleButton != TouchPhase::NONE || mouseState.rightButton != TouchPhase::NONE);
+
+        if (hasActivity)
         {
             Application::setInputType(InputType::TOUCH);
             Application::setDrawCoursor(true);
         }
 
-        if (mouseState.scroll.x == 0 && mouseState.scroll.y == 0 && mouseState.leftButton == TouchPhase::NONE && mouseState.middleButton == TouchPhase::NONE && mouseState.rightButton == TouchPhase::NONE)
-            mouseState.view = nullptr;
-        else if (mouseState.view == nullptr)
-        {
-            Point position = mouseState.position;
+        // Determine hovered view each frame to support hover enter/leave and idle hover
+        Point position = mouseState.position;
 
-            // Search for first responder, which will be the root of recognition tree
-            if (!Application::activitiesStack.empty())
-                mouseState.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
-                                      ->getContentView()
-                                      ->hitTest(position);
-        }
+        // Search for first responder, which will be the root of recognition tree
+        if (!Application::activitiesStack.empty())
+            mouseState.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
+                                  ->getContentView()
+                                  ->hitTest(position);
+        else
+            mouseState.view = nullptr;
     }
+
+    // Notify previous hovered view about leave (interrupt gestures) if it changed
+    if (currentMouseState.view && currentMouseState.view != mouseState.view)
+    {
+        View* oldHover = currentMouseState.view;
+        oldHover->interruptGestures(false);
+
+        // Send a synthetic leave to allow hover recognizers to emit END
+        MouseState leaveState   = currentMouseState;
+        leaveState.view         = oldHover;
+        leaveState.offset       = { 0, 0 };
+        leaveState.scroll       = { 0, 0 };
+        leaveState.leftButton   = TouchPhase::NONE;
+        leaveState.rightButton  = TouchPhase::NONE;
+        leaveState.middleButton = TouchPhase::END;
+
+        Sound snd = oldHover->gestureRecognizerRequest(TouchState(), leaveState, oldHover);
+        Application::getAudioPlayer()->play(snd, 1.0f);
+    }
+
     currentMouseState = mouseState;
 
     if (mouseState.view)
