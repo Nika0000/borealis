@@ -20,12 +20,35 @@
 namespace brls
 {
 
+HoverGestureRecognizer::HoverGestureRecognizer(View* view, HoverGestureConfig config)
+{
+    hoverEvent.subscribe([view, config](HoverGestureStatus status)
+        {
+            if (status.state == GestureState::START)
+            {
+                Application::getPlatform()->getInputManager()->setCursorType(config.cursor);
+                view->setClickAlpha(0.8f);
+            }
+
+            if (status.state == GestureState::END)
+            {
+                Application::getPlatform()->getInputManager()->setCursorType(CursorType::CURSOR_DEFAULT);
+                view->setClickAlpha(0.0f);
+            } });
+}
+
 HoverGestureRecognizer::HoverGestureRecognizer(HoverGestureEvent::Callback respond)
 {
     hoverEvent.subscribe(respond);
 }
 
-GestureState HoverGestureRecognizer::recognitionLoop(TouchState touch, MouseState mouse, View* /*view*/, Sound* soundToPlay)
+HoverGestureRecognizer::~HoverGestureRecognizer()
+{
+    if (lastState != GestureState::END)
+        Application::getPlatform()->getInputManager()->setCursorType(CursorType::CURSOR_DEFAULT);
+}
+
+GestureState HoverGestureRecognizer::recognitionLoop(TouchState touch, MouseState mouse, View*, Sound*)
 {
     if (!enabled)
         return GestureState::FAILED;

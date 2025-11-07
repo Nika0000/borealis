@@ -6,6 +6,19 @@
 namespace brls
 {
 
+struct HoverGestureConfig
+{
+    bool highlightOnHover = true;
+    CursorType cursor     = CursorType::CURSOR_POINTER;
+
+    HoverGestureConfig() = default;
+    HoverGestureConfig(bool highlightOnHover, CursorType cursor)
+    {
+        this->highlightOnHover = highlightOnHover;
+        this->cursor           = cursor;
+    }
+};
+
 struct HoverGestureStatus
 {
     GestureState state; // Gesture state
@@ -22,7 +35,9 @@ typedef Event<HoverGestureStatus> HoverGestureEvent;
 class HoverGestureRecognizer : public GestureRecognizer
 {
   public:
+    HoverGestureRecognizer(View* view, HoverGestureConfig config = HoverGestureConfig());
     HoverGestureRecognizer(HoverGestureEvent::Callback respond);
+    ~HoverGestureRecognizer();
 
     GestureState recognitionLoop(TouchState touch, MouseState mouse, View* view, Sound* soundToPlay) override;
 

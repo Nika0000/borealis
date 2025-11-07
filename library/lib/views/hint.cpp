@@ -17,6 +17,7 @@
 #include <borealis/core/application.hpp>
 #include <borealis/core/i18n.hpp>
 #include <borealis/core/logger.hpp>
+#include <borealis/core/touch/hover_gesture.hpp>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/core/util.hpp>
 #include <borealis/views/applet_frame.hpp>
@@ -69,6 +70,8 @@ Hint::Hint(Action action, bool allowAButtonTouch)
     {
         this->addGestureRecognizer(new TapGestureRecognizer(this, [this, action]()
             { action.actionListener(this); }));
+
+        this->addGestureRecognizer(new HoverGestureRecognizer(this));
     }
 
     if (!action.available || Application::isInputBlocked())

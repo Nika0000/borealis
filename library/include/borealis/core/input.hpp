@@ -224,6 +224,31 @@ enum ControllerAxis
     _AXES_MAX,
 };
 
+enum CursorType
+{
+    CURSOR_DEFAULT, /**< Default cursor. Usually an arrow. */
+    CURSOR_TEXT, /**< Text selection. Usually an I-beam. */
+    CURSOR_WAIT, /**< Wait. Usually an hourglass or watch or spinning ball. */
+    CURSOR_CROSSHAIR, /**< Crosshair. */
+    CURSOR_PROGRESS, /**< Program is busy but still interactive. Usually it's WAIT with an arrow. */
+    CURSOR_NWSE_RESIZE, /**< Double arrow pointing northwest and southeast. */
+    CURSOR_NESW_RESIZE, /**< Double arrow pointing northeast and southwest. */
+    CURSOR_EW_RESIZE, /**< Double arrow pointing west and east. */
+    CURSOR_NS_RESIZE, /**< Double arrow pointing north and south. */
+    CURSOR_MOVE, /**< Four pointed arrow pointing north, south, east, and west. */
+    CURSOR_NOT_ALLOWED, /**< Not permitted. Usually a slashed circle or crossbones. */
+    CURSOR_POINTER, /**< Pointer that indicates a link. Usually a pointing hand. */
+    CURSOR_NW_RESIZE, /**< Window resize top-left. This may be a single arrow or a double arrow like NWSE_RESIZE. */
+    CURSOR_N_RESIZE, /**< Window resize top. May be NS_RESIZE. */
+    CURSOR_NE_RESIZE, /**< Window resize top-right. May be NESW_RESIZE. */
+    CURSOR_E_RESIZE, /**< Window resize right. May be EW_RESIZE. */
+    CURSOR_SE_RESIZE, /**< Window resize bottom-right. May be NWSE_RESIZE. */
+    CURSOR_S_RESIZE, /**< Window resize bottom. May be NS_RESIZE. */
+    CURSOR_SW_RESIZE, /**< Window resize bottom-left. May be NESW_RESIZE. */
+    CURSOR_W_RESIZE, /**< Window resize left. May be EW_RESIZE. */
+    _CURSOR_MAX
+};
+
 struct KeyState
 {
     BrlsKeyboardScancode key;
@@ -349,6 +374,8 @@ class InputManager
     virtual void drawCursor(NVGcontext* vg) { };
 
     virtual void setPointerLock(bool lock) { };
+
+    virtual void setCursorType(CursorType type) { };
 
     inline static std::string GAMEPAD_DB = BRLS_ASSET("gamepad/gamecontrollerdb.txt");
 

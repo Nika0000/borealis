@@ -1483,6 +1483,7 @@ class View
     virtual float getAlpha(bool child = false);
 
     float getClickAlpha() { return this->clickAlpha; }
+    void setClickAlpha(float a) { this->clickAlpha = a; }
 
     /**
      * Forces this view and its children to use

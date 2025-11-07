@@ -18,6 +18,7 @@
 #include <math.h>
 
 #include <borealis/core/application.hpp>
+#include <borealis/core/touch/hover_gesture.hpp>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/views/button.hpp>
 
@@ -85,6 +86,7 @@ Button::Button()
     this->applyStyle();
 
     this->addGestureRecognizer(new TapGestureRecognizer(this));
+    this->addGestureRecognizer(new HoverGestureRecognizer(this));
 }
 
 void Button::applyStyle()

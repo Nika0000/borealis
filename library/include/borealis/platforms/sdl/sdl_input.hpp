@@ -35,6 +35,8 @@ class SDLInputManager : public InputManager
 
     void setPointerLock(bool lock) override;
 
+    void setCursorType(CursorType type) override;
+
     void updateMouseMotion(SDL_MouseMotionEvent event);
 
     void updateMouseWheel(SDL_MouseWheelEvent event);

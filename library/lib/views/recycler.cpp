@@ -15,6 +15,7 @@
 */
 
 #include <borealis/core/application.hpp>
+#include <borealis/core/touch/hover_gesture.hpp>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/views/recycler.hpp>
 
@@ -44,6 +45,7 @@ RecyclerCell::RecyclerCell()
         this->setLineColor((!isTouch && this->focused) ? TRANSPARENT : Application::getTheme()["brls/sidebar/separator"]); });
 
     this->addGestureRecognizer(new TapGestureRecognizer(this));
+    this->addGestureRecognizer(new HoverGestureRecognizer(this));
 }
 
 RecyclerCell::~RecyclerCell()

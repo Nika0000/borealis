@@ -21,7 +21,6 @@
 
 #include "SDL3/SDL_hints.h"
 
-
 namespace brls
 {
 
@@ -685,6 +684,12 @@ void SDLInputManager::setPointerLock(bool lock)
 
     SDL_SetWindowRelativeMouseMode(window, lock ? true : false);
     //    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
+}
+
+void SDLInputManager::setCursorType(CursorType type)
+{
+    SDL_Cursor* cursor = SDL_CreateSystemCursor((SDL_SystemCursor)type);
+    SDL_SetCursor(cursor);
 }
 
 void SDLInputManager::runloopStart()
