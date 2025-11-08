@@ -198,10 +198,6 @@ void View::frame(FrameContext* ctx)
         if (this->highlightAlpha > 0.0f && !this->hideHighlightBackground && !this->hideHighlight)
             this->drawHighlight(ctx->vg, ctx->theme, this->highlightAlpha, style, true);
 
-        // Draw click animation
-        if (this->clickAlpha > 0.0f)
-            this->drawClickAnimation(ctx->vg, ctx, frame);
-
         // Collapse clipping
         if (this->collapseState < 1.0f || this->clipsToBounds)
         {
@@ -218,6 +214,14 @@ void View::frame(FrameContext* ctx)
         // Reset clipping
         if (this->collapseState < 1.0f || this->clipsToBounds)
             nvgRestore(ctx->vg);
+
+        // draw click animation
+        if (this->clickAlpha > 0.0f)
+            this->drawClickAnimation(ctx->vg, ctx, frame);
+
+        // draw highlight
+        if (this->highlightAlpha > 0.0f && !this->hideHighlightBorder && !this->hideHighlight && Application::getInputType() != InputType::TOUCH)
+            this->drawHighlight(ctx->vg, ctx->theme, this->highlightAlpha, style, false);
     }
 
     // Cleanup
@@ -229,6 +233,8 @@ void View::frame(FrameContext* ctx)
 
 void View::frameHighlight(FrameContext* ctx)
 {
+    // This method is now mostly handled in frame() for proper layering
+    // Keep it for compatibility but the actual drawing happens in frame()
     if (this->alpha > 0.0f && this->collapseState != 0.0f && this->highlightAlpha > 0.0f && !this->hideHighlightBorder && !this->hideHighlight)
     {
         nvgSave(ctx->vg);
