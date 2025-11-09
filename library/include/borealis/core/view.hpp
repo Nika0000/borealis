@@ -1568,6 +1568,13 @@ class View
     void setScale(float scale);
 
     /**
+     * Gets the current scale of this view as a Point.
+     *
+     * Returns a Point containing the X and Y scale factors.
+     */
+    Point getScale();
+
+    /**
      * Wireframe mode allows you to see the view size and margins (and
      * padding if applicable) directly in your app.
      *

@@ -2225,6 +2225,11 @@ void View::setTranslationX(float translationX)
     this->translation.x = translationX;
 }
 
+Point View::getScale()
+{
+    return this->scale;
+}
+
 void View::setScaleX(float scaleX)
 {
     this->scale.x = scaleX;
