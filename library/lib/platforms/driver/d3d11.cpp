@@ -18,6 +18,8 @@
 #include <winrt/Windows.Graphics.Display.h>
 #endif
 
+#include <d3d11_4.h>
+
 namespace brls
 {
 
@@ -61,6 +63,7 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
     IDXGIAdapter* dxgiAdapter  = nullptr;
     IDXGIFactory2* dxgiFactory = nullptr;
 
+    // Track tearing support
     static const D3D_DRIVER_TYPE driverAttempts[] = {
         D3D_DRIVER_TYPE_HARDWARE,
         D3D_DRIVER_TYPE_WARP,
@@ -79,11 +82,16 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
 
     for (size_t driver = 0; driver < ARRAYSIZE(driverAttempts); driver++)
     {
+        UINT createFlags = D3D11_CREATE_DEVICE_VIDEO_SUPPORT | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+#if defined(_DEBUG)
+        createFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
         hr = D3D11CreateDevice(
             nullptr,
             driverAttempts[driver],
             nullptr,
-            0,
+            createFlags,
             levelAttempts,
             ARRAYSIZE(levelAttempts),
             D3D11_SDK_VERSION,
@@ -94,6 +102,16 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
         if (SUCCEEDED(hr))
         {
             break;
+        }
+    }
+    // Enable multithread protection since we use the immediate context across threads
+    if (SUCCEEDED(hr))
+    {
+        ID3D11Multithread* mt = nullptr;
+        if (SUCCEEDED(this->deviceContext->QueryInterface(IID_PPV_ARGS(&mt))))
+        {
+            mt->SetMultithreadProtected(TRUE);
+            mt->Release();
         }
     }
     if (SUCCEEDED(hr))
@@ -129,6 +147,22 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
         {
             swapDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
         }
+
+#ifdef __ALLOW_TEARING__
+        {
+            IDXGIFactory5* factory5 = nullptr;
+            if (SUCCEEDED(dxgiFactory->QueryInterface(IID_PPV_ARGS(&factory5))))
+            {
+                factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing));
+                factory5->Release();
+            }
+            if (allowTearing && swapDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD)
+            {
+                swapDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+            }
+        }
+#endif
+
 #ifdef __WINRT__
         if (IsWindows8OrGreater())
         {
@@ -187,6 +221,13 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
     }
 
     this->GetDpiForWindow = (UINT(WINAPI*)(HWND))GetProcAddress(GetModuleHandleW(L"USER32.DLL"), "GetDpiForWindow");
+
+    // Cache tearing support state for Present
+#ifdef __ALLOW_TEARING__
+    this->allowTearing = !!allowTearing;
+#else
+    this->allowTearing = false;
+#endif
 
     return true;
 }
@@ -325,6 +366,16 @@ void D3D11Context::endFrame()
     // https://learn.microsoft.com/zh-cn/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present
     DXGI_PRESENT_PARAMETERS presentParameters;
     ZeroMemory(&presentParameters, sizeof(DXGI_PRESENT_PARAMETERS));
+
+    // If tearing is enabled and swap interval is 0 (vsync off), use Present with tearing flag.
+#ifdef __ALLOW_TEARING__
+    if (this->allowTearing && this->swapInterval == 0)
+    {
+        this->swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
+        return;
+    }
+#endif
+
     this->swapChain->Present1(swapInterval, 0, &presentParameters);
 }
 
@@ -334,5 +385,14 @@ void D3D11Context::setSwapInterval(int interval)
         return;
 
     this->swapInterval = interval;
+}
+
+void D3D11Context::setAllowTearing(bool tearing)
+{
+#ifndef __ALLOW_TEARING__
+    Logger::warning("D3D11: Failed to set allow tearing, because its disabled internaly.");
+    return;
+#endif
+    this->allowTearing = tearing;
 }
 }

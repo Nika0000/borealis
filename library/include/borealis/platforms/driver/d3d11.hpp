@@ -44,6 +44,7 @@ class D3D11Context
     void beginFrame();
     void endFrame();
     void setSwapInterval(int interval);
+    void setAllowTearing(bool tearing);
 
     bool onFramebufferSize(int width, int height, bool init = false);
 
@@ -58,7 +59,8 @@ class D3D11Context
     ID3D11RenderTargetView* renderTargetView = nullptr;
     ID3D11DepthStencilView* depthStencilView = nullptr;
 
-    int swapInterval = 1;
+    int swapInterval  = 1;
+    bool allowTearing = FALSE;
 
     UINT(WINAPI* GetDpiForWindow)(HWND);
 
