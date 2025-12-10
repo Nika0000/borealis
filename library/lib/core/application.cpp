@@ -834,10 +834,14 @@ void Application::giveFocus(View* view)
         if (newFocus)
         {
             newFocus->onFocusGained();
-            Logger::verbose("Giving focus to {}", newFocus->describe());
         }
 
         Application::globalHintsUpdateEvent.fire();
+    }
+
+    // Only for simulation of unfocus (removing higlight)
+    if(!newFocus && oldFocus) {
+        oldFocus->onFocusLost();
     }
 }
 
@@ -894,7 +898,6 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
 
                 if (!top || newFocus->getParentActivity() == top)
                 {
-                    Logger::verbose("Giving focus to {}, and removing it from the focus stack", newFocus->describe());
                     Application::giveFocus(newFocus);
                 }
                 else if (top)
