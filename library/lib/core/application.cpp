@@ -840,7 +840,8 @@ void Application::giveFocus(View* view)
     }
 
     // Only for simulation of unfocus (removing higlight)
-    if(!newFocus && oldFocus) {
+    if (!newFocus && oldFocus)
+    {
         oldFocus->onFocusLost();
     }
 }
@@ -910,6 +911,26 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
         fade, last->getShowAnimationDuration(animation));
 
     return true;
+}
+
+bool Application::deleteActivity(Activity* activity)
+{
+    if (!activity || Application::activitiesStack.size() <= 1)
+        return false;
+
+    // Find the activity in the stack (excluding the first one)
+    for (auto it = Application::activitiesStack.begin() + 1; it != Application::activitiesStack.end(); ++it)
+    {
+        if (*it == activity)
+        {
+            brls::Logger::debug("Deleting activity from stack");
+            Application::activitiesStack.erase(it);
+            delete activity;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 std::vector<Activity*> Application::getActivitiesStack()
