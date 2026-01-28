@@ -949,6 +949,12 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
         Application::focusStack.push_back(Application::currentFocus);
     }
 
+    // Clear current focus when replacing to prevent accessing freed memory
+    if (replace)
+    {
+        Application::currentFocus = nullptr;
+    }
+
     // Create the activity content view
     activity->setContentView(activity->createContentView());
     activity->onContentAvailable();
