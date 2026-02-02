@@ -466,17 +466,17 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
     {
         try
         {
-            SDL_IOStream* rawDb = nullptr;
-            const auto& db      = romfs::get(GAMEPAD_DB.substr(5));
+            const auto& db = romfs::get(GAMEPAD_DB.substr(5));
 
             if (!db.valid())
-                throw;
+                throw std::runtime_error("Database not found or invalid");
 
-            rawDb = SDL_IOFromMem(const_cast<void*>(static_cast<const void*>(db.data())), db.size());
-            if (!rawDb && SDL_AddGamepadMappingsFromIO(rawDb, true) == -1)
-                throw;
+            SDL_IOStream* rawDb = SDL_IOFromMem(const_cast<void*>(static_cast<const void*>(db.data())), db.size());
+
+            if (!rawDb || SDL_AddGamepadMappingsFromIO(rawDb, true) == -1)
+                throw std::runtime_error("SDL failed to load mappings");
         }
-        catch (...)
+        catch (const std::exception& e)
         {
             Logger::warning("SDL: Input: Unable to load gamepad mappings from resource: {}", GAMEPAD_DB);
         }

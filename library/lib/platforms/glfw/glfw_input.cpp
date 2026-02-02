@@ -196,6 +196,25 @@ void GLFWInputManager::cursorCallback(GLFWwindow* window, double x, double y)
 GLFWInputManager::GLFWInputManager(GLFWwindow* window)
     : window(window)
 {
+#ifdef USE_LIBROMFS
+    if (GAMEPAD_DB.starts_with("@res/"))
+    {
+        try
+        {
+            const auto& db = romfs::get(GAMEPAD_DB.substr(5));
+
+            if (!db.valid())
+                throw std::runtime_error("Database not found or invalid");
+
+            const std::string mappings(reinterpret_cast<const char*>(db.data()), db.size());
+            glfwUpdateGamepadMappings(mappings.c_str());
+        }
+        catch (const std::exception& e)
+        {
+            Logger::warning("glfw: Input: Unable to load gamepad mappings from resource: {}", GAMEPAD_DB);
+        }
+    }
+#else
     if (access(InputManager::GAMEPAD_DB.c_str(), F_OK) == -1)
     {
         brls::Logger::warning("Cannot find custom gamepad db, (Searched at: {})",
@@ -207,6 +226,7 @@ GLFWInputManager::GLFWInputManager(GLFWwindow* window)
         brls::Logger::info("Load custom gamepad db: {}", InputManager::GAMEPAD_DB);
         glfwUpdateGamepadMappings(mappings.c_str());
     }
+#endif
 
     glfwSetJoystickCallback(glfwJoystickCallback);
     glfwSetScrollCallback(window, scrollCallback);
