@@ -12,16 +12,6 @@ borealis 的安卓移植遵循 SDL 的文档：[SDL/docs](https://github.com/lib
 cd android-project
 ```
 
-在安卓平台，borealis 使用 libromfs 将所有资源文件直接打包到共享库中，我们需要先构建 libromfs-generator。
-
-> libromfs-generator 的作用是将资源文件转换为 cpp 源码，并在后续的编译过程中链接进主程序， 
-
-```shell
-./build_libromfs_generator.sh
-```
-
-在成功运行后，`android-project/app/jni/borealis` 目录下会生成: `libromfs-generator`
-
 然后打开 Android Studio 编译即可
 
 ```shell

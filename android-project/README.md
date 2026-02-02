@@ -14,16 +14,6 @@ Theoretically, it supports Android API 16 and later (Android 4.1+), but I have o
 cd android-project
 ```
 
-On the Android platform, borealis uses libromfs to package all resource files directly into the shared library. We need to build the libromfs-generator first.
-
-> The libromfs-generator is responsible for converting resource files into C++ source code and linking them into the main program during the compilation process.
-
-```shell
-./build_libromfs_generator.sh
-```
-
-After a successful run, `libromfs-generator` will be generated in the `android-project/app/jni/borealis` directory.
-
 Then open Android Studio and build the project.
 
 ```shell

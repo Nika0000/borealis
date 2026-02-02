@@ -124,9 +124,6 @@ make -C build_ps4 -j$(nproc)
 ## Building the demo for Android
 
 ```shell
-# build libromfs generator
-./build_libromfs_generator.sh
-
 cd android-project
 export JAVA_HOME=/Applications/Android\ Studio.app/Contents/jbr/Contents/Home
 export ANDROID_SDK_ROOT=~/Library/Android/sdk
@@ -139,11 +136,6 @@ export ANDROID_NDK_HOME=~/Library/Android/sdk/ndk-bundle
 
 
 ## Building the demo for iOS
-
-```shell
-# build libromfs generator
-./build_libromfs_generator.sh
-```
 
 ### 1. Build for arm64 iphoneOS
 

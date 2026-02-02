@@ -1,0 +1,12 @@
+**/*.py
+**/*.md
+**/LICENSE
+
+**/.git/**
+**/.github/**
+**/.gitignore
+
+gamepad/.git/**
+gamepad/mapping_guide.png
+
+xml/schema/**

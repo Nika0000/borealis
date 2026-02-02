@@ -10,5 +10,4 @@ builddir
 *.dksh
 .DS_Store
 *.suprx
-libromfs-generator
 !.github/

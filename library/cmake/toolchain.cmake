@@ -1,12 +1,30 @@
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
-function(check_libromfs_generator)
-    if (NOT DEFINED LIBROMFS_PREBUILT_GENERATOR OR NOT EXISTS "${LIBROMFS_PREBUILT_GENERATOR}")
-        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libromfs-generator")
-            set(LIBROMFS_PREBUILT_GENERATOR "${CMAKE_CURRENT_SOURCE_DIR}/libromfs-generator" PARENT_SCOPE)
-        else ()
-            message(FATAL_ERROR "libromfs-generator has not been built, please refer to borealis/build_libromfs_generator.sh for more information")
-        endif ()
+function(build_libromfs_generator)
+    if(DEFINED LIBROMFS_PREBUILT_GENERATOR AND EXISTS "${LIBROMFS_PREBUILT_GENERATOR}")
+        message(STATUS "Using prebuilt libromfs-generator at ${LIBROMFS_PREBUILT_GENERATOR}")
+        return()
+    endif()
+
+    set(LIBROMFS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/library/lib/extern/libromfs/generator")
+    set(LIBROMFS_BUILD_DIR "${CMAKE_BINARY_DIR}/libromfs_generator")
+
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -B ${LIBROMFS_BUILD_DIR} -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release "${LIBROMFS_SOURCE_DIR}"
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    
+    execute_process(
+        COMMAND make -C ${LIBROMFS_BUILD_DIR} 
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    find_program(LIBROMFS_GENERATOR
+        NAME libromfs-generator libromfs-generator.exe
+        HINTS "${LIBROMFS_BUILD_DIR}")
+
+    if(LIBROMFS_GENERATOR)
+        set(LIBROMFS_PREBUILT_GENERATOR "${LIBROMFS_GENERATOR}" CACHE PATH "Path to libromfs-generator")
+    else()
+        message(FATAL_ERROR "libromfs-generator could not be found.")
     endif()
 endfunction()
 
@@ -36,7 +54,7 @@ elseif (PLATFORM_IOS OR PLATFORM_TVOS)
     elseif(PLATFORM_TVOS)
         set(CMAKE_XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "3") # tvos
     endif()
-    check_libromfs_generator()
+    build_libromfs_generator()
 elseif(PLATFORM_ANDROID)
     message(STATUS "building for Android")
     set(CMAKE_TOOLCHAIN_FILE ${EXTERN_PATH}/vcpkg/scripts/buildsystems/vcpkg.cmake CACHE STRING "")
@@ -46,7 +64,7 @@ elseif(PLATFORM_ANDROID)
         set(USE_GLES2 ON)
     endif()
     set(USE_LIBROMFS ON)
-    check_libromfs_generator()
+    build_libromfs_generator()
 elseif(PLATFORM_PSV)
     message(STATUS "building for PSVita")
     set(USE_SDL3 ON)
