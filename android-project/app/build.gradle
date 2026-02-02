@@ -8,27 +8,23 @@ else {
 }
 
 android {
-    compileSdkVersion 31
+    namespace = "com.borealis.demo"
+    ndkVersion "26.1.10909125"
+    compileSdk 35
     defaultConfig {
         if (buildAsApplication) {
             applicationId "com.borealis.demo"
         }
-        minSdkVersion 16
-        targetSdkVersion 31
+        minSdkVersion 21
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
-        // borealis need at least ndk r22 (r21 don't have std::filesystem support)
-        // The newer NDK library will cause lower versions of Android failed to run.
-        // r26: support api21 and later
-        // r24/r25: support api19 and later
-        // r22/23: support api16 and later
-        ndkVersion "22.1.7171670"
+
         externalNativeBuild {
              cmake {
-                 arguments "-DANDROID_APP_PLATFORM=android-16", "-DANDROID_STL=c++_static"
+                 arguments "-DANDROID_STL=c++_static"
                  // abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
                  abiFilters 'armeabi-v7a', 'arm64-v8a'
-                 version = '3.16.0+'
              }
         }
     }
