@@ -1,4 +1,8 @@
 <brls:Box
+    xmlns="http://borealisui.com/schema"
+    xmlns:brls="http://borealisui.com/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://borealisui.com/schema ../schema/borealis.xsd"
     width="auto"
     height="auto"
     focusable="true"
@@ -10,7 +14,7 @@
         width="44px"
         height="44px"
         marginLeft="@style/brls/sidebar/item_accent_margin_sides"
-        marginRight="@style/brls/sidebar/item_accent_margin_sides"/>
+        marginRight="@style/brls/sidebar/item_accent_margin_sides" />
 
     <brls:Label
         id="title"

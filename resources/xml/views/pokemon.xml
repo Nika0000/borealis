@@ -1,4 +1,8 @@
 <brls:Box
+    xmlns="http://borealisui.com/schema"
+    xmlns:brls="http://borealisui.com/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://borealisui.com/schema ../schema/borealis.xsd"
     width="auto"
     height="auto"
     axis="column"
@@ -6,14 +10,14 @@
     paddingTop="50px"
     paddingBottom="50px"
     paddingLeft="75px"
-    paddingRight="75px" >
+    paddingRight="75px">
 
     <brls:Image
         id="image"
         width="auto"
         height="33%"
         image="@res/img/borealis_256.png"
-        marginBottom="@style/about/description_margin"/>
+        marginBottom="@style/about/description_margin" />
 
     <brls:Label
         id="description"
@@ -27,6 +31,6 @@
         width="auto"
         height="auto"
         text="@i18n/hints/back"
-        marginTop="24px"/>
+        marginTop="24px" />
 
 </brls:Box>

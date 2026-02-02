@@ -1768,6 +1768,10 @@ void View::applyXMLAttributes(tinyxml2::XMLElement* element)
         std::string name  = attribute->Name();
         std::string value = std::string(attribute->Value());
 
+        // Ignore XML schema namespace attributes used for validation
+        if (name == "xmlns" || name.starts_with("xmlns:") || name.starts_with("xsi:"))
+            continue;
+
         if (!this->applyXMLAttribute(name, value))
             this->printXMLAttributeErrorMessage(element, name, value);
     }

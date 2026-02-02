@@ -1,62 +1,66 @@
 <brls:Box
-        width="auto"
-        height="auto">
+	xmlns="http://borealisui.com/schema"
+	xmlns:brls="http://borealisui.com/schema"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://borealisui.com/schema ../schema/borealis.xsd"
+	width="auto"
+	height="auto">
 
-    <brls:ScrollingFrame
-            width="auto"
-            height="auto"
-            marginRight="460"
-            grow="1.0">
+	<brls:ScrollingFrame
+		width="auto"
+		height="auto"
+		marginRight="460"
+		grow="1.0">
 
-        <brls:Box
-                width="auto"
-                height="auto"
-                paddingLeft="@style/brls/tab_frame/content_padding_sides"
-                paddingRight="@style/brls/tab_frame/content_padding_sides"
-                paddingTop="@style/brls/tab_frame/content_padding_top_bottom"
-                paddingBottom="@style/brls/tab_frame/content_padding_top_bottom">
+		<brls:Box
+			width="auto"
+			height="auto"
+			paddingLeft="@style/brls/tab_frame/content_padding_sides"
+			paddingRight="@style/brls/tab_frame/content_padding_sides"
+			paddingTop="@style/brls/tab_frame/content_padding_top_bottom"
+			paddingBottom="@style/brls/tab_frame/content_padding_top_bottom">
 
-            <brls:Box
-                    grow="1"
-                    axis="column">
+			<brls:Box
+				grow="1"
+				axis="column">
+				<brls:SliderCell
+					grow="1"
+					id="width" />
                 <brls:SliderCell
-                        grow="1"
-                        id="width"/>
-                <brls:SliderCell
-                        grow="1"
-                        id="height"/>
+					grow="1"
+					id="height" />
                 <brls:SelectorCell
-                        id="horizontal"/>
+					id="horizontal" />
                 <brls:SelectorCell
-                        id="vertical"/>
+					id="vertical" />
                 <brls:BooleanCell
-                        id="singleLine"/>
-            </brls:Box>
+					id="singleLine" />
+			</brls:Box>
 
-        </brls:Box>
+		</brls:Box>
 
-    </brls:ScrollingFrame>
+	</brls:ScrollingFrame>
 
     <brls:Box
-            height="404"
-            width="404"
-            paddingBottom="2"
-            paddingTop="2"
-            paddingLeft="2"
-            paddingRight="2"
-            positionType="absolute"
-            borderThickness="2"
-            cornerRadius="4"
-            borderColor="@theme/brls/header/border"
-            positionTop="64"
-            axis="column"
-            positionRight="30">
-        <brls:Label
-                id="label"
-                height="auto"
-                width="auto"
-                wireframe="true"
-                text="text 123456 qwe"/>
-    </brls:Box>
+		height="404"
+		width="404"
+		paddingBottom="2"
+		paddingTop="2"
+		paddingLeft="2"
+		paddingRight="2"
+		positionType="absolute"
+		borderThickness="2"
+		cornerRadius="4"
+		borderColor="@theme/brls/header/border"
+		positionTop="64"
+		axis="column"
+		positionRight="30">
+		<brls:Label
+			id="label"
+			height="auto"
+			width="auto"
+			wireframe="true"
+			text="text 123456 qwe" />
+	</brls:Box>
 
 </brls:Box>

@@ -1,12 +1,16 @@
 <brls:Box
+    xmlns="http://borealisui.com/schema"
+    xmlns:brls="http://borealisui.com/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://borealisui.com/schema ../schema/borealis.xsd"
     width="auto"
     height="auto">
 
     <brls:ScrollingFrame
         width="auto"
         height="auto"
-        grow="1.0" >
-        
+        grow="1.0">
+
         <brls:Box
             width="auto"
             height="auto"
@@ -15,15 +19,15 @@
             paddingRight="@style/brls/tab_frame/content_padding_sides"
             paddingTop="@style/brls/tab_frame/content_padding_top_bottom"
             paddingBottom="@style/brls/tab_frame/content_padding_top_bottom">
-            
+
             <brls:Label
                 width="auto"
                 height="auto"
                 text="@i18n/scroll/text"
                 marginBottom="10px" />
-            
+
         </brls:Box>
-        
+
     </brls:ScrollingFrame>
 
 </brls:Box>

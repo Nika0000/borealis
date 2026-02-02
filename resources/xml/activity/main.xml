@@ -1,4 +1,8 @@
 <brls:AppletFrame
+    xmlns="http://borealisui.com/schema"
+    xmlns:brls="http://borealisui.com/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://borealisui.com/schema ../schema/borealis.xsd"
     iconInterpolation="linear"
     footerHidden="false">
     <brls:TabFrame
@@ -6,26 +10,26 @@
         icon="@res/img/borealis_96.png">
 
         <!-- Dynamic tab - required to get references to the views in the code -->
-        <brls:Tab label="@i18n/demo/tabs/components" >
+        <brls:Tab label="@i18n/demo/tabs/components">
             <ComponentsTab />
         </brls:Tab>
 
         <!-- Static tab linking to another XML -->
-        <brls:Tab label="@i18n/demo/tabs/layout" >
+        <brls:Tab label="@i18n/demo/tabs/layout">
             <brls:View xml="@res/xml/tabs/layout.xml" />
         </brls:Tab>
 
-        <brls:Tab label="@i18n/demo/tabs/transform" >
+        <brls:Tab label="@i18n/demo/tabs/transform">
             <TransformTab />
         </brls:Tab>
 
-        <brls:Tab label="@i18n/demo/tabs/text" >
+        <brls:Tab label="@i18n/demo/tabs/text">
             <TextTestTab />
         </brls:Tab>
 
         <brls:Separator />
 
-        <brls:Tab label="@i18n/demo/tabs/scroll" >
+        <brls:Tab label="@i18n/demo/tabs/scroll">
             <brls:View xml="@res/xml/tabs/scroll_test.xml" />
         </brls:Tab>
 
@@ -39,21 +43,21 @@
             <SettingsTab />
         </brls:Tab>
 
-<!--        <brls:Separator />-->
+        <!--        <brls:Separator />-->
 
-<!--        <brls:Tab label="@i18n/demo/tabs/popups" />-->
-<!--        <brls:Tab label="@i18n/demo/tabs/hos_layout" />-->
+        <!--        <brls:Tab label="@i18n/demo/tabs/popups" />-->
+        <!--        <brls:Tab label="@i18n/demo/tabs/hos_layout" />-->
 
-<!--        <brls:Separator />-->
+        <!--        <brls:Separator />-->
 
-<!--        <brls:Tab label="@i18n/demo/tabs/misc_layouts" />-->
-<!--        <brls:Tab label="@i18n/demo/tabs/misc_components" />-->
-<!--        <brls:Tab label="@i18n/demo/tabs/misc_tools" />-->
+        <!--        <brls:Tab label="@i18n/demo/tabs/misc_layouts" />-->
+        <!--        <brls:Tab label="@i18n/demo/tabs/misc_components" />-->
+        <!--        <brls:Tab label="@i18n/demo/tabs/misc_tools" />-->
 
         <brls:Separator />
 
         <!-- Static tab with inline XML -->
-        <brls:Tab label="@i18n/demo/tabs/about" >
+        <brls:Tab label="@i18n/demo/tabs/about">
 
             <brls:Box
                 width="auto"
@@ -62,13 +66,13 @@
                 paddingTop="@style/about/padding_top_bottom"
                 paddingBottom="@style/about/padding_top_bottom"
                 paddingLeft="@style/about/padding_sides"
-                paddingRight="@style/about/padding_sides" >
+                paddingRight="@style/about/padding_sides">
 
                 <brls:Image
                     width="auto"
                     height="33%"
                     image="@res/img/borealis_256.png"
-                    marginBottom="@style/about/description_margin"/>
+                    marginBottom="@style/about/description_margin" />
 
                 <brls:Box
                     width="auto"
@@ -98,7 +102,7 @@
                     axis="column"
                     alignItems="center"
                     justifyContent="spaceEvenly"
-                    grow="1.0" >
+                    grow="1.0">
 
                     <brls:Label
                         width="auto"

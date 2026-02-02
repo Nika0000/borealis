@@ -1,4 +1,8 @@
 <brls:Box
+    xmlns="http://borealisui.com/schema"
+    xmlns:brls="http://borealisui.com/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://borealisui.com/schema ../schema/borealis.xsd"
     width="auto"
     height="auto">
 
@@ -10,6 +14,6 @@
         paddingTop="@style/brls/sidebar/padding_top"
         paddingRight="@style/brls/sidebar/padding_right"
         paddingBottom="@style/brls/sidebar/padding_bottom"
-        paddingLeft="@style/brls/sidebar/padding_left"/>
+        paddingLeft="@style/brls/sidebar/padding_left" />
 
 </brls:Box>

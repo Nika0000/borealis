@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://borealisui.com/schema"
+    xmlns="http://borealisui.com/schema"
+    elementFormDefault="qualified">
+
+    <!-- Common attribute groups for all views -->
+    <xs:attributeGroup name="commonViewAttributes">
+        <!-- Dimensions -->
+        <xs:attribute name="width" type="xs:string" />
+        <xs:attribute name="height" type="xs:string" />
+        <xs:attribute name="minWidth" type="xs:string" />
+        <xs:attribute name="minHeight" type="xs:string" />
+        <xs:attribute name="maxWidth" type="xs:string" />
+        <xs:attribute name="maxHeight" type="xs:string" />
+
+        <!-- Layout -->
+        <xs:attribute name="grow" type="xs:string" />
+        <xs:attribute name="shrink" type="xs:string" />
+
+        <!-- Alignment -->
+        <xs:attribute name="alignSelf">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="auto" />
+                    <xs:enumeration value="flexStart" />
+                    <xs:enumeration value="center" />
+                    <xs:enumeration value="flexEnd" />
+                    <xs:enumeration value="stretch" />
+                    <xs:enumeration value="baseline" />
+                    <xs:enumeration value="spaceBetween" />
+                    <xs:enumeration value="spaceAround" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+
+        <!-- Margins -->
+        <xs:attribute name="margin" type="xs:string" />
+        <xs:attribute name="marginTop" type="xs:string" />
+        <xs:attribute name="marginRight" type="xs:string" />
+        <xs:attribute name="marginBottom" type="xs:string" />
+        <xs:attribute name="marginLeft" type="xs:string" />
+
+        <!-- Padding -->
+        <xs:attribute name="padding" type="xs:string" />
+        <xs:attribute name="paddingTop" type="xs:string" />
+        <xs:attribute name="paddingRight" type="xs:string" />
+        <xs:attribute name="paddingBottom" type="xs:string" />
+        <xs:attribute name="paddingLeft" type="xs:string" />
+
+        <!-- Lines -->
+        <xs:attribute name="lineColor" type="xs:string" />
+        <xs:attribute name="lineTop" type="xs:string" />
+        <xs:attribute name="lineRight" type="xs:string" />
+        <xs:attribute name="lineBottom" type="xs:string" />
+        <xs:attribute name="lineLeft" type="xs:string" />
+
+        <!-- Position -->
+        <xs:attribute name="positionType">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="relative" />
+                    <xs:enumeration value="absolute" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="positionTop" type="xs:string" />
+        <xs:attribute name="positionRight" type="xs:string" />
+        <xs:attribute name="positionBottom" type="xs:string" />
+        <xs:attribute name="positionLeft" type="xs:string" />
+
+        <!-- Custom focus routes -->
+        <xs:attribute name="focusUp" type="xs:string" />
+        <xs:attribute name="focusRight" type="xs:string" />
+        <xs:attribute name="focusDown" type="xs:string" />
+        <xs:attribute name="focusLeft" type="xs:string" />
+
+        <!-- Shape -->
+        <xs:attribute name="backgroundColor" type="xs:string" />
+        <xs:attribute name="borderColor" type="xs:string" />
+        <xs:attribute name="borderThickness" type="xs:string" />
+        <xs:attribute name="cornerRadius" type="xs:string" />
+
+        <!-- Shadow -->
+        <xs:attribute name="shadowType">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="none" />
+                    <xs:enumeration value="generic" />
+                    <xs:enumeration value="custom" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+
+        <!-- Background -->
+        <xs:attribute name="background">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="sidebar" />
+                    <xs:enumeration value="backdrop" />
+                    <xs:enumeration value="vertical_linear" />
+                    <xs:enumeration value="horizontal_linear" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="backgroundStartColor" type="xs:string" />
+        <xs:attribute name="backgroundEndColor" type="xs:string" />
+
+        <!-- Misc -->
+        <xs:attribute name="visibility">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="visible" />
+                    <xs:enumeration value="invisible" />
+                    <xs:enumeration value="gone" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="id" type="xs:string" />
+    </xs:attributeGroup>
+
+    <!-- Box-specific attributes -->
+    <xs:attributeGroup name="boxAttributes">
+        <xs:attribute name="axis">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="row" />
+                    <xs:enumeration value="column" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="flexWrap">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="wrap" />
+                    <xs:enumeration value="noWrap" />
+                    <xs:enumeration value="wrapReverse" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="direction">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="inherit" />
+                    <xs:enumeration value="leftToRight" />
+                    <xs:enumeration value="rightToLeft" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="justifyContent">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="flexStart" />
+                    <xs:enumeration value="center" />
+                    <xs:enumeration value="flexEnd" />
+                    <xs:enumeration value="spaceBetween" />
+                    <xs:enumeration value="spaceAround" />
+                    <xs:enumeration value="spaceEvenly" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="alignItems">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="auto" />
+                    <xs:enumeration value="flexStart" />
+                    <xs:enumeration value="center" />
+                    <xs:enumeration value="flexEnd" />
+                    <xs:enumeration value="stretch" />
+                    <xs:enumeration value="baseline" />
+                    <xs:enumeration value="spaceBetween" />
+                    <xs:enumeration value="spaceAround" />
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="gap" type="xs:string" />
+    </xs:attributeGroup>
+
+    <!-- Complex type for Box (can contain any elements) -->
+    <xs:complexType name="BoxType" mixed="true">
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+            <xs:choice>
+                <xs:element ref="Box" />
+                <xs:element ref="Label" />
+                <xs:element ref="Image" />
+                <xs:element ref="Rectangle" />
+                <xs:element ref="Button" />
+                <xs:element ref="Header" />
+                <xs:element ref="Hint" />
+                <xs:element ref="Hints" />
+                <xs:element ref="BottomBar" />
+                <xs:element ref="ScrollingFrame" />
+                <xs:element ref="HScrollingFrame" />
+                <xs:element ref="AppletFrame" />
+                <xs:element ref="TabFrame" />
+                <xs:element ref="Tab" />
+                <xs:element ref="Separator" />
+                <xs:element ref="View" />
+                <xs:element ref="Slider" />
+                <xs:element ref="ProgressSpinner" />
+                <xs:element ref="RecyclerFrame" />
+                <xs:element ref="Dropdown" />
+                <xs:element ref="Dialog" />
+                <xs:element ref="Sidebar" />
+                <!-- Allow custom components from any namespace -->
+                <xs:any namespace="##any" processContents="lax" minOccurs="0" />
+            </xs:choice>
+        </xs:sequence>
+        <xs:attributeGroup ref="commonViewAttributes" />
+        <xs:attributeGroup ref="boxAttributes" />
+        <xs:anyAttribute processContents="lax" />
+    </xs:complexType>
+
+    <!-- Box element -->
+    <xs:element name="Box" type="BoxType" />
+
+    <!-- Label element -->
+    <xs:element name="Label">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attribute name="text" type="xs:string" />
+            <xs:attribute name="fontSize" type="xs:string" />
+            <xs:attribute name="fontFile" type="xs:string" />
+            <xs:attribute name="lineHeight" type="xs:string" />
+            <xs:attribute name="singleLine" type="xs:boolean" />
+            <xs:attribute name="cursor" type="xs:string" />
+            <xs:attribute name="horizontalAlign">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="left" />
+                        <xs:enumeration value="center" />
+                        <xs:enumeration value="right" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="verticalAlign">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="baseline" />
+                        <xs:enumeration value="top" />
+                        <xs:enumeration value="center" />
+                        <xs:enumeration value="bottom" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Image element -->
+    <xs:element name="Image">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attribute name="image" type="xs:string" />
+            <xs:attribute name="imageWidth" type="xs:string" />
+            <xs:attribute name="imageHeight" type="xs:string" />
+            <xs:attribute name="scalingType">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="fit" />
+                        <xs:enumeration value="fill" />
+                        <xs:enumeration value="stretch" />
+                        <xs:enumeration value="center" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="imageAlign">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="top" />
+                        <xs:enumeration value="right" />
+                        <xs:enumeration value="bottom" />
+                        <xs:enumeration value="left" />
+                        <xs:enumeration value="center" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="interpolation">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="linear" />
+                        <xs:enumeration value="nearest" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Rectangle element -->
+    <xs:element name="Rectangle">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attribute name="color" type="xs:string" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Button element -->
+    <xs:element name="Button">
+        <xs:complexType mixed="true">
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:any processContents="lax" />
+            </xs:sequence>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attributeGroup ref="boxAttributes" />
+            <xs:attribute name="text" type="xs:string" />
+            <xs:attribute name="fontSize" type="xs:string" />
+            <xs:attribute name="sound" type="xs:string" />
+            <xs:attribute name="style">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="primary" />
+                        <xs:enumeration value="highlight" />
+                        <xs:enumeration value="borderless" />
+                        <xs:enumeration value="bordered" />
+                        <xs:enumeration value="dialog" />
+                        <xs:enumeration value="regular" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Header element -->
+    <xs:element name="Header">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attributeGroup ref="boxAttributes" />
+            <xs:attribute name="title" type="xs:string" />
+            <xs:attribute name="subtitle" type="xs:string" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Hint element -->
+    <xs:element name="Hint">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attributeGroup ref="boxAttributes" />
+            <xs:attribute name="text" type="xs:string" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Hints element -->
+    <xs:element name="Hints">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attributeGroup ref="boxAttributes" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- BottomBar element -->
+    <xs:element name="BottomBar" type="BoxType" />
+
+    <!-- ScrollingFrame element -->
+    <xs:element name="ScrollingFrame" type="BoxType" />
+
+    <!-- HScrollingFrame element -->
+    <xs:element name="HScrollingFrame" type="BoxType" />
+
+    <!-- AppletFrame element -->
+    <xs:element name="AppletFrame">
+        <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:any processContents="lax" />
+            </xs:sequence>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attribute name="iconInterpolation">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="linear" />
+                        <xs:enumeration value="nearest" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="style">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="regular" />
+                        <xs:enumeration value="popup" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="headerHidden" type="xs:boolean" />
+            <xs:attribute name="footerHidden" type="xs:boolean" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- TabFrame element -->
+    <xs:element name="TabFrame">
+        <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:choice>
+                    <xs:element ref="Tab" />
+                    <xs:element ref="Separator" />
+                    <xs:any namespace="##any" processContents="lax" />
+                </xs:choice>
+            </xs:sequence>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attribute name="title" type="xs:string" />
+            <xs:attribute name="icon" type="xs:string" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Tab element -->
+    <xs:element name="Tab">
+        <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:any processContents="lax" />
+            </xs:sequence>
+            <xs:attribute name="label" type="xs:string" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Separator element -->
+    <xs:element name="Separator">
+        <xs:complexType />
+    </xs:element>
+
+    <!-- View element (generic container for custom components or XML includes) -->
+    <xs:element name="View">
+        <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:any processContents="lax" />
+            </xs:sequence>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attribute name="xml" type="xs:string" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Slider element -->
+    <xs:element name="Slider">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attributeGroup ref="boxAttributes" />
+            <xs:attribute name="progress" type="xs:string" />
+            <xs:attribute name="min" type="xs:string" />
+            <xs:attribute name="max" type="xs:string" />
+            <xs:attribute name="step" type="xs:string" />
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- ProgressSpinner element -->
+    <xs:element name="ProgressSpinner">
+        <xs:complexType>
+            <xs:attributeGroup ref="commonViewAttributes" />
+            <xs:attribute name="size">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="small" />
+                        <xs:enumeration value="medium" />
+                        <xs:enumeration value="large" />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:anyAttribute processContents="lax" />
+        </xs:complexType>
+    </xs:element>
+
+    <!-- RecyclerFrame element -->
+    <xs:element name="RecyclerFrame" type="BoxType" />
+
+    <!-- Dropdown element -->
+    <xs:element name="Dropdown" type="BoxType" />
+
+    <!-- Dialog element -->
+    <xs:element name="Dialog" type="BoxType" />
+
+    <!-- Sidebar element -->
+    <xs:element name="Sidebar" type="BoxType" />
+
+</xs:schema>

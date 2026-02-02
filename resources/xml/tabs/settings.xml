@@ -1,4 +1,8 @@
 <brls:Box
+    xmlns="http://borealisui.com/schema"
+    xmlns:brls="http://borealisui.com/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://borealisui.com/schema ../schema/borealis.xsd"
     width="auto"
     height="auto">
 
@@ -8,8 +12,8 @@
         axis="column"
         alignItems="stretch"
         scrollingBehavior="centered"
-        grow="1.0" >
-        
+        grow="1.0">
+
         <brls:Box
             width="10000"
             height="auto"
@@ -19,54 +23,54 @@
             paddingRight="@style/brls/sidebar/padding_right"
             paddingBottom="@style/brls/sidebar/padding_bottom"
             paddingLeft="@style/brls/sidebar/padding_left">
-            
+
             <brls:RadioCell
-                id="radio"/>
+                id="radio" />
                 
             <brls:BooleanCell
-                id="boolean"/>
+                id="boolean" />
                 
             <brls:SelectorCell
-                id="selector"/>
+                id="selector" />
                 
             <brls:InputCell
-                id="input"/>
+                id="input" />
                 
             <brls:InputNumericCell
-                id="inputNumeric"/>
+                id="inputNumeric" />
 
             <brls:DetailCell
                 title="IP"
-                id="ipAddress"/>
+                id="ipAddress" />
             
             <brls:DetailCell
                 title="DNS"
-                id="dnsServer"/>
+                id="dnsServer" />
 
             <brls:BooleanCell
-                id="debug"/>
+                id="debug" />
 
             <brls:BooleanCell
-                id="bottomBar"/>
+                id="bottomBar" />
 
             <brls:BooleanCell
-                id="alwaysOnTop"/>
+                id="alwaysOnTop" />
 
             <brls:BooleanCell
-                id="fps"/>
+                id="fps" />
                 
             <brls:SelectorCell
-                id="swapInterval"/>
+                id="swapInterval" />
 
             <brls:SliderCell
-                    id="slider"/>
+                id="slider" />
 
             <brls:DetailCell
-                    title="Post a notification"
-                    id="notify"/>
+                title="Post a notification"
+                id="notify" />
 
-            <brls:RadioCell/>
-            <brls:RadioCell/>
+            <brls:RadioCell />
+            <brls:RadioCell />
 
         </brls:Box>
 
