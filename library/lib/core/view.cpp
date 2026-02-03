@@ -216,7 +216,7 @@ void View::frame(FrameContext* ctx)
             nvgRestore(ctx->vg);
 
         // draw click animation
-        if (this->clickAlpha > 0.0f)
+        if (this->clickAlpha > 0.0f && !this->hideClickAnimation)
             this->drawClickAnimation(ctx->vg, ctx, frame);
 
         // draw highlight
