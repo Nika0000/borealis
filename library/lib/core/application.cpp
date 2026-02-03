@@ -884,8 +884,15 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
 
             brls::Logger::debug("Start delete top activity");
             if (free)
-                delete last;
-            brls::Logger::debug("Top activity deleted");
+            {
+                // Defer deletion to avoid crashing updateTickings loop if this callback 
+                // is triggered from an animation/Ticking.
+                Threading::sync([last]() { 
+                    delete last; 
+                    brls::Logger::debug("Top activity deleted");
+                });
+            }
+
 
             Application::unblockInputs();
             
