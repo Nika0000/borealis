@@ -26,10 +26,10 @@ namespace brls
 
 #if defined(PLATFORM_IOS)
 extern void init_device_rumble();
-extern void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor);
+extern void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned int durationMs);
 #else
 void init_device_rumble() { }
-void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor) { }
+void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned int durationMs) { }
 #endif
 
 #define SDL_GAMEPAD_BUTTON_NONE SIZE_MAX
@@ -702,7 +702,10 @@ void SDLInputManager::runloopStart()
 void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor)
 {
     if (controllers.size() <= controller)
+    {
+        device_rumble(lowFreqMotor, highFreqMotor, 30000);
         return;
+    }
 
     SDL_Gamepad* c = controllers[controller].second.second;
 
@@ -711,7 +714,7 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 
     if (!hasRumble)
     {
-        device_rumble(lowFreqMotor, highFreqMotor);
+        device_rumble(lowFreqMotor, highFreqMotor, 30000);
         return;
     }
 
@@ -721,7 +724,10 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor)
 {
     if (controllers.size() <= controller)
+    {
+        device_rumble(lowFreqMotor, highFreqMotor, 30000);
         return;
+    }
 
     SDL_Gamepad* c = controllers[controller].second.second;
 
@@ -730,7 +736,7 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
 
     if (!hasRumble)
     {
-        device_rumble(lowFreqMotor, highFreqMotor);
+        device_rumble(lowFreqMotor, highFreqMotor, 30000);
         return;
     }
 
