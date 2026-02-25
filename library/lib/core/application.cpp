@@ -750,6 +750,7 @@ void Application::frame()
     nvgEndFrame(Application::getNVGContext());
 
     Application::platform->getVideoContext()->endFrame();
+    postFrameEvent.fire();
 }
 
 void Application::exit()
@@ -1266,6 +1267,11 @@ Event<InputType>* Application::getGlobalInputTypeChangeEvent()
 VoidEvent* Application::getRunLoopEvent()
 {
     return &Application::runLoopEvent;
+}
+
+VoidEvent* Application::getPostFrameEvent()
+{
+    return &Application::postFrameEvent;
 }
 
 VoidEvent* Application::getExitEvent()
