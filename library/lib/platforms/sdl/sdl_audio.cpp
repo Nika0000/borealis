@@ -5,6 +5,7 @@
 
 #include <borealis/core/logger.hpp>
 #include <borealis/platforms/sdl/sdl_audio.hpp>
+#include <cstring>
 #include <string>
 
 #ifdef USE_LIBROMFS
@@ -56,8 +57,18 @@ SDLAudioPlayer::SDLAudioPlayer()
         return;
     }
 
-    // Bind both streams to the same output device
-    if (!SDL_BindAudioStream(audioDevice, audioStream) || !SDL_ResumeAudioStreamDevice(audioStream))
+    // Second stream for foreground (independent / overlapping) user audio
+    userAudioStream = SDL_CreateAudioStream(&spec, nullptr);
+    if (!userAudioStream)
+    {
+        Logger::error("Failed to create user audio stream: {}", SDL_GetError());
+        SDL_DestroyAudioStream(audioStream);
+        SDL_CloseAudioDevice(audioDevice);
+        return;
+    }
+
+    // Bind both streams to the same output device so SDL mixes them
+    if (!SDL_BindAudioStream(audioDevice, audioStream) || !SDL_BindAudioStream(audioDevice, userAudioStream) || !SDL_ResumeAudioStreamDevice(audioStream) || !SDL_ResumeAudioStreamDevice(userAudioStream))
     {
         Logger::error("Failed to initialize AudioPlayer: {}", SDL_GetError());
         return;
@@ -127,11 +138,15 @@ bool SDLAudioPlayer::play(Sound sound, float pitch)
             return false;
     }
 
-    const AudioData& data = sounds[sound];
-    SDL_ClearAudioStream(audioStream);
-    SDL_SetAudioStreamFrequencyRatio(audioStream, pitch);
+    return playAudioData(sounds[sound], pitch, audioStream);
+}
 
-    if (!SDL_PutAudioStreamData(audioStream, data.buf, data.len))
+bool SDLAudioPlayer::playAudioData(const AudioData& data, float pitch, SDL_AudioStream* stream)
+{
+    SDL_ClearAudioStream(stream);
+    SDL_SetAudioStreamFrequencyRatio(stream, pitch);
+
+    if (!SDL_PutAudioStreamData(stream, data.buf, data.len))
     {
         Logger::error("Unable to play sound: {}", SDL_GetError());
         return false;
@@ -140,12 +155,136 @@ bool SDLAudioPlayer::play(Sound sound, float pitch)
     return true;
 }
 
+static bool loadWAVFromFile(const std::string& path, brls::AudioData& out)
+{
+    SDL_AudioSpec wavSpec;
+    uint8_t* wavBuffer = nullptr;
+    uint32_t wavLength = 0;
+
+    if (!SDL_LoadWAV(path.c_str(), &wavSpec, &wavBuffer, &wavLength))
+    {
+        Logger::warning("Failed to load WAV from file {}: {}", path, SDL_GetError());
+        return false;
+    }
+
+    out.buf = wavBuffer;
+    out.len = wavLength;
+    return true;
+}
+
+static bool loadWAVFromMemory(const void* data, size_t size, brls::AudioData& out)
+{
+    SDL_IOStream* rw = SDL_IOFromMem(const_cast<void*>(data), static_cast<size_t>(size));
+    if (!rw)
+    {
+        Logger::warning("Failed to create IOStream for in-memory WAV: {}", SDL_GetError());
+        return false;
+    }
+
+    SDL_AudioSpec wavSpec;
+    uint8_t* wavBuffer = nullptr;
+    uint32_t wavLength = 0;
+
+    if (!SDL_LoadWAV_IO(rw, true, &wavSpec, &wavBuffer, &wavLength))
+    {
+        Logger::warning("Failed to load WAV from memory: {}", SDL_GetError());
+        return false;
+    }
+
+    out.buf = wavBuffer;
+    out.len = wavLength;
+    return true;
+}
+
+bool SDLAudioPlayer::loadAudioFromFile(const std::string& name, const std::string& filePath)
+{
+    if (!init)
+        return false;
+
+    // Release previous entry with same name, if any
+    unloadUserAudio(name);
+
+    AudioData data {};
+    if (!loadWAVFromFile(filePath, data))
+        return false;
+
+    userSounds[name] = data;
+    Logger::debug("Loaded user audio '{}' from '{}'.", name, filePath);
+    return true;
+}
+
+bool SDLAudioPlayer::loadAudioFromResource(const std::string& name, const std::string& resourcePath)
+{
+    if (!init)
+        return false;
+
+    unloadUserAudio(name);
+
+    AudioData data {};
+
+#ifdef USE_LIBROMFS
+    const auto& res = romfs::get(resourcePath);
+    if (!res.valid())
+    {
+        Logger::warning("Unable to load user audio resource '{}'", resourcePath);
+        return false;
+    }
+    if (!loadWAVFromMemory(res.data(), res.size(), data))
+        return false;
+#else
+    const std::string fullPath = std::string(BRLS_RESOURCES) + resourcePath;
+    if (!loadWAVFromFile(fullPath, data))
+        return false;
+#endif
+
+    userSounds[name] = data;
+    Logger::debug("Loaded user audio '{}' from resource '{}'.", name, resourcePath);
+    return true;
+}
+
+bool SDLAudioPlayer::play(const std::string& name, float pitch, bool foreground)
+{
+    if (!init)
+        return false;
+
+    auto it = userSounds.find(name);
+    if (it == userSounds.end())
+    {
+        Logger::warning("User audio '{}' not loaded.", name);
+        return false;
+    }
+
+    // foreground=true  -> dedicated independent stream, mixes alongside UI sounds
+    // foreground=false -> main stream, clears any current UI sound first
+    SDL_AudioStream* stream = foreground ? userAudioStream : audioStream;
+    return playAudioData(it->second, pitch, stream);
+}
+
+void SDLAudioPlayer::unloadUserAudio(const std::string& name)
+{
+    auto it = userSounds.find(name);
+    if (it == userSounds.end())
+        return;
+
+    SDL_free(it->second.buf);
+    userSounds.erase(it);
+}
+
 SDLAudioPlayer::~SDLAudioPlayer()
 {
     if (!this->init)
         return;
 
+    // Free system sounds
+    for (auto& [sound, data] : sounds)
+        SDL_free(data.buf);
+
+    // Free user sounds
+    for (auto& [name, data] : userSounds)
+        SDL_free(data.buf);
+
     SDL_CloseAudioDevice(audioDevice);
     SDL_DestroyAudioStream(audioStream);
+    SDL_DestroyAudioStream(userAudioStream);
 }
 }

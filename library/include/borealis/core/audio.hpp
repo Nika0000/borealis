@@ -15,6 +15,7 @@
 */
 
 #pragma once
+#include <string>
 
 namespace brls
 {
@@ -63,6 +64,48 @@ class AudioPlayer
      * Returns a boolean indicating if the sound has been played or not.
      */
     virtual bool play(enum Sound sound, float pitch = 1) = 0;
+
+    /**
+     * Loads a user audio WAV sound from a file path and registers it under
+     * the given name.  Calling this again with the same name replaces the
+     * previously loaded sound.
+     *
+     * Returns true on success.
+     */
+    virtual bool loadAudioFromFile(const std::string& name, const std::string& filePath) = 0;
+
+    /**
+     * Loads a user audio WAV sound from a resource path and registers it
+     * under the given name.
+     *
+     * When USE_LIBROMFS is defined the file is fetched from the embedded
+     * ROMFS archive using the given path (e.g. "audio/notify.wav").
+     * Otherwise the path is resolved relative to BRLS_RESOURCES on disk,
+     * matching the same pattern used by the font loader.
+     *
+     * Returns true on success.
+     */
+    virtual bool loadAudioFromResource(const std::string& name, const std::string& resourcePath) = 0;
+
+    /**
+     * Plays a previously loaded user audio sound by name.
+     *
+     * When `foreground` is false (default) the sound is played on the main
+     * audio stream: any currently playing UI sound on that stream is stopped
+     * first.
+     *
+     * When `foreground` is true the sound is played on a dedicated independent
+     * stream so it mixes alongside UI sounds without interrupting them.
+     *
+     * Returns true on success.
+     */
+    virtual bool play(const std::string& name, float pitch = 1, bool foreground = false) = 0;
+
+    /**
+     * Releases a previously loaded user audio sound.
+     * Does nothing if the name is unknown.
+     */
+    virtual void unloadUserAudio(const std::string& name) = 0;
 };
 
 // An AudioPlayer that does nothing
@@ -78,6 +121,23 @@ class NullAudioPlayer : public AudioPlayer
     {
         return false;
     }
+
+    bool loadAudioFromFile(const std::string&, const std::string&) override
+    {
+        return false;
+    }
+
+    bool loadAudioFromResource(const std::string& /*name*/, const std::string& /*resourcePath*/) override
+    {
+        return false;
+    }
+
+    bool play(const std::string&, float, bool) override
+    {
+        return false;
+    }
+
+    void unloadUserAudio(const std::string&) override { }
 };
 
 } // namespace brls

@@ -34,6 +34,11 @@ class SwitchAudioPlayer : public AudioPlayer
     bool load(enum Sound sound) override;
     bool play(enum Sound sound, float pitch) override;
 
+    bool loadAudioFromFile(const std::string& name, const std::string& filePath) override;
+    bool loadAudioFromResource(const std::string& name, const std::string& resourcePath) override;
+    bool play(const std::string& name, float pitch, bool foreground) override;
+    void unloadUserAudio(const std::string& name) override;
+
   private:
     bool init = false;
 
@@ -42,4 +47,4 @@ class SwitchAudioPlayer : public AudioPlayer
     PLSR_PlayerSoundId sounds[_SOUND_MAX];
 };
 
-} //namespace brls
+} // namespace brls

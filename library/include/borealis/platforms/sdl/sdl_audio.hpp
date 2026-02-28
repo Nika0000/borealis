@@ -40,13 +40,22 @@ class SDLAudioPlayer : public AudioPlayer
     bool load(enum Sound sound) override;
     bool play(enum Sound sound, float pitch) override;
 
+    bool loadAudioFromFile(const std::string& name, const std::string& filePath) override;
+    bool loadAudioFromResource(const std::string& name, const std::string& resourcePath) override;
+    bool play(const std::string& name, float pitch, bool foreground) override;
+    void unloadUserAudio(const std::string& name) override;
+
     [[nodiscard]] SDL_AudioDeviceID getDevice() const { return audioDevice; }
 
   private:
+    bool playAudioData(const AudioData& data, float pitch, SDL_AudioStream* stream);
+
     bool init = false;
     std::unordered_map<Sound, AudioData> sounds;
+    std::unordered_map<std::string, AudioData> userSounds;
 
-    SDL_AudioStream* audioStream;
+    SDL_AudioStream* audioStream; // main UI/system stream
+    SDL_AudioStream* userAudioStream; // independent user-audio stream (foreground)
     SDL_AudioDeviceID audioDevice;
 };
 
