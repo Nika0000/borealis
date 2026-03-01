@@ -284,6 +284,37 @@ enum class ControllerType
     GAMECUBE,
 };
 
+inline const char* controllerTypeName(ControllerType type)
+{
+    switch (type)
+    {
+        case ControllerType::XBOX360:
+            return "Xbox 360 Controller";
+        case ControllerType::XBOXONE:
+            return "Xbox Controller";
+        case ControllerType::PS3:
+            return "DualShock 3";
+        case ControllerType::PS4:
+            return "DualShock 4";
+        case ControllerType::PS5:
+            return "DualSense";
+        case ControllerType::NINTENDO_SWITCH_PRO:
+            return "Switch Pro Controller";
+        case ControllerType::NINTENDO_SWITCH_JOYCON_LEFT:
+            return "Joy-Con (L)";
+        case ControllerType::NINTENDO_SWITCH_JOYCON_RIGHT:
+            return "Joy-Con (R)";
+        case ControllerType::NINTENDO_SWITCH_JOYCON_PAIR:
+            return "Joy-Con Pair";
+        case ControllerType::GAMECUBE:
+            return "GameCube Controller";
+        case ControllerType::STANDARD:
+            return "Gamepad";
+        default:
+            return "Unknown Controller";
+    }
+}
+
 enum class ControllerFeatures : uint32_t
 {
     NONE           = 0,
