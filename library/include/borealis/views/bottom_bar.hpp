@@ -44,6 +44,7 @@ class BottomBar : public Box
     BRLS_BIND(Label, time, "brls/hints/time");
     BRLS_BIND(View, battery, "brls/battery");
     BRLS_BIND(View, wireless, "brls/wireless");
+    BRLS_BIND(View, gamepad, "brls/gamepad");
 };
 
 } // namespace brls

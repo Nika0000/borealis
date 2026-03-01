@@ -407,7 +407,15 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
 
             if (it == controllers.end())
             {
-                controllers.push_back({ controllers.size(), { jid, controller } });
+                size_t index = controllers.size();
+                controllers.push_back({ index, { jid, controller } });
+                std::string name = SDL_GetGamepadName(controller) ? SDL_GetGamepadName(controller) : "Unknown";
+                Application::getPlatform()->getInputManager()->getControllerConnectionEvent()->fire(
+                    ControllerConnectionEvent {
+                        .controllerIndex = (uint32_t)index,
+                        .name            = name,
+                        .state           = ControllerConnectionState::CONNECTED //
+                    });
             }
             else
             {
@@ -422,8 +430,16 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
         {
             if (it->second.first == event->gdevice.which)
             {
+                std::string name = SDL_GetGamepadName(it->second.second) ? SDL_GetGamepadName(it->second.second) : "Unknown";
+                size_t index     = it->first;
                 SDL_CloseGamepad(it->second.second);
                 controllers.erase(it);
+                Application::getPlatform()->getInputManager()->getControllerConnectionEvent()->fire(
+                    ControllerConnectionEvent {
+                        .controllerIndex = (uint32_t)index,
+                        .name            = name,
+                        .state           = ControllerConnectionState::DISCONNECTED //
+                    });
                 break;
             }
         }
@@ -597,7 +613,7 @@ void SDLInputManager::updateUnifiedControllerState(ControllerState* state)
 
 void SDLInputManager::updateControllerState(ControllerState* state, int controller)
 {
-    if (controllers.size() <= controller)
+    if (controllers.size() <= (size_t)controller)
         return;
 
     SDL_Gamepad* c = controllers[controller].second.second;

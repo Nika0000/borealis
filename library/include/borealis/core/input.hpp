@@ -262,6 +262,19 @@ enum class SensorEventType
     ACCEL
 };
 
+enum class ControllerConnectionState
+{
+    CONNECTED,
+    DISCONNECTED,
+};
+
+struct ControllerConnectionEvent
+{
+    uint32_t controllerIndex;
+    std::string name;
+    ControllerConnectionState state;
+};
+
 // Represents the state of the controller's sensor
 struct SensorEvent
 {
@@ -399,6 +412,11 @@ class InputManager
         return &keyboardKeyStateChanged;
     }
 
+    inline Event<ControllerConnectionEvent>* getControllerConnectionEvent()
+    {
+        return &controllerConnectionEvent;
+    }
+
     /**
      * Calculate current touch phase based on it's previous state
      */
@@ -416,6 +434,7 @@ class InputManager
     Event<Point> mouseScrollOffsetChanged;
     Event<KeyState> keyboardKeyStateChanged;
     Event<SensorEvent> controllerSensorStateChanged;
+    Event<ControllerConnectionEvent> controllerConnectionEvent;
 };
 
 }; // namespace brls

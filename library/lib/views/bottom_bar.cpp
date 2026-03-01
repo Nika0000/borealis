@@ -74,6 +74,11 @@ const std::string bottomBarXML = R"xml(
                     marginRight="21"
                     marginBottom="5"/>
 
+                <brls:Gamepad
+                    id="brls/gamepad"
+                    marginRight="21"
+                    marginBottom="5"/>
+
                 <brls:Label
                     id="brls/hints/time"
                     width="auto"
