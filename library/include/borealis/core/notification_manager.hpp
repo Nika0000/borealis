@@ -22,6 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <borealis/core/animation.hpp>
 #include <borealis/core/box.hpp>
 #include <borealis/views/label.hpp>
+#include <functional>
+#include <memory>
+#include <unordered_map>
 
 // TODO: check in HOS that the animation duration + notification timeout are correct
 namespace brls
@@ -46,6 +49,18 @@ class NotificationManager : public Box
     ~NotificationManager() override;
 
     void notify(const std::string& text);
+
+    /**
+     * Sets a custom factory used to create notification views.
+     * The factory receives the notification text and must return a Box* (which
+     * NotificationManager will own, animate, and eventually destroy).
+     * Set to nullptr to restore the default Notification view.
+     */
+    void setNotificationFactory(std::function<Box*(const std::string&)> factory);
+
+  private:
+    std::function<Box*(const std::string&)> notificationFactory;
+    std::unordered_map<Box*, std::unique_ptr<Animatable>> customTimers;
 };
 
 }; // namespace brls

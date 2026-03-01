@@ -94,6 +94,8 @@ class Application
     static Platform* getPlatform();
     static AudioPlayer* getAudioPlayer();
 
+    static NotificationManager* getNotificationManager();
+
     static NVGcontext* getNVGContext();
     inline static float contentWidth, contentHeight;
 

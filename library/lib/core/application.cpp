@@ -446,6 +446,11 @@ AudioPlayer* Application::getAudioPlayer()
     return Application::platform->getAudioPlayer();
 }
 
+NotificationManager* Application::getNotificationManager()
+{
+    return Application::notificationManager;
+}
+
 void Application::quit()
 {
     Application::quitRequested = true;

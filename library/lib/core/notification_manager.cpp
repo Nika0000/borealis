@@ -34,42 +34,80 @@ NotificationManager::NotificationManager()
 
 void NotificationManager::notify(const std::string& text)
 {
-    // Create the notification
     brls::Logger::debug("Showing notification \"{}\"", text);
 
-    auto* notification = new Notification(text);
-    this->addView(notification, 0);
-
-    // Timeout timer
     auto style    = Application::getStyle();
     float timeout = style.getMetric("brls/animations/notification_timeout");
     float show    = style.getMetric("brls/animations/notification_show");
     float slide   = style.getMetric("brls/notification/slide");
-    notification->timeoutTimer.reset(slide);
-    notification->timeoutTimer.addStep(0.0f, (int)show, EasingFunction::quadraticOut);
-    notification->timeoutTimer.addStep(0.0f, (int)timeout, EasingFunction::linear);
-    notification->timeoutTimer.addStep(slide, (int)show, EasingFunction::quadraticOut);
 
-    notification->timeoutTimer.setTickCallback([notification, slide]()
-        {
-            float position = notification->timeoutTimer.getValue();
-            notification->setTranslationX(position);
-            notification->setAlpha(1.0f - position / slide);
-        });
+    if (notificationFactory)
+    {
+        Box* view = notificationFactory(text);
+        this->addView(view, 0);
 
-    notification->timeoutTimer.setEndCallback([this, notification](bool finished)
-        { this->removeView(notification); });
+        auto timer         = std::make_unique<Animatable>();
+        Animatable* t      = timer.get();
+        customTimers[view] = std::move(timer);
 
-    notification->timeoutTimer.start();
+        t->reset(slide);
+        t->addStep(0.0f, (int)show, EasingFunction::quadraticOut);
+        t->addStep(0.0f, (int)timeout, EasingFunction::linear);
+        t->addStep(slide, (int)show, EasingFunction::quadraticOut);
+
+        t->setTickCallback([view, slide, t]()
+            {
+                float position = t->getValue();
+                view->setTranslationX(position);
+                view->setAlpha(1.0f - position / slide); });
+
+        t->setEndCallback([this, view](bool)
+            {
+                this->removeView(view);
+                customTimers.erase(view); });
+
+        t->start();
+    }
+    else
+    {
+        auto* notification = new Notification(text);
+        this->addView(notification, 0);
+
+        notification->timeoutTimer.reset(slide);
+        notification->timeoutTimer.addStep(0.0f, (int)show, EasingFunction::quadraticOut);
+        notification->timeoutTimer.addStep(0.0f, (int)timeout, EasingFunction::linear);
+        notification->timeoutTimer.addStep(slide, (int)show, EasingFunction::quadraticOut);
+
+        notification->timeoutTimer.setTickCallback([notification, slide]()
+            {
+                float position = notification->timeoutTimer.getValue();
+                notification->setTranslationX(position);
+                notification->setAlpha(1.0f - position / slide); });
+
+        notification->timeoutTimer.setEndCallback([this, notification](bool finished)
+            { this->removeView(notification); });
+
+        notification->timeoutTimer.start();
+    }
+}
+
+void NotificationManager::setNotificationFactory(std::function<Box*(const std::string&)> factory)
+{
+    notificationFactory = std::move(factory);
 }
 
 NotificationManager::~NotificationManager()
 {
+    for (auto& [view, timer] : customTimers)
+        timer->stop();
+    customTimers.clear();
+
     std::vector<View*> views = this->getChildren();
     for (auto& view : views)
     {
-        auto label = dynamic_cast<Notification*>(view);
-        label->timeoutTimer.stop();
+        auto* notification = dynamic_cast<Notification*>(view);
+        if (notification)
+            notification->timeoutTimer.stop();
     }
 }
 
