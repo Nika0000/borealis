@@ -346,6 +346,51 @@ static const size_t SDL_GAMEPAD_TO_KEYBOARD[SDL_GAMEPAD_BUTTON_MAX] = {
     SDL_SCANCODE_RIGHT, // SDL_CONTROLLER_BUTTON_DPAD_RIGHT
 };
 
+static const ControllerType SDL_GAMEPAD_TYPE_MAPPING[SDL_GAMEPAD_TYPE_COUNT] = {
+    ControllerType::UNKNOWN, // SDL_GAMEPAD_TYPE_UNKNOWN
+    ControllerType::STANDARD, // SDL_GAMEPAD_TYPE_STANDARD
+    ControllerType::XBOX360, // SDL_GAMEPAD_TYPE_XBOX360
+    ControllerType::XBOXONE, // SDL_GAMEPAD_TYPE_XBOXONE
+    ControllerType::PS3, // SDL_GAMEPAD_TYPE_PS3
+    ControllerType::PS4, // SDL_GAMEPAD_TYPE_PS4
+    ControllerType::PS5, // SDL_GAMEPAD_TYPE_PS5
+    ControllerType::NINTENDO_SWITCH_PRO, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO
+    ControllerType::NINTENDO_SWITCH_JOYCON_LEFT, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT
+    ControllerType::NINTENDO_SWITCH_JOYCON_RIGHT, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT
+    ControllerType::NINTENDO_SWITCH_JOYCON_PAIR, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR
+    ControllerType::GAMECUBE, // SDL_GAMEPAD_TYPE_GAMECUBE
+};
+
+static ControllerFeatures sdlGetControllerFeatures(SDL_Gamepad* gamepad)
+{
+    ControllerFeatures features = ControllerFeatures::NONE;
+    SDL_PropertiesID props      = SDL_GetGamepadProperties(gamepad);
+
+    if (SDL_GetBooleanProperty(props, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false))
+        features |= ControllerFeatures::RUMBLE;
+    if (SDL_GetBooleanProperty(props, SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN, false))
+        features |= ControllerFeatures::TRIGGER_RUMBLE;
+    if (SDL_GetBooleanProperty(props, SDL_PROP_GAMEPAD_CAP_MONO_LED_BOOLEAN, false))
+        features |= ControllerFeatures::MONO_LED;
+    if (SDL_GetBooleanProperty(props, SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false))
+        features |= ControllerFeatures::RGB_LED;
+    if (SDL_GetBooleanProperty(props, SDL_PROP_GAMEPAD_CAP_PLAYER_LED_BOOLEAN, false))
+        features |= ControllerFeatures::PLAYER_LED;
+    if (SDL_GamepadHasSensor(gamepad, SDL_SENSOR_GYRO))
+        features |= ControllerFeatures::GYRO;
+    if (SDL_GamepadHasSensor(gamepad, SDL_SENSOR_ACCEL))
+        features |= ControllerFeatures::ACCEL;
+    if (SDL_GetNumGamepadTouchpads(gamepad) > 0)
+        features |= ControllerFeatures::TOUCHPAD;
+
+    int percent                 = 0;
+    SDL_PowerState batteryState = SDL_GetGamepadPowerInfo(gamepad, &percent);
+    if (batteryState != SDL_POWERSTATE_UNKNOWN && batteryState != SDL_POWERSTATE_NO_BATTERY)
+        features |= ControllerFeatures::BATTERY;
+
+    return features;
+}
+
 static std::unordered_map<SDL_Scancode, int> keyboardKeys {};
 
 static const size_t SDL_AXIS_MAPPING[SDL_GAMEPAD_AXIS_MAX] = {
@@ -391,6 +436,13 @@ static inline bool getKeyboardKeys(SDL_Scancode code)
     }
 }
 
+static ControllerType sdlControllerTypeToBrls(SDL_GamepadType t)
+{
+    if (t >= 0 && t < SDL_GAMEPAD_TYPE_COUNT)
+        return SDL_GAMEPAD_TYPE_MAPPING[t];
+    return ControllerType::UNKNOWN;
+}
+
 static bool sdlEventWatcher(void* data, SDL_Event* event)
 {
     if (event->type == SDL_EVENT_GAMEPAD_ADDED)
@@ -409,12 +461,13 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
             {
                 size_t index = controllers.size();
                 controllers.push_back({ index, { jid, controller } });
-                std::string name = SDL_GetGamepadName(controller) ? SDL_GetGamepadName(controller) : "Unknown";
+                ControllerType brlsType = sdlControllerTypeToBrls(SDL_GetGamepadType(controller));
                 Application::getPlatform()->getInputManager()->getControllerConnectionEvent()->fire(
-                    ControllerConnectionEvent {
-                        .controllerIndex = (uint32_t)index,
-                        .name            = name,
-                        .state           = ControllerConnectionState::CONNECTED //
+                    ControllerInfo {
+                        .index    = (uint32_t)index,
+                        .type     = brlsType,
+                        .features = sdlGetControllerFeatures(controller),
+                        .state    = ControllerConnectionState::CONNECTED,
                     });
             }
             else
@@ -430,15 +483,17 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
         {
             if (it->second.first == event->gdevice.which)
             {
-                std::string name = SDL_GetGamepadName(it->second.second) ? SDL_GetGamepadName(it->second.second) : "Unknown";
-                size_t index     = it->first;
+                ControllerType brlsType     = sdlControllerTypeToBrls(SDL_GetGamepadType(it->second.second));
+                ControllerFeatures features = sdlGetControllerFeatures(it->second.second);
+                size_t index                = it->first;
                 SDL_CloseGamepad(it->second.second);
                 controllers.erase(it);
                 Application::getPlatform()->getInputManager()->getControllerConnectionEvent()->fire(
-                    ControllerConnectionEvent {
-                        .controllerIndex = (uint32_t)index,
-                        .name            = name,
-                        .state           = ControllerConnectionState::DISCONNECTED //
+                    ControllerInfo {
+                        .index    = (uint32_t)index,
+                        .type     = brlsType,
+                        .features = features,
+                        .state    = ControllerConnectionState::DISCONNECTED,
                     });
                 break;
             }
@@ -511,15 +566,15 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
     {
         int numGamepads;
         SDL_JoystickID* joysticks = SDL_GetGamepads(&numGamepads);
-        Logger::info("Detected {} game controllers.", numGamepads);
+        Logger::debug("Detected {} game controllers.", numGamepads);
 
         for (int i = 0; i < numGamepads; i++)
         {
             if (SDL_IsGamepad(joysticks[i]))
             {
-                SDL_JoystickID jid = joysticks[i];
-                Logger::info("SDL: Controller {} | {}", jid, SDL_GetGamepadNameForID(jid));
-                controllers.push_back({ controllers.size(), { jid, SDL_OpenGamepad(jid) } });
+                SDL_JoystickID jid   = joysticks[i];
+                SDL_Gamepad* gamepad = SDL_OpenGamepad(jid);
+                controllers.push_back({ controllers.size(), { jid, gamepad } });
             }
         }
     }
@@ -550,6 +605,24 @@ SDLInputManager::~SDLInputManager()
 short SDLInputManager::getControllersConnectedCount()
 {
     return controllers.size();
+}
+
+std::vector<ControllerInfo> SDLInputManager::getConnectedControllers()
+{
+    std::vector<ControllerInfo> result;
+    result.reserve(controllers.size());
+    for (const auto& c : controllers)
+    {
+        SDL_Gamepad* gamepad    = c.second.second;
+        ControllerType brlsType = sdlControllerTypeToBrls(SDL_GetGamepadType(gamepad));
+        result.push_back(ControllerInfo {
+            .index    = (uint32_t)c.first,
+            .type     = brlsType,
+            .features = sdlGetControllerFeatures(gamepad),
+            .state    = ControllerConnectionState::CONNECTED,
+        });
+    }
+    return result;
 }
 
 void SDLInputManager::updateUnifiedControllerState(ControllerState* state)

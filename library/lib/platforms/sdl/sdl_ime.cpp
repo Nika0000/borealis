@@ -81,7 +81,7 @@ static int utf8_find_next(std::string& s, int offset, int size)
     {
         return 0;
     }
-    for (int i = offset; i < s.size(); i++)
+    for (size_t i = offset; i < s.size(); i++)
     {
         char p = s.at(i);
         if ((p & 0xc0) != 0x80)
@@ -151,7 +151,7 @@ void SDLImeManager::openInputDialog(
     };
     auto updateTextAndCursor = [this, updateText, updateTextCursor, maxStringLength](std::string text)
     {
-        int prev_n = utf8_len(this->inputBuffer);
+        size_t prev_n = utf8_len(this->inputBuffer);
         if (prev_n >= maxStringLength)
         {
             return;

@@ -268,10 +268,54 @@ enum class ControllerConnectionState
     DISCONNECTED,
 };
 
-struct ControllerConnectionEvent
+enum class ControllerType
 {
-    uint32_t controllerIndex;
-    std::string name;
+    UNKNOWN = 0,
+    STANDARD,
+    XBOX360,
+    XBOXONE,
+    PS3,
+    PS4,
+    PS5,
+    NINTENDO_SWITCH_PRO,
+    NINTENDO_SWITCH_JOYCON_LEFT,
+    NINTENDO_SWITCH_JOYCON_RIGHT,
+    NINTENDO_SWITCH_JOYCON_PAIR,
+    GAMECUBE,
+};
+
+enum class ControllerFeatures : uint32_t
+{
+    NONE           = 0,
+    RUMBLE         = 1 << 0, ///< Body rumble motors
+    TRIGGER_RUMBLE = 1 << 1, ///< Individual trigger rumble (Xbox One / DualSense)
+    GYRO           = 1 << 2, ///< Gyroscope sensor
+    ACCEL          = 1 << 3, ///< Accelerometer sensor
+    TOUCHPAD       = 1 << 4, ///< Capacitive touchpad (DualShock 4 / DualSense)
+    MONO_LED       = 1 << 5, ///< Single-colour LED
+    RGB_LED        = 1 << 6, ///< Full RGB LED (DualShock 4 / DualSense)
+    PLAYER_LED     = 1 << 7, ///< Player-index LED bar (Switch Pro, Xbox)
+    BATTERY        = 1 << 8, ///< Battery level reporting
+};
+
+inline ControllerFeatures operator|(ControllerFeatures a, ControllerFeatures b)
+{
+    return static_cast<ControllerFeatures>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
+inline ControllerFeatures& operator|=(ControllerFeatures& a, ControllerFeatures b)
+{
+    return a = a | b;
+}
+inline bool hasFeature(ControllerFeatures flags, ControllerFeatures bit)
+{
+    return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(bit)) != 0;
+}
+
+struct ControllerInfo
+{
+    uint32_t index;
+    ControllerType type;
+    ControllerFeatures features;
     ControllerConnectionState state;
 };
 
@@ -350,6 +394,11 @@ class InputManager
 
     virtual short getControllersConnectedCount() = 0;
 
+    /**
+     * Returns detailed info (name, type, connection state) for all currently connected controllers.
+     */
+    virtual std::vector<ControllerInfo> getConnectedControllers() { return {}; }
+
     virtual void updateUnifiedControllerState(ControllerState* state) = 0;
     /**
      * Called once every frame to fill the given ControllerState struct with the controller state.
@@ -412,7 +461,7 @@ class InputManager
         return &keyboardKeyStateChanged;
     }
 
-    inline Event<ControllerConnectionEvent>* getControllerConnectionEvent()
+    inline Event<ControllerInfo>* getControllerConnectionEvent()
     {
         return &controllerConnectionEvent;
     }
@@ -434,7 +483,7 @@ class InputManager
     Event<Point> mouseScrollOffsetChanged;
     Event<KeyState> keyboardKeyStateChanged;
     Event<SensorEvent> controllerSensorStateChanged;
-    Event<ControllerConnectionEvent> controllerConnectionEvent;
+    Event<ControllerInfo> controllerConnectionEvent;
 };
 
 }; // namespace brls

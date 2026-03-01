@@ -26,7 +26,7 @@ GamepadWidget::GamepadWidget()
 
     InputManager* inputManager = Application::getPlatform()->getInputManager();
 
-    connectionSub = inputManager->getControllerConnectionEvent()->subscribe([this](const ControllerConnectionEvent& e)
+    connectionSub = inputManager->getControllerConnectionEvent()->subscribe([this](const ControllerInfo& e)
         {
             if (e.state == ControllerConnectionState::CONNECTED)
                 controllerCount++;

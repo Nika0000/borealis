@@ -25,7 +25,7 @@ class GamepadWidget : public Box
 
   private:
     int controllerCount = 0;
-    Event<ControllerConnectionEvent>::Subscription connectionSub;
+    Event<ControllerInfo>::Subscription connectionSub;
 
     static constexpr float ICON_SIZE    = 28.0f;
     static constexpr float ICON_SPACING = 4.0f;

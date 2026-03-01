@@ -17,6 +17,8 @@ class SDLInputManager : public InputManager
 
     short getControllersConnectedCount() override;
 
+    std::vector<ControllerInfo> getConnectedControllers() override;
+
     void updateUnifiedControllerState(ControllerState* state) override;
 
     void updateControllerState(ControllerState* state, int controller) override;
