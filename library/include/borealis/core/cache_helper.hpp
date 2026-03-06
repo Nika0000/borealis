@@ -172,6 +172,29 @@ class LRUCache
         }
     }
 
+    /**
+     * Delete all cache entries whose reference count has dropped to zero.
+     * Call this after releasing images to promptly free GPU memory.
+     */
+    void trimUnused()
+    {
+        auto vg = brls::Application::getNVGContext();
+        for (auto i = cacheList.begin(); i != cacheList.end();)
+        {
+            if (i->count <= 0)
+            {
+                nvgDeleteImage(vg, i->value);
+                cacheMap.erase(i->key);
+                valueMap.erase(i->value);
+                i = cacheList.erase(i);
+            }
+            else
+            {
+                ++i;
+            }
+        }
+    }
+
     std::list<Node<K, T>>& getCacheList() { return cacheList; }
 
     void debug()
@@ -293,6 +316,12 @@ class TextureCache : public Singleton<TextureCache>
             nvgDeleteImage(vg, i.value);
         }
     }
+
+    /**
+     * Free GPU memory for all textures whose reference count has reached zero.
+     * Safe to call at any time; in-use textures (count > 0) are left untouched.
+     */
+    void trimUnused() { cache.trimUnused(); }
 
     void debug() { cache.debug(); }
 
