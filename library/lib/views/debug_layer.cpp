@@ -44,62 +44,68 @@ DebugLayer::DebugLayer()
     Logger::getLogEvent()->subscribe([this, contentView](Logger::TimePoint now, LogLevel level, const std::string& log)
         { brls::sync([this, now, level, contentView, log]
               {
-            uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now.time_since_epoch()).count() % 1000;
+                  uint64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                    now.time_since_epoch())
+                                    .count()
+                      % 1000;
 #ifdef PS4
-            OrbisDateTime lt{};
-            if (sceRtcGetCurrentClockLocalTime)
-                sceRtcGetCurrentClockLocalTime(&lt);
-            std::string timeBase = fmt::format("{:02d}:{:02d}:{:02d}.{:03d}", lt.hour, lt.minute, lt.second, (int)ms);
+                  OrbisDateTime lt {};
+                  if (sceRtcGetCurrentClockLocalTime)
+                      sceRtcGetCurrentClockLocalTime(&lt);
+                  std::string timeBase = fmt::format("{:02d}:{:02d}:{:02d}.{:03d}", lt.hour, lt.minute, lt.second, (int)ms);
 #else
-            std::time_t t = std::chrono::system_clock::to_time_t(now);
-            std::tm* time_tm = std::localtime(&t);
-            std::string timeBase = fmt::format("{:%H:%M:%S}.{:03d}", *time_tm, (int)ms);
+                  std::time_t t        = std::chrono::system_clock::to_time_t(now);
+                  std::tm* time_tm     = std::localtime(&t);
+                  std::string timeBase = fmt::format("{:%H:%M:%S}.{:03d}", *time_tm, (int)ms);
 #endif
 
-            auto box = new Box(Axis::ROW);
-            box->setMarginTop(1);
-            box->setMarginBottom(1);
-            box->setPaddingTop(1);
-            box->setHeight(9);
-            auto timeLabel = new Label();
-            timeLabel->setFontSize(8);
-            timeLabel->setText(timeBase);
-            timeLabel->setMinWidth(60);
-            timeLabel->setTextColor(RGBA(200, 200, 200, 200));
-            auto levelLabel = new Label();
-            levelLabel->setFontSize(8);
-            levelLabel->setMinWidth(40);
-            auto label = new Label();
-            label->setText(log);
-            label->setFontSize(8);
-            label->setTextColor(RGBA(200, 200, 200, 200));
-            switch (level)
-            {
-                case LogLevel::LOG_INFO:
-                    levelLabel->setTextColor(RGBA(94, 145, 208, 255));
-                    levelLabel->setText("[INFO] ");
-                    break;
-                case LogLevel::LOG_WARNING:
-                    levelLabel->setTextColor(RGBA(158, 139, 40, 255));
-                    levelLabel->setText("[WARN] ");
-                    break;
-                case LogLevel::LOG_ERROR:
-                    levelLabel->setTextColor(RGBA(165, 77, 69, 255));
-                    levelLabel->setText("[ERROR] ");
-                    break;
-                case LogLevel::LOG_DEBUG:
-                default:
-                    levelLabel->setTextColor(RGBA(99, 138, 55, 255));
-                    levelLabel->setText("[DEBUG] ");
-            }
-            box->addView(timeLabel);
-            box->addView(levelLabel);
-            box->addView(label);
-            contentView->addView(box, 0);
+                  auto box = new Box(Axis::ROW);
+                  box->setMarginTop(1);
+                  box->setMarginBottom(1);
+                  box->setPaddingTop(1);
+                  box->setHeight(9);
+                  auto timeLabel = new Label();
+                  timeLabel->setFontSize(8);
+                  timeLabel->setText(timeBase);
+                  timeLabel->setMinWidth(60);
+                  timeLabel->setTextColor(RGBA(200, 200, 200, 200));
+                  auto levelLabel = new Label();
+                  levelLabel->setFontSize(8);
+                  levelLabel->setMinWidth(40);
+                  auto label = new Label();
+                  label->setText(log);
+                  label->setFontSize(8);
+                  label->setTextColor(RGBA(200, 200, 200, 200));
+                  switch (level)
+                  {
+                      case LogLevel::LOG_INFO:
+                          levelLabel->setTextColor(RGBA(94, 145, 208, 255));
+                          levelLabel->setText("[INFO] ");
+                          break;
+                      case LogLevel::LOG_WARNING:
+                          levelLabel->setTextColor(RGBA(158, 139, 40, 255));
+                          levelLabel->setText("[WARN] ");
+                          break;
+                      case LogLevel::LOG_ERROR:
+                          levelLabel->setTextColor(RGBA(165, 77, 69, 255));
+                          levelLabel->setText("[ERROR] ");
+                          break;
+                      case LogLevel::LOG_DEBUG:
+                      default:
+                          levelLabel->setTextColor(RGBA(99, 138, 55, 255));
+                          levelLabel->setText("[DEBUG] ");
+                  }
+                  box->addView(timeLabel);
+                  box->addView(levelLabel);
+                  box->addView(label);
+                  contentView->addView(box, 0);
 
-            if (contentView->getChildren().size() > brls::Application::contentHeight / 10 - 1)
-                contentView->removeView(contentView->getChildren()[contentView->getChildren().size() - 1]); }); });
+                  if (contentView->getChildren().size() > brls::Application::contentHeight / 10 - 1)
+                  {
+                      auto* old = contentView->getChildren()[contentView->getChildren().size() - 1];
+                      contentView->removeView(old, false); // false = don't freeView(), avoids Logger::verbose infinite loop
+                      delete old;
+                  } }); });
 }
 
 } // namespace brls
