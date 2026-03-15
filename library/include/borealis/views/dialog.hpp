@@ -22,6 +22,7 @@
 #include <borealis/views/applet_frame.hpp>
 #include <borealis/views/button.hpp>
 #include <borealis/views/rectangle.hpp>
+#include <string>
 
 namespace brls
 {
@@ -52,6 +53,7 @@ class Dialog : public Box
     void buttonClick(DialogButton* button);
 
     bool cancelable = true;
+    std::string dialogKey;
 
   protected:
     BRLS_BIND(Button, button1, "brls/dialog/button1");
@@ -87,7 +89,15 @@ class Dialog : public Box
     void setCancelable(bool cancelable);
 
     virtual void open();
-    void close(std::function<void(void)> cb = [] {});
+    void close(std::function<void(void)> cb = [] { });
+
+    /**
+     * Sets an optional deduplication key.
+     * When open() is called, if an activity with the same key is already on
+     * the stack it will be replaced by this new dialog (see Activity::setKey).
+     */
+    void setKey(const std::string& key) { dialogKey = key; }
+    const std::string& getKey() const { return dialogKey; }
 
     bool isTranslucent() override
     {

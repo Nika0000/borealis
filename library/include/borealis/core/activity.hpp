@@ -17,6 +17,7 @@
 #pragma once
 
 #include <borealis/core/view.hpp>
+#include <string>
 
 namespace brls
 {
@@ -70,7 +71,7 @@ class Activity
      * Called when the content view is created, so that
      * you can get the references to the activity views (by id).
      */
-    virtual void onContentAvailable() {};
+    virtual void onContentAvailable() { };
 
     View* getContentView();
 
@@ -159,9 +160,21 @@ class Activity
 
     void setAlpha(float alpha);
 
+    /**
+     * Sets an optional deduplication key for this activity.
+     *
+     * When pushing an activity onto the stack, if another activity with the
+     * same non-empty key is already present, that existing activity is popped
+     * and discarded before the new one is pushed — ensuring at most one
+     * instance with a given key is on the stack at any time.
+     */
+    void setKey(const std::string& key) { activityKey = key; }
+    const std::string& getKey() const { return activityKey; }
+
   private:
     View* constructorView = nullptr;
     View* contentView     = nullptr;
+    std::string activityKey;
 };
 
 } // namespace brls

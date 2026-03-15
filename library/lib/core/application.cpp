@@ -956,6 +956,26 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
 {
     Application::blockInputs();
 
+    // Deduplication by key: if an activity with the same non-empty key already
+    // exists on the stack, remove it before pushing the new one.
+    const std::string& newKey = activity->getKey();
+    if (!newKey.empty())
+    {
+        for (auto it = Application::activitiesStack.begin(); it != Application::activitiesStack.end(); ++it)
+        {
+            if ((*it)->getKey() == newKey)
+            {
+                Activity* existing = *it;
+                Application::activitiesStack.erase(it);
+                existing->willDisappear(true);
+                // Defer deletion so we don't invalidate any in-flight ticking.
+                Threading::sync([existing]()
+                    { delete existing; });
+                break;
+            }
+        }
+    }
+
     // Focus: only stash current focus if we are NOT replacing the current activity
     if (!replace && !Application::activitiesStack.empty() && Application::currentFocus != nullptr)
     {

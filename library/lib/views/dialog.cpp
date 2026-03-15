@@ -219,7 +219,10 @@ void Dialog::addButton(std::string label, VoidEvent::Callback cb)
 
 void Dialog::open()
 {
-    Application::pushActivity(new Activity(this));
+    auto* activity = new Activity(this);
+    if (!dialogKey.empty())
+        activity->setKey(dialogKey);
+    Application::pushActivity(activity);
 }
 
 void Dialog::close(std::function<void(void)> cb)
