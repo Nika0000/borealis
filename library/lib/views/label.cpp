@@ -149,6 +149,16 @@ static YGSize labelMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthM
 
         float requiredHeight = boxBounds[3] - boxBounds[1];
 
+        // Cap height when maxLines is set
+        if (label->getMaxLines() > 0)
+        {
+            float cap = label->getMaxLines() * label->getFontSize() * label->getLineHeight();
+            if (requiredHeight > cap)
+            {
+                requiredHeight = cap;
+            }
+        }
+
         // Undefined height mode, always wrap
         if (heightMode == YGMeasureModeUndefined)
         {
@@ -250,6 +260,9 @@ Label::Label()
 
     this->registerBoolXMLAttribute("singleLine", [this](bool value)
         { this->setSingleLine(value); });
+
+    this->registerFloatXMLAttribute("maxLines", [this](float value)
+        { this->setMaxLines(static_cast<int>(value)); });
 
     this->registerFloatXMLAttribute("cursor", [this](float value)
         { this->setCursor(value); });
@@ -379,6 +392,18 @@ void Label::setSingleLine(bool singleLine)
     this->invalidate();
 }
 
+void Label::setMaxLines(int maxLines)
+{
+    this->maxLines = maxLines;
+
+    this->invalidate();
+}
+
+int Label::getMaxLines() const
+{
+    return this->maxLines;
+}
+
 void Label::setFontSize(float value)
 {
     this->fontSize = value;
@@ -479,7 +504,49 @@ void Label::draw(NVGcontext* vg, float x, float y, float width, float height, St
 
         nvgRestore(vg);
     }
-    // Wrapped text
+    // Wrapped text (with maxLines)
+    else if (this->isWrapping && this->maxLines > 0)
+    {
+        nvgTextAlign(vg, horizAlign | NVG_ALIGN_TOP);
+
+        const int kBufRows = 128;
+        NVGtextRow rows[kBufRows];
+        int nrows     = nvgTextBreakLines(vg, fullText.c_str(), nullptr, width, rows, kBufRows);
+        bool clipped  = nrows > this->maxLines;
+        int drawCount = clipped ? this->maxLines : nrows;
+        float lineH   = this->fontSize * this->lineHeight;
+        float ty      = y;
+
+        for (int i = 0; i < drawCount; i++)
+        {
+            if (clipped && i == drawCount - 1)
+            {
+                // Trim the last visible line to fit width including the ellipsis
+                std::string line(rows[i].start, rows[i].end);
+                while (!line.empty())
+                {
+                    float b[4];
+                    nvgTextBounds(vg, 0, 0, (line + ELLIPSIS).c_str(), nullptr, b);
+                    if (b[2] - b[0] <= width)
+                        break;
+                    // Strip one UTF-8 character from the end
+                    size_t pos = line.size();
+                    while (pos > 0 && (static_cast<unsigned char>(line[pos - 1]) & 0xC0) == 0x80)
+                        pos--;
+                    if (pos > 0)
+                        pos--;
+                    line.resize(pos);
+                }
+                nvgText(vg, x, ty, (line + ELLIPSIS).c_str(), nullptr);
+            }
+            else
+            {
+                nvgText(vg, x, ty, rows[i].start, rows[i].end);
+            }
+            ty += lineH;
+        }
+    }
+    // Wrapped text (unlimited)
     else if (this->isWrapping)
     {
         nvgTextAlign(vg, horizAlign | NVG_ALIGN_TOP);

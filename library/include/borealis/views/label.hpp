@@ -143,6 +143,14 @@ class Label : public View
     bool isSingleLine();
 
     /**
+     * Limits the number of wrapped lines that are displayed.
+     * Excess lines are clipped and the last visible line ends with an ellipsis.
+     * 0 (default) means no limit.
+     */
+    void setMaxLines(int maxLines);
+    int getMaxLines() const;
+
+    /**
      * Internal flag set by the measure function.
      */
     void setIsWrapping(bool isWrapping);
@@ -172,6 +180,7 @@ class Label : public View
 
     bool singleLine = false;
     bool isWrapping = false;
+    int maxLines    = 0;
 
     bool autoAnimate  = true;
     bool animated     = false; // should it animate?
