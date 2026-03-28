@@ -384,6 +384,9 @@ float Box::getGap()
 
 View* Box::getDefaultFocus()
 {
+    if (this->getVisibility() != Visibility::VISIBLE)
+        return nullptr;
+
     // Focus ourself first
     if (this->isFocusable())
         return this;
