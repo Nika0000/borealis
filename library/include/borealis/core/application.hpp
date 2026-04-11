@@ -205,7 +205,7 @@ class Application
 
     static int getDefaultFont();
 
-    static void notify(const std::string& text);
+    static void notify(const std::string& text, size_t duration = 0);
 
     static void onControllerButtonPressed(enum ControllerButton button, bool repeating);
 

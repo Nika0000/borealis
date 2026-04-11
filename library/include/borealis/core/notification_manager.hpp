@@ -48,7 +48,7 @@ class NotificationManager : public Box
     NotificationManager();
     ~NotificationManager() override;
 
-    void notify(const std::string& text);
+    void notify(const std::string& text, size_t duration = 0);
 
     /**
      * Sets a custom factory used to create notification views.

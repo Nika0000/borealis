@@ -32,12 +32,12 @@ NotificationManager::NotificationManager()
     this->setAxis(Axis::COLUMN);
 }
 
-void NotificationManager::notify(const std::string& text)
+void NotificationManager::notify(const std::string& text, size_t duration)
 {
     brls::Logger::debug("Showing notification \"{}\"", text);
 
     auto style    = Application::getStyle();
-    float timeout = style.getMetric("brls/animations/notification_timeout");
+    float timeout = duration <= 0 ? style.getMetric("brls/animations/notification_timeout") : duration;
     float show    = style.getMetric("brls/animations/notification_show");
     float slide   = style.getMetric("brls/notification/slide");
 
@@ -99,7 +99,10 @@ void NotificationManager::setNotificationFactory(std::function<Box*(const std::s
 NotificationManager::~NotificationManager()
 {
     for (auto& [view, timer] : customTimers)
+    {
+        timer->setEndCallback([](bool) { });
         timer->stop();
+    }
     customTimers.clear();
 
     std::vector<View*> views = this->getChildren();
