@@ -22,6 +22,7 @@
 #include <borealis/core/util.hpp>
 #include <cmath>
 #include <fstream>
+#include <limits>
 
 namespace brls
 {
@@ -448,7 +449,81 @@ View* Box::getNextFocus(FocusDirection direction, View* currentView)
 {
     void* parentUserData = currentView->getParentUserData();
 
-    // Return nullptr immediately if focus direction mismatches the box axis (clang-format refuses to split it in multiple lines...)
+    // For wrapped layouts, use spatial navigation for the cross-axis direction
+    bool isWrapped   = YGNodeStyleGetFlexWrap(this->ygNode) != YGWrapNoWrap;
+    bool isCrossAxis = (this->axis == Axis::ROW && (direction == FocusDirection::UP || direction == FocusDirection::DOWN))
+        || (this->axis == Axis::COLUMN && (direction == FocusDirection::LEFT || direction == FocusDirection::RIGHT));
+
+    if (isCrossAxis && isWrapped && !this->children.empty())
+    {
+        Rect currentFrame    = currentView->getFrame();
+        float currentCenterX = currentFrame.getMinX() + currentFrame.getWidth() / 2.0f;
+        float currentCenterY = currentFrame.getMinY() + currentFrame.getHeight() / 2.0f;
+
+        View* bestCandidate = nullptr;
+        float bestDistance  = std::numeric_limits<float>::max();
+
+        for (View* child : this->children)
+        {
+            if (child == currentView)
+                continue;
+
+            View* focusable = child->getDefaultFocus();
+            if (!focusable)
+                continue;
+
+            Rect frame    = child->getFrame();
+            float centerX = frame.getMinX() + frame.getWidth() / 2.0f;
+            float centerY = frame.getMinY() + frame.getHeight() / 2.0f;
+
+            bool valid = false;
+            switch (direction)
+            {
+                case FocusDirection::UP:
+                    valid = centerY < currentCenterY;
+                    break;
+                case FocusDirection::DOWN:
+                    valid = centerY > currentCenterY;
+                    break;
+                case FocusDirection::LEFT:
+                    valid = centerX < currentCenterX;
+                    break;
+                case FocusDirection::RIGHT:
+                    valid = centerX > currentCenterX;
+                    break;
+            }
+
+            if (!valid)
+                continue;
+
+            // Prefer closest on the cross axis, then closest on main axis
+            float crossDist, mainDist;
+            if (direction == FocusDirection::UP || direction == FocusDirection::DOWN)
+            {
+                crossDist = std::abs(centerY - currentCenterY);
+                mainDist  = std::abs(centerX - currentCenterX);
+            }
+            else
+            {
+                crossDist = std::abs(centerX - currentCenterX);
+                mainDist  = std::abs(centerY - currentCenterY);
+            }
+
+            float distance = crossDist * 1000.0f + mainDist;
+            if (distance < bestDistance)
+            {
+                bestDistance  = distance;
+                bestCandidate = focusable;
+            }
+        }
+
+        View* result = getParentNavigationDecision(this, bestCandidate, direction);
+        if (!result && hasParent())
+            result = getParent()->getNextFocus(direction, this);
+        return result;
+    }
+
+    // Return nullptr immediately if focus direction mismatches the box axis
     if ((this->axis == Axis::ROW && direction != FocusDirection::LEFT && direction != FocusDirection::RIGHT) || (this->axis == Axis::COLUMN && direction != FocusDirection::UP && direction != FocusDirection::DOWN))
     {
         View* next = getParentNavigationDecision(this, nullptr, direction);
