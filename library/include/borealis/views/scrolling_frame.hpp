@@ -131,6 +131,7 @@ class ScrollingFrame : public Box
     ScrollingBehavior behavior = ScrollingBehavior::NATURAL;
     InputManager* input;
     bool naturalScrollingCanScroll = false;
+    bool isRubberBanding           = false; ///< true while finger is dragging past a scroll boundary
     void naturalScrollingBehaviour();
     void naturalScrollingButtonProcessing(FocusDirection focusDirection, bool* repeat);
     View* findTopMostFocusableView();

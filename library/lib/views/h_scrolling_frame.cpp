@@ -43,7 +43,14 @@ HScrollingFrame::HScrollingFrame()
     addGestureRecognizer(new ScrollGestureRecognizer([this](PanGestureStatus state, Sound* soundToPlay)
         {
         if (state.state == GestureState::FAILED || state.state == GestureState::UNSURE || state.state == GestureState::INTERRUPTED)
+        {
+            if (isRubberBanding)
+            {
+                this->contentOffsetX.setEndCallback([](bool) {});
+                isRubberBanding = false;
+            }
             return;
+        }
 
         if (state.deltaOnly)
         {
@@ -55,25 +62,82 @@ HScrollingFrame::HScrollingFrame()
         static float startX;
         if (state.state == GestureState::START)
         {
-            Application::giveFocus(this);
-            startX = this->contentOffsetX;
+            // Only steal gamepad focus to enable natural scrolling.
+            // On touch, grabbing focus plays a sound and interrupts child views.
+            if (Application::getInputType() != InputType::TOUCH)
+                Application::giveFocus(this);
+            startX          = this->contentOffsetX;
+            isRubberBanding = false;
         }
 
-        float newScroll = startX - (state.position.x - state.startPosition.x);
+        // Raw scroll position computed from total finger displacement
+        float rawScroll  = startX - (state.position.x - state.startPosition.x);
+        float contentW   = getContentWidth();
+        float rightLimit = contentW - getScrollingAreaWidth();
 
-        // Start animation
-        if (state.state != GestureState::END)
-            startScrolling(false, newScroll);
+        // Apply rubber-band resistance when dragging past the scroll boundaries
+        float newScroll = rawScroll;
+        if (rightLimit > 0.0f)
+        {
+            if (rawScroll < 0.0f)
+            {
+                newScroll       = rawScroll * 0.35f;
+                isRubberBanding = true;
+            }
+            else if (rawScroll > rightLimit)
+            {
+                newScroll       = rightLimit + (rawScroll - rightLimit) * 0.35f;
+                isRubberBanding = true;
+            }
+            else
+            {
+                newScroll       = rawScroll;
+                isRubberBanding = false;
+            }
+        }
         else
         {
+            newScroll = rawScroll;
+        }
+
+        if (state.state != GestureState::END)
+        {
+            startScrolling(false, newScroll);
+        }
+        else
+        {
+            float currentOffset = static_cast<float>(this->contentOffsetX);
+            float clampMax      = std::max(0.0f, rightLimit);
+            bool  outOfBounds   = (currentOffset < 0.0f) || (rightLimit > 0.0f && currentOffset > rightLimit);
+
+            if (outOfBounds)
+            {
+                // Snap back: clear old callback before stop() so it can't set isRubberBanding=false
+                float snapTarget = std::max(0.0f, std::min(currentOffset, clampMax));
+                this->contentOffsetX.setEndCallback([](bool) {});
+                this->contentOffsetX.stop();
+                this->contentOffsetX.reset();
+                isRubberBanding = true;
+                this->contentOffsetX.addStep(snapTarget, 300, EasingFunction::quadraticOut);
+                this->contentOffsetX.setTickCallback([this] { this->scrollAnimationTick(); });
+                this->contentOffsetX.setEndCallback([this](bool) { isRubberBanding = false; this->invalidate(); });
+                this->contentOffsetX.start();
+                this->invalidate();
+                return;
+            }
+
+            isRubberBanding = false;
+
             float time   = state.acceleration.time.x * 1000.0f;
-            float newPos = this->contentOffsetX + state.acceleration.distance.x;
+            float newPos = currentOffset + state.acceleration.distance.x;
+            newScroll    = newPos;
 
-            newScroll = newPos;
-
-            if (newScroll == this->contentOffsetX || time < 100)
+            // No meaningful fling — stop cleanly
+            if (newScroll == currentOffset || time < 50.0f)
                 return;
 
+            // Clamp fling target to valid range
+            newScroll = std::max(0.0f, std::min(newScroll, clampMax));
             animateScrolling(newScroll, time);
         } },
         PanAxis::HORIZONTAL));
@@ -82,7 +146,11 @@ HScrollingFrame::HScrollingFrame()
     addGestureRecognizer(new TapGestureRecognizer([this](brls::TapGestureStatus status, Sound* soundToPlay)
         {
         if (status.state == GestureState::UNSURE)
-            this->contentOffsetX.stop(); }));
+        {
+            // Clear end callback before stop() to prevent stale snap-back callback from firing
+            this->contentOffsetX.setEndCallback([](bool) {});
+            this->contentOffsetX.stop();
+        } }));
 
     inputTypeSubscription = Application::getGlobalInputTypeChangeEvent()->subscribe([this](InputType type)
         {
@@ -135,6 +203,23 @@ void HScrollingFrame::draw(NVGcontext* vg, float x, float y, float width, float 
     // Update scrolling - try until it works
     if (this->updateScrollingOnNextFrame && this->updateScrolling(false))
         this->updateScrollingOnNextFrame = false;
+
+    // Auto-correct: if content is out of bounds, not animating, and not rubber-banding,
+    // snap it back instantly (handles tap-interrupting a snap-back animation).
+    if (this->contentView && !isRubberBanding && !this->contentOffsetX.isRunning())
+    {
+        float contentW  = getContentWidth();
+        float rgtLimit  = contentW - getScrollingAreaWidth();
+        float offset    = static_cast<float>(this->contentOffsetX);
+        float corrected = contentW <= getWidth()
+                              ? 0.0f
+                              : std::max(0.0f, std::min(offset, std::max(0.0f, rgtLimit)));
+        if (offset != corrected)
+        {
+            this->contentOffsetX = corrected;
+            this->contentView->setTranslationX(-corrected);
+        }
+    }
 
     // Enable scissoring
     nvgSave(vg);
@@ -374,6 +459,7 @@ void HScrollingFrame::startScrolling(bool animated, float newScroll)
     }
     else
     {
+        this->contentOffsetX.setEndCallback([](bool) {});
         this->contentOffsetX.stop();
         this->contentOffsetX = newScroll;
         this->scrollAnimationTick();
@@ -383,6 +469,7 @@ void HScrollingFrame::startScrolling(bool animated, float newScroll)
 
 void HScrollingFrame::animateScrolling(float newScroll, float time)
 {
+    this->contentOffsetX.setEndCallback([](bool) {});
     this->contentOffsetX.stop();
 
     this->contentOffsetX.reset();
@@ -419,19 +506,23 @@ void HScrollingFrame::scrollAnimationTick()
 {
     if (this->contentView)
     {
-        float contentWidth = this->getContentWidth();
-        float rightLimit   = contentWidth - this->getScrollingAreaWidth();
+        float contentWidth  = this->getContentWidth();
+        float rightLimit    = contentWidth - this->getScrollingAreaWidth();
+        float offset        = static_cast<float>(this->contentOffsetX);
+        float displayOffset = offset;
 
-        if (this->contentOffsetX < 0)
-            this->contentOffsetX = 0;
-
-        if (this->contentOffsetX > rightLimit)
-            this->contentOffsetX = rightLimit;
-
+        // Visual-only clamp: never use operator= here because that calls reset()
+        // which stops any running animation (including snap-back).
         if (contentWidth <= getWidth())
-            this->contentOffsetX = 0;
+        {
+            displayOffset = 0.0f;
+        }
+        else if (!isRubberBanding)
+        {
+            displayOffset = std::max(0.0f, std::min(offset, std::max(0.0f, rightLimit)));
+        }
 
-        this->contentView->setTranslationX(-this->contentOffsetX);
+        this->contentView->setTranslationX(-displayOffset);
     }
 }
 
