@@ -125,7 +125,7 @@ bool SwitchAudioPlayer::play(enum Sound sound, float pitch)
     if (!this->init)
         return false;
 
-    if (sound == SOUND_NONE)
+    if (sound == SOUND_NONE || muted)
         return true;
 
     //    // Load the sound if needed

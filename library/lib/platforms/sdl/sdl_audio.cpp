@@ -129,7 +129,7 @@ bool SDLAudioPlayer::load(enum Sound sound)
 
 bool SDLAudioPlayer::play(Sound sound, float pitch)
 {
-    if (sound == SOUND_NONE)
+    if (sound == SOUND_NONE || muted)
         return true;
 
     if (!sounds.contains(sound))

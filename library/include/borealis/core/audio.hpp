@@ -48,6 +48,13 @@ class AudioPlayer
     virtual ~AudioPlayer() { };
 
     /**
+     * When muted, system UI sounds (enum Sound) are silently ignored.
+     * User audio is still allowed through.
+     */
+    void setMuted(bool value) { muted = value; }
+    bool isMuted() const { return muted; }
+
+    /**
      * Preemptively loads the given sound so that it's ready to be played
      * when needed.
      *
@@ -106,6 +113,9 @@ class AudioPlayer
      * Does nothing if the name is unknown.
      */
     virtual void unloadUserAudio(const std::string& name) = 0;
+
+  protected:
+    bool muted = false;
 };
 
 // An AudioPlayer that does nothing
