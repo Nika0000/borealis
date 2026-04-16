@@ -227,6 +227,13 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     PVRSRVCreateVirtualAppHint(&hint);
 #endif
 
+    SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "1");
+#if defined(__APPLE__) && !defined(IOS)
+    // covers the entire screen including the notch.
+    SDL_SetHint(SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "0");
+    SDL_SetHint(SDL_HINT_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY, "0");
+#endif
+
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
         Logger::error("sdl: failed to initialize");
@@ -294,11 +301,9 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 #ifdef __WINRT__
         windowFlags |= SDL_WINDOW_FULLSCREEN;
 #else
-        /// TODO:
         windowFlags |= SDL_WINDOW_FULLSCREEN;
 #endif
     }
-    SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "1");
 
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, windowTitle.c_str());
@@ -325,6 +330,7 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     {
         fatal("sdl: failed to create window");
     }
+
 #ifdef BOREALIS_USE_OPENGL
     // Configure window
     SDL_GLContext context = SDL_GL_CreateContext(window);
@@ -384,6 +390,17 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     D3D11_CONTEXT->onFramebufferSize(fWidth, fHeight);
 #endif
 
+#if defined(__APPLE__) && !defined(IOS)
+    // TODO:
+    // On macOS with Spaces disabled, calling SDL_SetWindowFullscreen during window
+    // construction does not properly hide the dock and menu bar, they remain
+    // visible permanently. Deferring the call via brls::sync to the first main
+    // loop iteration gives macOS enough time to fully set up the window, after
+    // which the fullscreen transition works correctly and the dock/menu bar are hidden.
+    brls::sync([this]
+        { fullScreen(VideoContext::FULLSCREEN); });
+#endif
+
     int xPos, yPos;
     SDL_GetWindowPosition(window, &xPos, &yPos);
     Application::setWindowPosition(xPos, yPos);
@@ -395,7 +412,6 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
         VideoContext::posX  = (float)xPos;
         VideoContext::posY  = (float)yPos;
     }
-
     sdlWindowSafeAreaCallback(window);
 }
 
@@ -515,16 +531,7 @@ SDL_Window* SDLVideoContext::getSDLWindow()
 
 void SDLVideoContext::fullScreen(bool fs)
 {
-#ifdef __WINRT__
-    // win32 会很模糊，而且点击事件貌似也错位了，只给 winrt 使用。
-    static unsigned int flag = SDL_WINDOW_FULLSCREEN;
-#else
-    /// TODO:
-    static unsigned int flag = SDL_WINDOW_FULLSCREEN;
-    // static unsigned int flag = SDL_WINDOW_FULLSCREEN_DESKTOP;
-#endif
-    /// TODO:
-    SDL_SetWindowFullscreen(this->window, fs ? flag : 0);
+    SDL_SetWindowFullscreen(this->window, fs);
 }
 
 } // namespace brls
