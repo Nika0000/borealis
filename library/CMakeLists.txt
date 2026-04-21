@@ -43,7 +43,7 @@ if (USE_BOOST_FILESYSTEM)
         list(APPEND BRLS_PLATFORM_OPTION -DUSE_BOOST_FILESYSTEM)
     endif()
 elseif ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1) OR
-    (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT WIN32) AND NOT PLATFORM_ANDROID AND NOT PLATFORM_PS4)
+    (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT WIN32) AND NOT PLATFORM_ANDROID AND NOT PLATFORM_PS4 AND NOT PLATFORM_WASM AND NOT EMSCRIPTEN)
     list(APPEND BRLS_PLATFORM_LIBS stdc++fs)
 endif ()
 
@@ -66,7 +66,7 @@ else()
 endif()
 
 # dbus
-if (UNIX AND NOT APPLE AND NOT ANDROID)
+if (UNIX AND NOT APPLE AND NOT ANDROID AND NOT PLATFORM_WASM)
     find_package(DBus)
     list(APPEND BOREALIS_INCLUDE ${DBUS_INCLUDE_DIRS})
     list(APPEND BRLS_PLATFORM_LIBS ${DBUS_LIBRARIES})
@@ -185,6 +185,18 @@ elseif(PLATFORM_IOS OR PLATFORM_TVOS)
         list(APPEND BRLS_PLATFORM_OPTION -D__SDL3__ -DTVOS -DUSE_GLES3)
         target_include_directories(SDL3-static PRIVATE ${BOREALIS_PATH}/lib/extern/angle/tvos/MetalANGLE.framework/Headers)
     endif()
+elseif(PLATFORM_WASM)
+    # Build SDL3 from source for Emscripten
+    set(BUILD_SHARED_LIBS OFF)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON CACHE BOOL "" FORCE)
+    add_subdirectory(${BOREALIS_PATH}/lib/extern/SDL EXCLUDE_FROM_ALL)
+    list(APPEND BOREALIS_SOURCE
+            ${BOREALIS_PATH}/lib/platforms/sdl
+            ${BOREALIS_PATH}/lib/platforms/desktop)
+    list(APPEND BRLS_PLATFORM_LIBS SDL3::SDL3-static)
+    list(APPEND BRLS_PLATFORM_OPTION -D__SDL3__ -DUSE_GLES3 -D__EMSCRIPTEN__)
+    set(BRLS_PLATFORM_RESOURCES_PATH "\"/resources/\"")
 elseif(PLATFORM_SWITCH)
     list(APPEND BOREALIS_SOURCE
             ${BOREALIS_PATH}/lib/extern/switch-libpulsar/src/archive
@@ -235,7 +247,7 @@ list(APPEND BOREALIS_SOURCE
         ${BOREALIS_PATH}/lib/extern/libretro-common/encodings
         ${BOREALIS_PATH}/lib/extern/libretro-common/features
         )
-if (PLATFORM_PSV OR PLATFORM_PS4)
+if (PLATFORM_PSV OR PLATFORM_PS4 OR PLATFORM_WASM)
         list(REMOVE_ITEM BOREALIS_SOURCE ${BOREALIS_PATH}/lib/extern/glad)
 endif ()
 

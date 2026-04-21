@@ -35,6 +35,9 @@ extern "C"
 #elif defined(PS4)
 #include <orbis/Pigletv2VSH.h>
 #define NANOVG_GLES2_IMPLEMENTATION
+#elif defined(__EMSCRIPTEN__)
+#include <GLES3/gl3.h>
+#define NANOVG_GLES3_IMPLEMENTATION
 #else
 #include <glad/glad.h>
 #ifdef USE_GLES2
@@ -338,7 +341,7 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 #endif
     SDL_AddEventWatch(sdlWindowEventWatcher, window);
 #ifdef BOREALIS_USE_OPENGL
-#if !defined(__PSV__) && !defined(PS4)
+#if !defined(__PSV__) && !defined(PS4) && !defined(__EMSCRIPTEN__)
     // Load OpenGL routines using glad
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #endif

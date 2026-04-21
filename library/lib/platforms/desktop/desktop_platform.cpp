@@ -24,6 +24,11 @@
 #include <memory>
 #include <sstream>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
 #ifdef __SDL3__
 #include <SDL3/SDL_misc.h>
 #endif
@@ -659,6 +664,21 @@ void DesktopPlatform::disableScreenDimming(bool disable, const std::string& reas
 bool DesktopPlatform::runLoop(const std::function<bool()>& runLoopImpl) {
 #if __APPLE__
     return darwin_runloop(runLoopImpl);
+#elif defined(__EMSCRIPTEN__)
+    // On Emscripten we cannot busy-loop: the browser must get control.
+    // Install the iteration as the browser's animation-frame callback and
+    // unwind the stack by throwing a JS exception (simulate_infinite_loop=1).
+    static std::function<bool()> s_loop;
+    static bool s_started = false;
+    s_loop = runLoopImpl;
+    if (!s_started) {
+        s_started = true;
+        emscripten_set_main_loop([]() {
+            if (!s_loop || !s_loop())
+                emscripten_cancel_main_loop();
+        }, 0, 1);
+    }
+    return false;
 #else
     return runLoopImpl();
 #endif
@@ -980,8 +1000,13 @@ std::string DesktopPlatform::getLocale()
 
 std::string DesktopPlatform::getHomeDirectory(std::string appName) 
 {
-    std::string home(getenv("HOME"));
-    return home + "/" + appName;
+    const char* home = getenv("HOME");
+#ifdef __EMSCRIPTEN__
+    if (!home) home = "/home/web_user";
+#else
+    if (!home) home = "";
+#endif
+    return std::string(home) + "/" + appName;
 }
 
 DesktopPlatform::~DesktopPlatform()

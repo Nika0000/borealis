@@ -182,6 +182,41 @@ open -a Simulator
 xcrun simctl install booted build-ios/Debug-iphonesimulator/borealis_demo.app
 ```
 
+## Building the demo for WebAssembly (browser, WebGL2)
+
+Borealis can be compiled to WebAssembly using [Emscripten](https://emscripten.org/).
+Rendering goes through nanovg's GLES3 backend, which Emscripten maps onto WebGL2
+
+1. Install and activate the Emscripten SDK:
+
+```bash
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk && ./emsdk install latest && ./emsdk activate latest
+source ./emsdk_env.sh
+```
+
+2. Configure and build with `emcmake`:
+
+```bash
+emcmake cmake -B build_wasm -DPLATFORM_WASM=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build_wasm -j
+```
+
+3. Serve the resulting files (browsers require HTTP, not `file://`):
+
+```bash
+cd build_wasm
+python3 -m http.server 8080
+# open http://localhost:8080/borealis_demo.html
+```
+
+The build produces `borealis_demo.html`, `.js`, `.wasm`, and a `.data` file containing
+the preloaded `resources/` directory.
+
+Notes:
+- Gamepad, keyboard and mouse input are delivered via SDL3's Emscripten backend.
+- Network/battery/wifi platform queries return stub values on the web.
+
 ## Including in your project
 
 1. Your project must be built as C++17 (`-std=c++1z`). You also need to remove `-fno-rtti` and `-fno-exceptions` if you have them

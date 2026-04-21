@@ -171,6 +171,23 @@ elseif (PLATFORM_TVOS)
             "${CMAKE_CURRENT_SOURCE_DIR}/demo/ios/iOSBundleInfo.plist.in"
             "borealis"
             "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_ALTER}")
+elseif (PLATFORM_WASM)
+    # Produce an HTML shell + .js + .wasm (+ .data with preloaded resources)
+    set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
+    target_link_options(${PROJECT_NAME} PRIVATE
+        "SHELL:-s USE_WEBGL2=1"
+        "SHELL:-s FULL_ES3=1"
+        "SHELL:-s MIN_WEBGL_VERSION=2"
+        "SHELL:-s MAX_WEBGL_VERSION=2"
+        "SHELL:-s ALLOW_MEMORY_GROWTH=1"
+        "SHELL:-s INITIAL_MEMORY=67108864"
+        "SHELL:-s STACK_SIZE=4MB"
+        "SHELL:-s EXIT_RUNTIME=0"
+        "SHELL:-s ENVIRONMENT=web"
+        "SHELL:-s DISABLE_EXCEPTION_CATCHING=0"
+        "SHELL:-s ASYNCIFY=0"
+        "SHELL:--preload-file ${PROJECT_RESOURCES}@/resources"
+    )
 endif ()
 
 target_include_directories(${PROJECT_NAME} PRIVATE demo ${APP_PLATFORM_INCLUDE})
