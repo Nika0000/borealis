@@ -535,6 +535,7 @@ SDL_Window* SDLVideoContext::getSDLWindow()
 void SDLVideoContext::fullScreen(bool fs)
 {
     SDL_SetWindowFullscreen(this->window, fs);
+    VideoContext::FULLSCREEN = fs;
 }
 
 } // namespace brls
