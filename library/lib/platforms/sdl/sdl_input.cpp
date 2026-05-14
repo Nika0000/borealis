@@ -561,6 +561,7 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
 
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
+    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "2");
 
     if (SDL_HasGamepad())
     {
@@ -771,8 +772,7 @@ void SDLInputManager::setPointerLock(bool lock)
     pointerLocked = lock;
     lock ? SDL_HideCursor() : SDL_ShowCursor();
 
-    SDL_SetWindowRelativeMouseMode(window, lock ? true : false);
-    //    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, lock ? "1" : "0");
+    SDL_SetWindowRelativeMouseMode(window, lock);
 }
 
 void SDLInputManager::setCursorType(CursorType type)
