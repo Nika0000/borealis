@@ -4,9 +4,7 @@
 #define NANOVG_D3D11_IMPLEMENTATION
 #include <nanovg_d3d11.h>
 #include <versionhelpers.h>
-#ifdef __ALLOW_TEARING__
 #include <dxgi1_6.h>
-#endif
 #ifdef __GLFW__
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
@@ -25,6 +23,16 @@ namespace brls
 
 static const int SwapChainBufferCount    = 2;
 static const DXGI_SAMPLE_DESC sampleDesc = { 1, 0 };
+
+static DXGI_FORMAT getSwapChainFormatForHDR(bool enabled)
+{
+    return enabled ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
+}
+
+static DXGI_COLOR_SPACE_TYPE getColorSpaceForHDR(bool enabled)
+{
+    return enabled ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+}
 
 #ifdef __GLFW__
 D3D11Context::D3D11Context(GLFWwindow* window, int width, int height)
@@ -133,11 +141,11 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
         ZeroMemory(&swapDesc, sizeof(swapDesc));
         swapDesc.SampleDesc.Count   = sampleDesc.Count;
         swapDesc.SampleDesc.Quality = sampleDesc.Quality;
-        swapDesc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+        swapDesc.Format             = this->swapChainFormat;
         swapDesc.Stereo             = FALSE;
         swapDesc.BufferUsage        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapDesc.BufferCount        = SwapChainBufferCount;
-        swapDesc.Flags              = 0;
+        swapDesc.Flags              = this->swapChainFlags;
         swapDesc.Scaling            = DXGI_SCALING_STRETCH;
         if (IsWindows10OrGreater())
         {
@@ -158,7 +166,8 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
             }
             if (allowTearing && swapDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD)
             {
-                swapDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+                this->swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+                swapDesc.Flags = this->swapChainFlags;
             }
         }
 #endif
@@ -198,6 +207,10 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
                 &this->swapChain);
         }
     }
+    if (SUCCEEDED(hr))
+    {
+        this->applySwapChainColorSpace();
+    }
     D3D_API_RELEASE(dxgiDevice);
     D3D_API_RELEASE(dxgiAdapter);
     D3D_API_RELEASE(dxgiFactory);
@@ -230,6 +243,84 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
 #endif
 
     return true;
+}
+
+bool D3D11Context::applySwapChainColorSpace()
+{
+    this->colorSpace = getColorSpaceForHDR(this->hdrEnabled);
+
+    IDXGISwapChain3* swapChain3 = nullptr;
+    HRESULT hr                  = this->swapChain->QueryInterface(IID_PPV_ARGS(&swapChain3));
+    if (FAILED(hr))
+    {
+        if (this->hdrEnabled)
+        {
+            Logger::error("D3D11: HDR requires IDXGISwapChain3 support: {:#010x}", hr);
+            return false;
+        }
+        return true;
+    }
+
+    UINT colorSpaceSupport = 0;
+    hr = swapChain3->CheckColorSpaceSupport(this->colorSpace, &colorSpaceSupport);
+    if (FAILED(hr) || !(colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
+    {
+        Logger::error("D3D11: Swapchain color space {} is not supported: {:#010x}", static_cast<int>(this->colorSpace), hr);
+        D3D_API_RELEASE(swapChain3);
+        return false;
+    }
+
+    hr = swapChain3->SetColorSpace1(this->colorSpace);
+    D3D_API_RELEASE(swapChain3);
+    if (FAILED(hr))
+    {
+        Logger::error("D3D11: Failed to set swapchain color space {}: {:#010x}", static_cast<int>(this->colorSpace), hr);
+        return false;
+    }
+
+    return true;
+}
+
+bool D3D11Context::setHDREnabled(bool enabled)
+{
+    if (this->hdrEnabled == enabled)
+    {
+        return true;
+    }
+
+    const bool previousHdrEnabled     = this->hdrEnabled;
+    const DXGI_FORMAT previousFormat  = this->swapChainFormat;
+    const auto previousColorSpace     = this->colorSpace;
+
+    this->hdrEnabled      = enabled;
+    this->swapChainFormat = getSwapChainFormatForHDR(enabled);
+
+    if (this->framebufferWidth <= 0 || this->framebufferHeight <= 0)
+    {
+        if (this->applySwapChainColorSpace())
+        {
+            Logger::info("D3D11: HDR output {}", enabled ? "enabled" : "disabled");
+            return true;
+        }
+    }
+    else if (this->onFramebufferSize(this->framebufferWidth, this->framebufferHeight))
+    {
+        Logger::info("D3D11: HDR output {}", enabled ? "enabled" : "disabled");
+        return true;
+    }
+
+    this->hdrEnabled      = previousHdrEnabled;
+    this->swapChainFormat = previousFormat;
+    this->colorSpace      = previousColorSpace;
+    if (this->framebufferWidth > 0 && this->framebufferHeight > 0)
+    {
+        this->onFramebufferSize(this->framebufferWidth, this->framebufferHeight);
+    }
+    else
+    {
+        this->applySwapChainColorSpace();
+    }
+    return false;
 }
 
 void D3D11Context::unInitDX()
@@ -285,7 +376,7 @@ bool D3D11Context::onFramebufferSize(int width, int height, bool init)
 
     if (!init)
     {
-        hr = this->swapChain->ResizeBuffers(SwapChainBufferCount, width, height, DXGI_FORMAT_UNKNOWN, 0);
+        hr = this->swapChain->ResizeBuffers(SwapChainBufferCount, width, height, this->swapChainFormat, this->swapChainFlags);
         if (FAILED(hr))
         {
             return false;
@@ -345,6 +436,14 @@ bool D3D11Context::onFramebufferSize(int width, int height, bool init)
     viewport.TopLeftX = 0.0f;
     viewport.TopLeftY = 0.0f;
     this->deviceContext->RSSetViewports(1, &viewport);
+
+    if (!this->applySwapChainColorSpace())
+    {
+        return false;
+    }
+
+    this->framebufferWidth  = width;
+    this->framebufferHeight = height;
 
     return true;
 }

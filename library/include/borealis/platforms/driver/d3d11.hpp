@@ -17,6 +17,7 @@
 #pragma once
 #include <d3d11.h>
 #include <d3d11_1.h>
+#include <dxgi1_6.h>
 #include <nanovg.h>
 
 #ifdef __GLFW__
@@ -45,6 +46,8 @@ class D3D11Context
     void endFrame();
     void setSwapInterval(int interval);
     void setAllowTearing(bool tearing);
+    bool setHDREnabled(bool enabled);
+    bool isHDREnabled() const { return this->hdrEnabled; }
 
     bool onFramebufferSize(int width, int height, bool init = false);
 
@@ -61,12 +64,20 @@ class D3D11Context
 
     int swapInterval  = 1;
     bool allowTearing = FALSE;
+    bool hdrEnabled   = false;
+
+    int framebufferWidth               = 0;
+    int framebufferHeight              = 0;
+    UINT swapChainFlags                = 0;
+    DXGI_FORMAT swapChainFormat        = DXGI_FORMAT_R8G8B8A8_UNORM;
+    DXGI_COLOR_SPACE_TYPE colorSpace   = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
     UINT(WINAPI* GetDpiForWindow)(HWND);
 
     HWND hWnd = nullptr;
 
     bool initDX(HWND window, IUnknown* coreWindow, int width, int height);
+    bool applySwapChainColorSpace();
     void unInitDX();
 };
 
