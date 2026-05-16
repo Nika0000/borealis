@@ -44,6 +44,7 @@ const std::string buttonXML = R"xml(
         id="brls/button/label"
         width="auto"
         height="auto"
+        singleLine="true"
         fontSize="@style/brls/button/text_size"
         horizontalAlign="center" />
 
