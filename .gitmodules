@@ -13,3 +13,6 @@
 [submodule "library/lib/extern/libromfs"]
 	path = library/lib/extern/libromfs
 	url = https://github.com/Nika0000/libromfs.git
+[submodule "library/lib/extern/nanovg"]
+	path = library/lib/extern/nanovg
+	url = https://github.com/Nika0000/nanovg.git
