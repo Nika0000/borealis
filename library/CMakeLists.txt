@@ -114,6 +114,9 @@ if (PLATFORM_DESKTOP)
         list(APPEND BRLS_PLATFORM_LIBS "-framework CoreWLAN" "-framework SystemConfiguration" "-framework Cocoa")
         list(APPEND BRLS_PLATFORM_LIBS "-framework IOKit" "-framework CoreFoundation" "-framework CoreGraphics")
         list(APPEND BRLS_PLATFORM_LIBS "-framework AppKit" "-framework Foundation" "-framework CoreServices" "-lobjc")
+        if (BOREALIS_USE_METAL)
+            list(APPEND BRLS_PLATFORM_LIBS "-framework Metal" "-framework QuartzCore")
+        endif()
         list(APPEND BOREALIS_SRC ${BOREALIS_PATH}/lib/platforms/desktop/desktop_darwin.mm)
     endif ()
     list(APPEND BOREALIS_SOURCE ${BOREALIS_PATH}/lib/platforms/desktop)
@@ -147,7 +150,7 @@ elseif(PLATFORM_PS4)
     list(APPEND BOREALIS_SOURCE
             ${BOREALIS_PATH}/lib/platforms/sdl
             ${BOREALIS_PATH}/lib/platforms/desktop
-            ${BOREALIS_PATH}/lib/extern/nanovg/ps4)
+            ${BOREALIS_PATH}/lib/extern/nanovg/src/ps4)
     file(GLOB_RECURSE PS4_PLATFORM_SRC "${BOREALIS_PATH}/lib/platforms/ps4/*.cpp")
     list(APPEND BOREALIS_SRC ${PS4_PLATFORM_SRC})
     list(APPEND BOREALIS_INCLUDE /opt/OpenOrbis-PS4-Toolchain/include)
@@ -234,7 +237,8 @@ endif ()
 list(APPEND BOREALIS_INCLUDE
         ${BOREALIS_PATH}/include
         ${BOREALIS_PATH}/include/borealis/extern
-        ${BOREALIS_PATH}/include/borealis/extern/nanovg
+        ${BOREALIS_PATH}/lib/extern/nanovg/include
+        ${BOREALIS_PATH}/lib/extern/nanovg/include/nanovg
         )
 list(APPEND BOREALIS_SOURCE
         ${BOREALIS_PATH}/lib/core
@@ -252,19 +256,23 @@ if (PLATFORM_PSV OR PLATFORM_PS4 OR PLATFORM_WASM)
 endif ()
 
 # nanovg
-list(APPEND BOREALIS_SRC ${BOREALIS_PATH}/lib/extern/nanovg/nanovg.c)
+list(APPEND BOREALIS_SRC ${BOREALIS_PATH}/lib/extern/nanovg/src/nanovg.c)
 if(BRLS_FONTSTASH_STREAM)
     set_source_files_properties(
-        ${BOREALIS_PATH}/lib/extern/nanovg/nanovg.c
+        ${BOREALIS_PATH}/lib/extern/nanovg/src/nanovg.c
         PROPERTIES
         COMPILE_DEFINITIONS "FONTSTASH_STREAM_IMPLEMENTATION"
     )
     message(STATUS "borealis fontstash use stream")
 endif()
 if (PLATFORM_SWITCH AND BOREALIS_USE_DEKO3D)
-    file(GLOB_RECURSE NANOVG_PLATFORM_SRC ${BOREALIS_PATH}/lib/extern/nanovg/*.cpp)
+    file(GLOB_RECURSE NANOVG_PLATFORM_SRC ${BOREALIS_PATH}/lib/extern/nanovg/src/deko3d/*.cpp)
     list(APPEND BOREALIS_SRC ${NANOVG_PLATFORM_SRC})
 endif ()
+if (BOREALIS_USE_METAL)
+    enable_language(OBJC)
+    list(APPEND BOREALIS_SRC ${BOREALIS_PATH}/lib/extern/nanovg/src/metal/nanovg_mtl.m)
+endif()
 message(STATUS "BOREALIS_SOURCE: ${BOREALIS_SOURCE}")
 
 foreach (lib ${BOREALIS_SOURCE})
