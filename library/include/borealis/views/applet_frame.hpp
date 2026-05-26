@@ -78,6 +78,7 @@ class AppletFrame : public Box
     static View* create();
 
     inline static bool HIDE_BOTTOM_BAR = false;
+    inline static std::function<void()> exitCallback = nullptr;
 
   private:
     BRLS_BIND(Box, header, "brls/applet_frame/header");
