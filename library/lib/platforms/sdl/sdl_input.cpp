@@ -753,7 +753,7 @@ void SDLInputManager::updateMouseStates(RawMouseState* state)
     state->middleButton = getMouseButtonState(SDL_BUTTON_MIDDLE);
     state->rightButton  = getMouseButtonState(SDL_BUTTON_RIGHT);
 
-#ifdef BOREALIS_USE_D3D11
+#if defined(BOREALIS_USE_D3D11) || defined(BOREALIS_USE_METAL)
     // d3d11 scaleFactor 不计算在点击事件里
     state->position.x = x / Application::windowScale;
     state->position.y = y / Application::windowScale;
