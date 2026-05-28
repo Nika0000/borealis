@@ -2,9 +2,9 @@
 #include <borealis/platforms/driver/d3d11.hpp>
 
 #define NANOVG_D3D11_IMPLEMENTATION
+#include <dxgi1_6.h>
 #include <nanovg_d3d11.h>
 #include <versionhelpers.h>
-#include <dxgi1_6.h>
 #ifdef __GLFW__
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
@@ -211,6 +211,13 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
     {
         this->applySwapChainColorSpace();
     }
+
+    // Disable Alt+Enter fullscreen toggle, PrintScreen and window message snooping.
+    if (dxgiFactory && hWnd)
+    {
+        dxgiFactory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_PRINT_SCREEN);
+    }
+
     D3D_API_RELEASE(dxgiDevice);
     D3D_API_RELEASE(dxgiAdapter);
     D3D_API_RELEASE(dxgiFactory);
@@ -262,7 +269,7 @@ bool D3D11Context::applySwapChainColorSpace()
     }
 
     UINT colorSpaceSupport = 0;
-    hr = swapChain3->CheckColorSpaceSupport(this->colorSpace, &colorSpaceSupport);
+    hr                     = swapChain3->CheckColorSpaceSupport(this->colorSpace, &colorSpaceSupport);
     if (FAILED(hr) || !(colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
     {
         Logger::error("D3D11: Swapchain color space {} is not supported: {:#010x}", static_cast<int>(this->colorSpace), hr);
@@ -288,9 +295,9 @@ bool D3D11Context::setHDREnabled(bool enabled)
         return true;
     }
 
-    const bool previousHdrEnabled     = this->hdrEnabled;
-    const DXGI_FORMAT previousFormat  = this->swapChainFormat;
-    const auto previousColorSpace     = this->colorSpace;
+    const bool previousHdrEnabled    = this->hdrEnabled;
+    const DXGI_FORMAT previousFormat = this->swapChainFormat;
+    const auto previousColorSpace    = this->colorSpace;
 
     this->hdrEnabled      = enabled;
     this->swapChainFormat = getSwapChainFormatForHDR(enabled);
