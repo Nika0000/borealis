@@ -86,8 +86,7 @@ static void sdlWindowFramebufferSizeCallback(SDL_Window* window, int width, int 
     scaleFactor = fWidth * 1.0 / width;
 #if defined(ANDROID)
     // On Android, doing this is to ensure that glViewport is called from the main thread
-    brls::sync([fWidth, fHeight]()
-        { glViewport(0, 0, fWidth, fHeight); });
+    brls::sync([fWidth, fHeight]() { glViewport(0, 0, fWidth, fHeight); });
 #else
     glViewport(0, 0, fWidth, fHeight);
 #endif
@@ -118,8 +117,8 @@ static void sdlWindowPositionCallback(SDL_Window* window, int windowXPos, int wi
 
     if (!VideoContext::FULLSCREEN)
     {
-        VideoContext::posX = (float)windowXPos;
-        VideoContext::posY = (float)windowYPos;
+        VideoContext::posX = (float) windowXPos;
+        VideoContext::posY = (float) windowYPos;
     }
 }
 
@@ -131,9 +130,9 @@ static void sdlWindowSafeAreaCallback(SDL_Window* window)
     int width, height;
     SDL_GetWindowSize(window, &width, &height);
 
-    float wScale   = (float)width / Application::contentWidth;
+    float wScale   = (float) width / Application::contentWidth;
     float contentW = Application::contentWidth;
-    float contentH = (unsigned)roundf((float)(height / wScale));
+    float contentH = (unsigned) roundf((float) (height / wScale));
 
     float mp = brls::getStyle()["brls/safe_area/multiplier"];
 
@@ -154,7 +153,8 @@ static void sdlWindowSafeAreaCallback(SDL_Window* window)
             .bottom = roundf(bottom),
             .left   = roundf(left),
             .right  = roundf(right),
-        });
+        }
+    );
 }
 
 static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
@@ -165,23 +165,19 @@ static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
         switch (event->type)
         {
             case SDL_EVENT_WINDOW_RESIZED:
-                if (win == (SDL_Window*)data)
+                if (win == (SDL_Window*) data)
                 {
-                    sdlWindowFramebufferSizeCallback(win,
-                        event->window.data1,
-                        event->window.data2);
+                    sdlWindowFramebufferSizeCallback(win, event->window.data1, event->window.data2);
                 }
                 break;
             case SDL_EVENT_WINDOW_MOVED:
-                if (win == (SDL_Window*)data)
+                if (win == (SDL_Window*) data)
                 {
-                    sdlWindowPositionCallback(win,
-                        event->window.data1,
-                        event->window.data2);
+                    sdlWindowPositionCallback(win, event->window.data1, event->window.data2);
                 }
                 break;
             case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
-                if (win == (SDL_Window*)data)
+                if (win == (SDL_Window*) data)
                 {
                     sdlWindowSafeAreaCallback(win);
                 }
@@ -205,7 +201,7 @@ static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
     return true;
 }
 
-SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos)
+SDLVideoContext::SDLVideoContext(const std::string& title, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos)
 {
 #ifdef __PSV__
 #define MAX_PATH 256
@@ -323,65 +319,65 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     }
 
     SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, windowTitle.c_str());
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, windowWidth);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, windowHeight);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, windowFlags);
 
-    if (isnan(windowXPos) || isnan(windowYPos))
+    if (std::isnan(windowXPos) || std::isnan(windowYPos))
     {
         SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_UNDEFINED);
         SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_UNDEFINED);
-        this->window = SDL_CreateWindowWithProperties(props);
+        m_window = SDL_CreateWindowWithProperties(props);
     }
     else
     {
         SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, windowXPos > 0 ? windowXPos : SDL_WINDOWPOS_UNDEFINED);
         SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, windowYPos > 0 ? windowYPos : SDL_WINDOWPOS_UNDEFINED);
-        this->window = SDL_CreateWindowWithProperties(props);
+        m_window = SDL_CreateWindowWithProperties(props);
     }
 
     SDL_DestroyProperties(props);
 
-    if (!this->window)
+    if (!m_window)
     {
         fatal("sdl: failed to create window");
     }
 
 #ifdef BOREALIS_USE_OPENGL
     // Configure window
-    SDL_GLContext context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, context);
+    SDL_GLContext context = SDL_GL_CreateContext(m_window);
+    SDL_GL_MakeCurrent(m_window, context);
 #elif defined(BOREALIS_USE_METAL)
-    metalView = SDL_Metal_CreateView(window);
+    metalView = SDL_Metal_CreateView(m_window);
     if (!metalView)
     {
         fatal("sdl: failed to create metal view");
     }
 #endif
-    SDL_AddEventWatch(sdlWindowEventWatcher, window);
+    SDL_AddEventWatch(sdlWindowEventWatcher, m_window);
 #ifdef BOREALIS_USE_OPENGL
 #if !defined(__PSV__) && !defined(PS4) && !defined(__EMSCRIPTEN__)
     // Load OpenGL routines using glad
-    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+    gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress);
 #endif
 
-    Logger::info("sdl: GL Vendor: {}", (const char*)glGetString(GL_VENDOR));
-    Logger::info("sdl: GL Renderer: {}", (const char*)glGetString(GL_RENDERER));
-    Logger::info("sdl: GL Version: {}", (const char*)glGetString(GL_VERSION));
+    Logger::info("sdl: GL Vendor: {}", (const char*) glGetString(GL_VENDOR));
+    Logger::info("sdl: GL Renderer: {}", (const char*) glGetString(GL_RENDERER));
+    Logger::info("sdl: GL Version: {}", (const char*) glGetString(GL_VERSION));
 
     // Initialize nanovg
 #ifdef __PSV__
-    this->nvgContext = nvgCreateGLES2(0);
+    m_nvgContext = nvgCreateGLES2(0);
 #elif PS4
     // Same as GLES2, but with pre-compiled shaders, so the flags must be "NVG_STENCIL_STROKES | NVG_ANTIALIAS" now
-    this->nvgContext = nvgCreateGLES2(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
+    m_nvgContext = nvgCreateGLES2(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
 #elif USE_GLES2
-    this->nvgContext = nvgCreateGLES2(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
+    m_nvgContext = nvgCreateGLES2(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
 #elif USE_GLES3
-    this->nvgContext = nvgCreateGLES3(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
+    m_nvgContext = nvgCreateGLES3(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
 #else
-    this->nvgContext = nvgCreateGL3(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
+    m_nvgContext = nvgCreateGL3(NVG_STENCIL_STROKES | NVG_ANTIALIAS);
 #endif
 #elif defined(BOREALIS_USE_METAL)
     void* metalLayer = SDL_Metal_GetLayer(metalView);
@@ -389,13 +385,13 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     {
         fatal("sdl: failed to get metal layer");
     }
-    this->nvgContext = nvgCreateMTL(metalLayer, NVG_STENCIL_STROKES | NVG_ANTIALIAS);
+    m_nvgContext = nvgCreateMTL(metalLayer, NVG_STENCIL_STROKES | NVG_ANTIALIAS);
 #elif defined(BOREALIS_USE_D3D11)
     Logger::info("sdl: USE_D3D11");
-    D3D11_CONTEXT    = std::make_unique<D3D11Context>(this->window, windowWidth, windowHeight);
-    this->nvgContext = nvgCreateD3D11(D3D11_CONTEXT->getDevice(), NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+    D3D11_CONTEXT = std::make_unique<D3D11Context>(m_window, windowWidth, windowHeight);
+    m_nvgContext  = nvgCreateD3D11(D3D11_CONTEXT->getDevice(), NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 #endif
-    if (!this->nvgContext)
+    if (!m_nvgContext)
     {
         brls::fatal("sdl: unable to init nanovg");
     }
@@ -404,16 +400,16 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
 
     // Setup window state
     int width, height;
-    SDL_GetWindowSize(window, &width, &height);
+    SDL_GetWindowSize(m_window, &width, &height);
 
     int fWidth, fHeight;
 #ifdef BOREALIS_USE_OPENGL
-    SDL_GetWindowSizeInPixels(window, &fWidth, &fHeight);
+    SDL_GetWindowSizeInPixels(m_window, &fWidth, &fHeight);
     scaleFactor = fWidth * 1.0 / width;
     Application::setWindowSize(fWidth, fHeight);
     glViewport(0, 0, fWidth, fHeight);
 #elif defined(BOREALIS_USE_METAL)
-    SDL_GetWindowSizeInPixels(window, &fWidth, &fHeight);
+    SDL_GetWindowSizeInPixels(m_window, &fWidth, &fHeight);
     scaleFactor = fWidth * 1.0 / width;
     Application::setWindowSize(width, height);
 #elif defined(BOREALIS_USE_D3D11)
@@ -431,22 +427,21 @@ SDLVideoContext::SDLVideoContext(std::string windowTitle, uint32_t windowWidth, 
     // visible permanently. Deferring the call via brls::sync to the first main
     // loop iteration gives macOS enough time to fully set up the window, after
     // which the fullscreen transition works correctly and the dock/menu bar are hidden.
-    brls::sync([this]
-        { fullScreen(VideoContext::FULLSCREEN); });
+    brls::sync([this] { fullScreen(VideoContext::FULLSCREEN); });
 #endif
 
     int xPos, yPos;
-    SDL_GetWindowPosition(window, &xPos, &yPos);
+    SDL_GetWindowPosition(m_window, &xPos, &yPos);
     Application::setWindowPosition(xPos, yPos);
 
     if (!VideoContext::FULLSCREEN)
     {
         VideoContext::sizeW = width;
         VideoContext::sizeH = height;
-        VideoContext::posX  = (float)xPos;
-        VideoContext::posY  = (float)yPos;
+        VideoContext::posX  = (float) xPos;
+        VideoContext::posY  = (float) yPos;
     }
-    sdlWindowSafeAreaCallback(window);
+    sdlWindowSafeAreaCallback(m_window);
 }
 
 void SDLVideoContext::beginFrame()
@@ -463,7 +458,7 @@ void SDLVideoContext::beginFrame()
 
         brls::Logger::info("Resolution chaned: {} / {}", oldWidth, oldHeight);
 
-        SDL_SetWindowSize(window, width, height);
+        SDL_SetWindowSize(m_window, width, height);
         Application::setWindowSize(width, height);
     }
 #elif defined(BOREALIS_USE_D3D11)
@@ -474,7 +469,7 @@ void SDLVideoContext::beginFrame()
 void SDLVideoContext::endFrame()
 {
 #ifdef BOREALIS_USE_OPENGL
-    SDL_GL_SwapWindow(this->window);
+    SDL_GL_SwapWindow(m_window);
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->endFrame();
 #endif
@@ -493,21 +488,13 @@ void SDLVideoContext::setSwapInterval(int interval)
 void SDLVideoContext::clear(NVGcolor color)
 {
 #ifdef BOREALIS_USE_OPENGL
-    glClearColor(
-        color.r,
-        color.g,
-        color.b,
-        color.a);
+    glClearColor(color.r, color.g, color.b, color.a);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 #elif defined(BOREALIS_USE_METAL)
-    mnvgClearWithColor(this->nvgContext, color);
+    mnvgClearWithColor(m_nvgContext, color);
 #elif defined(BOREALIS_USE_D3D11)
-    D3D11_CONTEXT->clear(nvgRGBAf(
-        color.r,
-        color.g,
-        color.b,
-        color.a));
+    D3D11_CONTEXT->clear(nvgRGBAf(color.r, color.g, color.b, color.a));
 #endif
 }
 
@@ -522,29 +509,26 @@ void SDLVideoContext::resetState()
 #endif
 }
 
-double SDLVideoContext::getScaleFactor()
-{
-    return scaleFactor;
-}
+double SDLVideoContext::getScaleFactor() { return scaleFactor; }
 
 SDLVideoContext::~SDLVideoContext()
 {
     try
     {
-        if (this->nvgContext)
+        if (m_nvgContext)
         {
 #ifdef BOREALIS_USE_OPENGL
 #ifdef USE_GLES2
-            nvgDeleteGLES2(this->nvgContext);
+            nvgDeleteGLES2(m_nvgContext);
 #elif USE_GLES3
-            nvgDeleteGLES3(this->nvgContext);
+            nvgDeleteGLES3(m_nvgContext);
 #else
-            nvgDeleteGL3(this->nvgContext);
+            nvgDeleteGL3(m_nvgContext);
 #endif
 #elif defined(BOREALIS_USE_METAL)
-            nvgDeleteMTL(this->nvgContext);
+            nvgDeleteMTL(m_nvgContext);
 #elif defined(BOREALIS_USE_D3D11)
-            nvgDeleteD3D11(this->nvgContext);
+            nvgDeleteD3D11(m_nvgContext);
             D3D11_CONTEXT = nullptr;
 #endif
         }
@@ -560,23 +544,17 @@ SDLVideoContext::~SDLVideoContext()
         metalView = nullptr;
     }
 #endif
-    SDL_DestroyWindow(this->window);
+    SDL_DestroyWindow(m_window);
     SDL_Quit();
 }
 
-NVGcontext* SDLVideoContext::getNVGContext()
-{
-    return this->nvgContext;
-}
+NVGcontext* SDLVideoContext::getNVGContext() { return m_nvgContext; }
 
-SDL_Window* SDLVideoContext::getSDLWindow()
-{
-    return this->window;
-}
+SDL_Window* SDLVideoContext::getSDLWindow() { return m_window; }
 
 void SDLVideoContext::fullScreen(bool fs)
 {
-    SDL_SetWindowFullscreen(this->window, fs);
+    SDL_SetWindowFullscreen(m_window, fs);
     VideoContext::FULLSCREEN = fs;
 }
 

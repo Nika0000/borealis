@@ -24,29 +24,36 @@
 namespace brls
 {
 
-// SDL Video Context
+/** SDL Video Context providing OpenGL-based rendering via NanoVG. */
 class SDLVideoContext : public VideoContext
 {
   public:
-    SDLVideoContext(std::string windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos);
+    /**
+     * Creates an SDL window with an OpenGL context and initializes NanoVG.
+     * @param title window title
+     * @param windowWidth initial window width in pixels
+     * @param windowHeight initial window height in pixels
+     * @param windowXPos initial horizontal position (SDL_WINDOWPOS_* or coordinate)
+     * @param windowYPos initial vertical position (SDL_WINDOWPOS_* or coordinate)
+     */
+    SDLVideoContext(const std::string& title, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos);
     ~SDLVideoContext() override;
 
     NVGcontext* getNVGContext() override;
-
     void clear(NVGcolor color) override;
     void beginFrame() override;
     void endFrame() override;
     void resetState() override;
     void fullScreen(bool fs) override;
     void setSwapInterval(int interval) override;
-
-    SDL_Window* getSDLWindow();
-
     double getScaleFactor() override;
 
+    /** Returns the underlying SDL window handle. */
+    SDL_Window* getSDLWindow();
+
   private:
-    SDL_Window* window     = nullptr;
-    NVGcontext* nvgContext = nullptr;
+    SDL_Window* m_window     = nullptr;
+    NVGcontext* m_nvgContext = nullptr;
 };
 
 } // namespace brls
