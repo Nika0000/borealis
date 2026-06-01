@@ -22,6 +22,7 @@
 namespace brls
 {
 
+/** Controls how children are distributed along the main axis of a Box. */
 enum class JustifyContent
 {
     FLEX_START,
@@ -32,6 +33,7 @@ enum class JustifyContent
     SPACE_EVENLY,
 };
 
+/** Controls how children are aligned along the cross axis of a Box. */
 enum class AlignItems
 {
     AUTO,
@@ -44,12 +46,14 @@ enum class AlignItems
     SPACE_AROUND,
 };
 
+/** The main layout direction of a Box. */
 enum class Axis
 {
     ROW,
     COLUMN,
 };
 
+/** Controls whether children wrap to new lines when they overflow the main axis. */
 enum class Wrap
 {
     NO_WRAP,
@@ -57,6 +61,7 @@ enum class Wrap
     WRAP_REVERSE,
 };
 
+/** Controls the text/layout direction of a Box. */
 enum class Direction
 {
     INHERIT,
@@ -64,11 +69,26 @@ enum class Direction
     RIGHT_TO_LEFT,
 };
 
-// Generic FlexBox layout
+/**
+ * Generic FlexBox layout container.
+ *
+ * A Box is a view that can contain children views arranged along a given axis
+ * (row or column), following the CSS Flexbox layout model powered by Yoga.
+ *
+ * Children can be justified and aligned using setJustifyContent() and setAlignItems().
+ * The box supports padding, gap, wrapping, and direction control.
+ */
 class Box : public View
 {
   public:
+    /**
+     * Creates a Box with the given flex direction axis.
+     */
     Box(Axis flexDirection);
+
+    /**
+     * Creates a Box with the default axis (ROW).
+     */
     Box();
     ~Box();
 
@@ -83,10 +103,15 @@ class Box : public View
     void onFocusLost() override;
     void onParentFocusGained(View* focusedView) override;
     void onParentFocusLost(View* focusedView) override;
-    bool applyXMLAttribute(std::string name, std::string value) override;
+    bool applyXMLAttribute(const std::string& name, const std::string& value) override;
 
+    /** Creates a new Box instance for use with the XML view factory. */
     static View* create();
 
+    /**
+     * Called when a child requests focus navigation. Allows the box to override
+     * or redirect the focus decision.
+     */
     virtual View* getParentNavigationDecision(View* from, View* newFocus, FocusDirection direction);
 
     /**
@@ -133,6 +158,7 @@ class Box : public View
      */
     virtual void setPaddingTop(float top);
 
+    /** Returns the top padding value. */
     float getPaddingTop();
 
     /**
@@ -141,6 +167,7 @@ class Box : public View
      */
     virtual void setPaddingRight(float right);
 
+    /** Returns the right padding value. */
     float getPaddingRight();
 
     /**
@@ -149,6 +176,7 @@ class Box : public View
      */
     virtual void setPaddingBottom(float bottom);
 
+    /** Returns the bottom padding value. */
     float getPaddingBottom();
 
     /**
@@ -157,6 +185,7 @@ class Box : public View
      */
     virtual void setPaddingLeft(float left);
 
+    /** Returns the left padding value. */
     float getPaddingLeft();
 
     /**
@@ -192,7 +221,10 @@ class Box : public View
      */
     void setDirection(Direction direction);
 
+    /** Sets the main axis of the box layout. */
     void setAxis(Axis axis);
+
+    /** Returns the current main axis of the box layout. */
     Axis getAxis() const;
 
     /**
@@ -205,6 +237,7 @@ class Box : public View
      */
     Wrap getWrap() const;
 
+    /** Returns a reference to the vector of child views. */
     std::vector<View*>& getChildren();
 
     /**
@@ -218,7 +251,7 @@ class Box : public View
      *
      * The forwarded attribute value will override the value of the regular attribute if it already exists in the target view.
      */
-    void forwardXMLAttribute(std::string attributeName, View* target);
+    void forwardXMLAttribute(const std::string& attributeName, View* target);
 
     /**
      * Registers an XML attribute to be forwarded to the given view, while changing the target attribute name.
@@ -227,7 +260,7 @@ class Box : public View
      *
      * The forwarded attribute value will override the value of the regular attribute if it already exists in the target view.
      */
-    void forwardXMLAttribute(std::string attributeName, View* target, std::string targetAttributeName);
+    void forwardXMLAttribute(const std::string& attributeName, View* target, const std::string& targetAttributeName);
 
     /**
      * Fired when focus is gained on one of this view's children, or one of the children
@@ -247,27 +280,32 @@ class Box : public View
      */
     virtual void onChildFocusLost(View* directChild, View* focusedView);
 
-    View* getView(std::string id) override;
+    View* getView(const std::string& id) override;
 
+    /** Sets the last focused child view, used for focus memory. */
     void setLastFocusedView(View* view);
 
+    /** Sets the default child index to focus when this box receives focus. */
     void setDefaultFocusedIndex(int index);
 
+    /** Returns the default child index to focus. */
     size_t getDefaultFocusedIndex() const;
 
+    /** Returns the last child view that held focus inside this box. */
     View* getLastFocusedView() const;
 
+    /** Returns true if any child (or descendant) currently holds focus. */
     virtual bool isChildFocused();
 
   private:
-    Axis axis;
+    Axis m_axis;
 
-    std::vector<View*> children;
+    std::vector<View*> m_children;
 
-    size_t defaultFocusedIndex = 0;
-    View* lastFocusedView      = nullptr;
+    size_t m_defaultFocusedIndex = 0;
+    View* m_lastFocusedView      = nullptr;
 
-    std::unordered_map<std::string, std::pair<std::string, View*>> forwardedAttributes;
+    std::unordered_map<std::string, std::pair<std::string, View*>> m_forwardedAttributes;
 
   protected:
     /**
@@ -323,8 +361,12 @@ class Box : public View
     void handleXMLElement(tinyxml2::XMLElement* element) override;
 };
 
-// An empty view that has auto x auto and grow=1.0 to push
-// all the next views in its box to the right (or to the bottom)
+/**
+ * An empty spacer view with auto size and grow=1.0.
+ *
+ * When placed in a Box, it pushes all subsequent siblings to the opposite end
+ * of the axis (e.g., to the right in a row, or to the bottom in a column).
+ */
 class Padding : public View
 {
   public:
@@ -332,6 +374,7 @@ class Padding : public View
 
     void draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx) override;
 
+    /** Creates a new Padding instance for use with the XML view factory. */
     static View* create();
 };
 

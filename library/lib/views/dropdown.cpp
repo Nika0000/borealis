@@ -101,76 +101,78 @@ float min(float a, float b)
     return b;
 }
 
-Dropdown::Dropdown(std::string title, std::vector<std::string> values, ValueSelectedEvent::Callback cb, int selected, ValueSelectedEvent::Callback dismissCb)
-    : cb(cb)
-    , dismissCb(dismissCb)
-    , values(values)
-    , selected(selected)
+Dropdown::Dropdown(
+    const std::string& title,
+    std::vector<std::string> values,
+    ValueSelectedEvent::Callback cb,
+    int selected,
+    ValueSelectedEvent::Callback dismissCb
+)
+    : m_cb(std::move(cb)), m_dismissCb(std::move(dismissCb)), m_values(std::move(values)), m_selected(selected)
 {
-    this->inflateFromXMLString(dropdownFrameXML);
-    this->title->setText(title);
 
-    recycler->estimatedRowHeight = Application::getStyle()["brls/dropdown/listItemHeight"];
-    recycler->registerCell("Cell", []()
+    inflateFromXMLString(dropdownFrameXML);
+    m_title->setText(title);
+
+    m_recycler->estimatedRowHeight = Application::getStyle()["brls/dropdown/listItemHeight"];
+    m_recycler->registerCell(
+        "Cell",
+        []()
         {
-        RadioCell* cell = new RadioCell();
-        cell->setHeight(Application::getStyle()["brls/dropdown/listItemHeight"]);
-        cell->title->setFontSize(Application::getStyle()["brls/dropdown/listItemTextSize"]);
-        return cell; });
-    recycler->setDefaultCellFocus(IndexPath(0, selected));
-    recycler->setDataSource(this, false);
+            RadioCell* cell = new RadioCell();
+            cell->setHeight(Application::getStyle()["brls/dropdown/listItemHeight"]);
+            cell->title->setFontSize(Application::getStyle()["brls/dropdown/listItemTextSize"]);
+            return cell;
+        }
+    );
+    m_recycler->setDefaultCellFocus(IndexPath(0, selected));
+    m_recycler->setDataSource(this, false);
 
     Style style = Application::getStyle();
 
-    float height = numberOfRows(recycler, 0) * style["brls/dropdown/listItemHeight"]
-        + header->getHeight()
-        + style["brls/dropdown/listPadding"] // top
-        + style["brls/dropdown/listPadding"] // bottom
-        ;
+    float height = numberOfRows(m_recycler, 0) * style["brls/dropdown/listItemHeight"] + m_header->getHeight()
+                   + style["brls/dropdown/listPadding"]  // top
+                   + style["brls/dropdown/listPadding"]; // bottom
 
-    content->setHeight(min(height, Application::contentHeight * 0.73f));
+    m_content->setHeight(min(height, Application::contentHeight * 0.73f));
 }
 
-int Dropdown::numberOfRows(RecyclerFrame* recycler, int section)
-{
-    return (int)values.size();
-}
+int Dropdown::numberOfRows(RecyclerFrame* recycler, int section) { return (int) m_values.size(); }
 
 RecyclerCell* Dropdown::cellForRow(RecyclerFrame* recycler, IndexPath index)
 {
-    RadioCell* cell = (RadioCell*)recycler->dequeueReusableCell("Cell");
-    cell->title->setText(values[index.row]);
-    cell->setSelected(index.row == selected);
+    RadioCell* cell = (RadioCell*) recycler->dequeueReusableCell("Cell");
+    cell->title->setText(m_values[index.row]);
+    cell->setSelected(index.row == m_selected);
     return cell;
 }
 
 void Dropdown::didSelectRowAt(RecyclerFrame* recycler, IndexPath index)
 {
-    this->cb(index.row);
-    Application::popActivity(TransitionAnimation::FADE, [this, index]
+    m_cb(index.row);
+    Application::popActivity(
+        TransitionAnimation::FADE,
+        [this, index]
         {
-            if (this->dismissCb)
-                this->dismissCb(index.row);
-        });
+            if (this->m_dismissCb)
+                this->m_dismissCb(index.row);
+        }
+    );
 }
 
-AppletFrame* Dropdown::getAppletFrame()
-{
-    return applet;
-}
+AppletFrame* Dropdown::getAppletFrame() { return m_applet; }
 
-void Dropdown::show(std::function<void(void)> cb, bool animate, float animationDuration)
+void Dropdown::show(const std::function<void(void)>& cb, bool animate, float animationDuration)
 {
     if (animate)
     {
-        content->setTranslationY(30.0f);
+        m_content->setTranslationY(30.0f);
 
-        showOffset.stop();
-        showOffset.reset(30.0f);
-        showOffset.addStep(0, animationDuration, EasingFunction::quadraticOut);
-        showOffset.setTickCallback([this]
-            { this->offsetTick(); });
-        showOffset.start();
+        m_showOffset.stop();
+        m_showOffset.reset(30.0f);
+        m_showOffset.addStep(0, animationDuration, EasingFunction::quadraticOut);
+        m_showOffset.setTickCallback([this] { this->offsetTick(); });
+        m_showOffset.start();
     }
 
     Box::show(cb, animate, animationDuration);
@@ -180,25 +182,24 @@ void Dropdown::show(std::function<void(void)> cb, bool animate, float animationD
         alpha.stop();
         alpha.reset(1);
 
-        applet->alpha.stop();
-        applet->alpha.reset(0);
-        applet->alpha.addStep(1, animationDuration, EasingFunction::quadraticOut);
-        applet->alpha.start();
+        m_applet->alpha.stop();
+        m_applet->alpha.reset(0);
+        m_applet->alpha.addStep(1, animationDuration, EasingFunction::quadraticOut);
+        m_applet->alpha.start();
     }
 }
 
-void Dropdown::hide(std::function<void(void)> cb, bool animated, float animationDuration)
+void Dropdown::hide(const std::function<void(void)>& cb, bool animated, float animationDuration)
 {
-
     if (animated)
     {
         alpha.stop();
         alpha.reset(0);
 
-        applet->alpha.stop();
-        applet->alpha.reset(1);
-        applet->alpha.addStep(0, animationDuration, EasingFunction::quadraticOut);
-        applet->alpha.start();
+        m_applet->alpha.stop();
+        m_applet->alpha.reset(1);
+        m_applet->alpha.addStep(0, animationDuration, EasingFunction::quadraticOut);
+        m_applet->alpha.start();
     }
 
     Box::hide(cb, animated, animationDuration);
@@ -211,20 +212,14 @@ View* Dropdown::getParentNavigationDecision(View* from, View* newFocus, FocusDir
     RecyclerCell* cell = dynamic_cast<RecyclerCell*>(result);
     if (cell && cell != from)
     {
-        cellFocusDidChangeEvent.fire(cell);
+        m_cellFocusDidChangeEvent.fire(cell);
     }
 
     return result;
 }
 
-float Dropdown::getShowAnimationDuration(TransitionAnimation animation)
-{
-    return View::getShowAnimationDuration(animation) / 2;
-}
+float Dropdown::getShowAnimationDuration(TransitionAnimation animation) { return View::getShowAnimationDuration(animation) / 2; }
 
-void Dropdown::offsetTick()
-{
-    content->setTranslationY(showOffset);
-}
+void Dropdown::offsetTick() { m_content->setTranslationY(m_showOffset); }
 
 } // namespace brls

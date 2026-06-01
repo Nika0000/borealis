@@ -52,39 +52,49 @@ static YGWrap getYGWrap(Wrap wrap)
     }
 }
 
-Box::Box(Axis axis)
-    : axis(axis)
+Box::Box(Axis flexDirection) : m_axis(flexDirection)
 {
-    YGNodeStyleSetFlexDirection(this->ygNode, getYGFlexDirection(axis));
+    YGNodeStyleSetFlexDirection(this->ygNode, getYGFlexDirection(flexDirection));
 
     // no need to invalidate if the box is empty and is not attached to any parent
 
     // Register XML attributes
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "axis", Axis, this->setAxis,
+        "axis",
+        Axis,
+        this->setAxis,
         {
             { "row", Axis::ROW },
             { "column", Axis::COLUMN },
-        });
+        }
+    );
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "flexWrap", Wrap, this->setWrap,
+        "flexWrap",
+        Wrap,
+        this->setWrap,
         {
             { "wrap", Wrap::WRAP },
             { "noWrap", Wrap::NO_WRAP },
             { "wrapReverse", Wrap::WRAP_REVERSE },
-        });
+        }
+    );
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "direction", Direction, this->setDirection,
+        "direction",
+        Direction,
+        this->setDirection,
         {
             { "inherit", Direction::INHERIT },
             { "leftToRight", Direction::LEFT_TO_RIGHT },
             { "rightToLeft", Direction::RIGHT_TO_LEFT },
-        });
+        }
+    );
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "justifyContent", JustifyContent, this->setJustifyContent,
+        "justifyContent",
+        JustifyContent,
+        this->setJustifyContent,
         {
             { "flexStart", JustifyContent::FLEX_START },
             { "center", JustifyContent::CENTER },
@@ -92,10 +102,13 @@ Box::Box(Axis axis)
             { "spaceBetween", JustifyContent::SPACE_BETWEEN },
             { "spaceAround", JustifyContent::SPACE_AROUND },
             { "spaceEvenly", JustifyContent::SPACE_EVENLY },
-        });
+        }
+    );
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "alignItems", AlignItems, this->setAlignItems,
+        "alignItems",
+        AlignItems,
+        this->setAlignItems,
         {
             { "auto", AlignItems::AUTO },
             { "flexStart", AlignItems::FLEX_START },
@@ -105,31 +118,21 @@ Box::Box(Axis axis)
             { "baseline", AlignItems::BASELINE },
             { "spaceBetween", AlignItems::SPACE_BETWEEN },
             { "spaceAround", AlignItems::SPACE_AROUND },
-        });
+        }
+    );
 
     // Gap
-    this->registerFloatXMLAttribute("gap", [this](float value)
-        { this->setGap(value); });
+    this->registerFloatXMLAttribute("gap", [this](float value) { this->setGap(value); });
 
     // Padding
-    this->registerFloatXMLAttribute("paddingTop", [this](float value)
-        { this->setPaddingTop(value); });
-
-    this->registerFloatXMLAttribute("paddingRight", [this](float value)
-        { this->setPaddingRight(value); });
-
-    this->registerFloatXMLAttribute("paddingBottom", [this](float value)
-        { this->setPaddingBottom(value); });
-
-    this->registerFloatXMLAttribute("paddingLeft", [this](float value)
-        { this->setPaddingLeft(value); });
-
-    this->registerFloatXMLAttribute("padding", [this](float value)
-        { this->setPadding(value); });
+    this->registerFloatXMLAttribute("paddingTop", [this](float value) { this->setPaddingTop(value); });
+    this->registerFloatXMLAttribute("paddingRight", [this](float value) { this->setPaddingRight(value); });
+    this->registerFloatXMLAttribute("paddingBottom", [this](float value) { this->setPaddingBottom(value); });
+    this->registerFloatXMLAttribute("paddingLeft", [this](float value) { this->setPaddingLeft(value); });
+    this->registerFloatXMLAttribute("padding", [this](float value) { this->setPadding(value); });
 }
 
-Box::Box()
-    : Box(Axis::ROW)
+Box::Box() : Box(Axis::ROW)
 {
     // Empty ctor for XML
 }
@@ -144,7 +147,7 @@ void Box::getCullingBounds(float* top, float* right, float* bottom, float* left)
 
 void Box::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
 {
-    for (View* child : this->children)
+    for (View* child : this->m_children)
     {
         // Ensure that the child is in bounds of all parents before drawing it
         // Only do that check for leaf views, as nested boxes will do that check themselves
@@ -166,7 +169,7 @@ void Box::draw(NVGcontext* vg, float x, float y, float width, float height, Styl
                     childBottom < top || // too high
                     childRight < left || // too far left
                     childLeft > right || // too far right
-                    childTop > bottom // too low
+                    childTop > bottom    // too low
                 )
                 {
                     draw = false;
@@ -190,24 +193,24 @@ void Box::addView(View* view)
 
 void Box::addView(View* view, size_t position)
 {
-    if (position > this->children.size() || position < 0)
-        fatal(fmt::format("cannot insert view at {}:{}/{}", this->describe(), this->children.size(), position));
+    if (position > this->m_children.size() || position < 0)
+        fatal(fmt::format("cannot insert view at {}:{}/{}", this->describe(), this->m_children.size(), position));
 
     // Add the view to our children and YGNode
-    this->children.insert(this->children.begin() + position, view);
+    this->m_children.insert(this->m_children.begin() + position, view);
 
     if (!view->isDetached())
         YGNodeInsertChild(this->ygNode, view->getYGNode(), position);
 
     // Allocate and set parent userdata
-    size_t* userdata = (size_t*)malloc(sizeof(size_t));
+    size_t* userdata = (size_t*) malloc(sizeof(size_t));
     *userdata        = position;
 
     view->setParent(this, userdata);
 
-    for (size_t i = position + 1; i < this->children.size(); i++)
+    for (size_t i = position + 1; i < this->m_children.size(); i++)
     {
-        auto* index = (size_t*)this->children[i]->getParentUserData();
+        auto* index = (size_t*) this->m_children[i]->getParentUserData();
         if (index)
             (*index)++;
     }
@@ -226,9 +229,9 @@ void Box::removeView(View* view, bool free)
     size_t index;
     bool found = false;
 
-    for (size_t i = 0; i < this->children.size(); i++)
+    for (size_t i = 0; i < this->m_children.size(); i++)
     {
-        View* child = this->children[i];
+        View* child = this->m_children[i];
 
         if (child == view)
         {
@@ -244,12 +247,12 @@ void Box::removeView(View* view, bool free)
     // Remove it
     if (!view->isDetached())
         YGNodeRemoveChild(this->ygNode, view->getYGNode());
-    this->children.erase(this->children.begin() + index);
+    this->m_children.erase(this->m_children.begin() + index);
 
     // Update parent userdata
-    for (size_t i = index; i < this->children.size(); i++)
+    for (size_t i = index; i < this->m_children.size(); i++)
     {
-        auto* index = (size_t*)this->children[i]->getParentUserData();
+        auto* index = (size_t*) this->m_children[i]->getParentUserData();
         if (index)
             (*index)--;
     }
@@ -263,16 +266,16 @@ void Box::removeView(View* view, bool free)
 
 void Box::clearViews(bool free)
 {
-    lastFocusedView          = nullptr;
+    m_lastFocusedView        = nullptr;
     std::vector<View*> views = getChildren();
 
     for (size_t i = 0; i < views.size(); i++)
     {
-        View* view = this->children.back();
+        View* view = this->m_children.back();
 
         // Remove it
         YGNodeRemoveChild(this->ygNode, view->getYGNode());
-        this->children.pop_back();
+        this->m_children.pop_back();
 
         view->willDisappear(true);
         if (free)
@@ -286,7 +289,7 @@ void Box::onFocusGained()
 {
     View::onFocusGained();
 
-    for (View* child : this->children)
+    for (View* child : this->m_children)
         child->onParentFocusGained(this);
 }
 
@@ -294,7 +297,7 @@ void Box::onFocusLost()
 {
     View::onFocusLost();
 
-    for (View* child : this->children)
+    for (View* child : this->m_children)
         child->onParentFocusLost(this);
 }
 
@@ -302,7 +305,7 @@ void Box::onParentFocusGained(View* focusedView)
 {
     View::onParentFocusGained(focusedView);
 
-    for (View* child : this->children)
+    for (View* child : this->m_children)
         child->onParentFocusGained(focusedView);
 }
 
@@ -310,7 +313,7 @@ void Box::onParentFocusLost(View* focusedView)
 {
     View::onParentFocusLost(focusedView);
 
-    for (View* child : this->children)
+    for (View* child : this->m_children)
         child->onParentFocusLost(focusedView);
 }
 
@@ -324,10 +327,7 @@ void Box::setPadding(float top, float right, float bottom, float left)
     this->invalidate();
 }
 
-void Box::setPadding(float padding)
-{
-    this->setPadding(padding, padding, padding, padding);
-}
+void Box::setPadding(float padding) { this->setPadding(padding, padding, padding, padding); }
 
 void Box::setPaddingTop(float top)
 {
@@ -353,24 +353,12 @@ void Box::setPaddingLeft(float left)
     this->invalidate();
 }
 
-float Box::getPaddingTop()
-{
-    return YGNodeStyleGetPadding(this->ygNode, YGEdgeTop).value;
-}
+float Box::getPaddingTop() { return YGNodeStyleGetPadding(this->ygNode, YGEdgeTop).value; }
 
-float Box::getPaddingBottom()
-{
-    return YGNodeStyleGetPadding(this->ygNode, YGEdgeBottom).value;
-}
+float Box::getPaddingBottom() { return YGNodeStyleGetPadding(this->ygNode, YGEdgeBottom).value; }
 
-float Box::getPaddingLeft()
-{
-    return YGNodeStyleGetPadding(this->ygNode, YGEdgeLeft).value;
-}
-float Box::getPaddingRight()
-{
-    return YGNodeStyleGetPadding(this->ygNode, YGEdgeRight).value;
-}
+float Box::getPaddingLeft() { return YGNodeStyleGetPadding(this->ygNode, YGEdgeLeft).value; }
+float Box::getPaddingRight() { return YGNodeStyleGetPadding(this->ygNode, YGEdgeRight).value; }
 
 void Box::setGap(float gap)
 {
@@ -378,10 +366,7 @@ void Box::setGap(float gap)
     this->invalidate();
 }
 
-float Box::getGap()
-{
-    return YGNodeStyleGetGap(this->ygNode, YGGutterAll);
-}
+float Box::getGap() { return YGNodeStyleGetGap(this->ygNode, YGGutterAll); }
 
 View* Box::getDefaultFocus()
 {
@@ -392,26 +377,26 @@ View* Box::getDefaultFocus()
     if (this->isFocusable())
         return this;
 
-    if (lastFocusedView)
+    if (m_lastFocusedView)
     {
-        View* view = lastFocusedView->getDefaultFocus();
+        View* view = m_lastFocusedView->getDefaultFocus();
         if (view)
             return view;
     }
 
     // Then try default focus
-    if (this->defaultFocusedIndex < this->children.size())
+    if (this->m_defaultFocusedIndex < this->m_children.size())
     {
-        View* newFocus = this->children[this->defaultFocusedIndex]->getDefaultFocus();
+        View* newFocus = this->m_children[this->m_defaultFocusedIndex]->getDefaultFocus();
 
         if (newFocus)
             return newFocus;
     }
 
     // Fallback to finding the first focusable view
-    for (size_t i = 0; i < this->children.size(); i++)
+    for (size_t i = 0; i < this->m_children.size(); i++)
     {
-        View* newFocus = this->children[i]->getDefaultFocus();
+        View* newFocus = this->m_children[i]->getDefaultFocus();
 
         if (newFocus)
             return newFocus;
@@ -429,8 +414,7 @@ View* Box::hitTest(Point point)
     // Check if touch fits in view frame
     if (this->getFrame().pointInside(point))
     {
-        //        Logger::debug(describe() + ": --- X: " + std::to_string((int)getX()) + ", Y: " + std::to_string((int)getY()) + ", W: " + std::to_string((int)getWidth()) + ", H: " + std::to_string((int)getHeight()));
-        for (auto child = this->children.rbegin(); child != this->children.rend(); child++)
+        for (auto child = this->m_children.rbegin(); child != this->m_children.rend(); child++)
         {
             View* result = (*child)->hitTest(point);
 
@@ -438,7 +422,6 @@ View* Box::hitTest(Point point)
                 return result;
         }
 
-        //        Logger::debug(describe() + ": OK");
         return this;
     }
 
@@ -451,10 +434,10 @@ View* Box::getNextFocus(FocusDirection direction, View* currentView)
 
     // For wrapped layouts, use spatial navigation for the cross-axis direction
     bool isWrapped   = YGNodeStyleGetFlexWrap(this->ygNode) != YGWrapNoWrap;
-    bool isCrossAxis = (this->axis == Axis::ROW && (direction == FocusDirection::UP || direction == FocusDirection::DOWN))
-        || (this->axis == Axis::COLUMN && (direction == FocusDirection::LEFT || direction == FocusDirection::RIGHT));
+    bool isCrossAxis = (this->m_axis == Axis::ROW && (direction == FocusDirection::UP || direction == FocusDirection::DOWN))
+                       || (this->m_axis == Axis::COLUMN && (direction == FocusDirection::LEFT || direction == FocusDirection::RIGHT));
 
-    if (isCrossAxis && isWrapped && !this->children.empty())
+    if (isCrossAxis && isWrapped && !this->m_children.empty())
     {
         Rect currentFrame    = currentView->getFrame();
         float currentCenterX = currentFrame.getMinX() + currentFrame.getWidth() / 2.0f;
@@ -463,7 +446,7 @@ View* Box::getNextFocus(FocusDirection direction, View* currentView)
         View* bestCandidate = nullptr;
         float bestDistance  = std::numeric_limits<float>::max();
 
-        for (View* child : this->children)
+        for (View* child : this->m_children)
         {
             if (child == currentView)
                 continue;
@@ -524,7 +507,8 @@ View* Box::getNextFocus(FocusDirection direction, View* currentView)
     }
 
     // Return nullptr immediately if focus direction mismatches the box axis
-    if ((this->axis == Axis::ROW && direction != FocusDirection::LEFT && direction != FocusDirection::RIGHT) || (this->axis == Axis::COLUMN && direction != FocusDirection::UP && direction != FocusDirection::DOWN))
+    if ((this->m_axis == Axis::ROW && direction != FocusDirection::LEFT && direction != FocusDirection::RIGHT)
+        || (this->m_axis == Axis::COLUMN && direction != FocusDirection::UP && direction != FocusDirection::DOWN))
     {
         View* next = getParentNavigationDecision(this, nullptr, direction);
         if (!next && hasParent())
@@ -535,17 +519,18 @@ View* Box::getNextFocus(FocusDirection direction, View* currentView)
     // Traverse the children
     size_t offset = 1; // which way we are going in the children list
 
-    if ((this->axis == Axis::ROW && direction == FocusDirection::LEFT) || (this->axis == Axis::COLUMN && direction == FocusDirection::UP))
+    if ((this->m_axis == Axis::ROW && direction == FocusDirection::LEFT)
+        || (this->m_axis == Axis::COLUMN && direction == FocusDirection::UP))
     {
         offset = -1;
     }
 
-    size_t currentFocusIndex = *((size_t*)parentUserData) + offset;
+    size_t currentFocusIndex = *((size_t*) parentUserData) + offset;
     View* currentFocus       = nullptr;
 
-    while (!currentFocus && currentFocusIndex >= 0 && currentFocusIndex < this->children.size())
+    while (!currentFocus && currentFocusIndex >= 0 && currentFocusIndex < this->m_children.size())
     {
-        currentFocus = this->children[currentFocusIndex]->getDefaultFocus();
+        currentFocus = this->m_children[currentFocusIndex]->getDefaultFocus();
         currentFocusIndex += offset;
     }
 
@@ -565,26 +550,23 @@ View* Box::getParentNavigationDecision(View* from, View* newFocus, FocusDirectio
 
 void Box::willAppear(bool resetState)
 {
-    for (View* child : this->children)
+    for (View* child : this->m_children)
         child->willAppear(resetState);
 }
 
 void Box::willDisappear(bool resetState)
 {
-    for (View* child : this->children)
+    for (View* child : this->m_children)
         child->willDisappear(resetState);
 }
 
 void Box::onWindowSizeChanged()
 {
-    for (View* child : this->children)
+    for (View* child : this->m_children)
         child->onWindowSizeChanged();
 }
 
-std::vector<View*>& Box::getChildren()
-{
-    return this->children;
-}
+std::vector<View*>& Box::getChildren() { return this->m_children; }
 
 void Box::inflateFromXMLString(std::string_view xml)
 {
@@ -608,18 +590,18 @@ void Box::inflateFromXMLString(std::string_view xml)
     return Box::inflateFromXMLElement(element);
 }
 
-void Box::inflateFromXMLRes(const std::string& name)
+void Box::inflateFromXMLRes(const std::string& res)
 {
     // Check if custom xml file exists
-    if (!View::CUSTOM_RESOURCES_PATH.empty() && std::ifstream { View::CUSTOM_RESOURCES_PATH + name }.good())
+    if (!View::CUSTOM_RESOURCES_PATH.empty() && std::ifstream { View::CUSTOM_RESOURCES_PATH + res }.good())
     {
-        return Box::inflateFromXMLFile(View::CUSTOM_RESOURCES_PATH + name);
+        return Box::inflateFromXMLFile(View::CUSTOM_RESOURCES_PATH + res);
     }
 
 #ifdef USE_LIBROMFS
-    return Box::inflateFromXMLString(romfs::get(name).string());
+    return Box::inflateFromXMLString(romfs::get(res).string());
 #else
-    return Box::inflateFromXMLFile(std::string(BRLS_RESOURCES) + name);
+    return Box::inflateFromXMLFile(std::string(BRLS_RESOURCES) + res);
 #endif
 }
 
@@ -659,22 +641,16 @@ void Box::inflateFromXMLElement(tinyxml2::XMLElement* element)
         this->addView(View::createFromXMLElement(child)); // don't call handleXMLElement because this method is for user XMLs
 }
 
-void Box::handleXMLElement(tinyxml2::XMLElement* element)
-{
-    this->addView(View::createFromXMLElement(element));
-}
+void Box::handleXMLElement(tinyxml2::XMLElement* element) { this->addView(View::createFromXMLElement(element)); }
 
 void Box::setAxis(Axis axis)
 {
     YGNodeStyleSetFlexDirection(this->ygNode, getYGFlexDirection(axis));
-    this->axis = axis;
+    this->m_axis = axis;
     this->invalidate();
 }
 
-Axis Box::getAxis() const
-{
-    return axis;
-}
+Axis Box::getAxis() const { return m_axis; }
 
 void Box::setWrap(Wrap wrap)
 {
@@ -760,12 +736,12 @@ void Box::setAlignItems(AlignItems alignment)
     this->invalidate();
 }
 
-View* Box::getView(std::string id)
+View* Box::getView(const std::string& id)
 {
     if (id == this->id)
         return this;
 
-    for (View* child : this->children)
+    for (View* child : this->m_children)
     {
         View* result = child->getView(id);
 
@@ -776,36 +752,41 @@ View* Box::getView(std::string id)
     return nullptr;
 }
 
-bool Box::applyXMLAttribute(std::string name, std::string value)
+bool Box::applyXMLAttribute(const std::string& name, const std::string& value)
 {
-    if (this->forwardedAttributes.count(name) > 0)
+    if (this->m_forwardedAttributes.count(name) > 0)
     {
-        std::pair<std::string, View*> pair = this->forwardedAttributes[name];
+        std::pair<std::string, View*> pair = this->m_forwardedAttributes[name];
         return pair.second->applyXMLAttribute(pair.first, value);
     }
 
     return View::applyXMLAttribute(name, value);
 }
 
-void Box::forwardXMLAttribute(std::string attributeName, View* target)
+void Box::forwardXMLAttribute(const std::string& attributeName, View* target)
 {
     this->forwardXMLAttribute(attributeName, target, attributeName);
 }
 
-void Box::forwardXMLAttribute(std::string attributeName, View* target, std::string targetAttributeName)
+void Box::forwardXMLAttribute(const std::string& attributeName, View* target, const std::string& targetAttributeName)
 {
     if (!target->isXMLAttributeValid(targetAttributeName))
-        fatal("Error when forwarding \"" + attributeName + "\" of \"" + this->describe() + "\": attribute \"" + targetAttributeName + "\" is not a XML valid attribute for view \"" + target->describe() + "\"");
+        fatal(
+            "Error when forwarding \"" + attributeName + "\" of \"" + this->describe() + "\": attribute \"" + targetAttributeName
+            + "\" is not a XML valid attribute for view \"" + target->describe() + "\""
+        );
 
-    if (this->forwardedAttributes.count(attributeName) > 0)
-        fatal("Error when forwarding \"" + attributeName + "\" of \"" + this->describe() + "\": the same attribute cannot be forwarded twice");
+    if (this->m_forwardedAttributes.count(attributeName) > 0)
+        fatal(
+            "Error when forwarding \"" + attributeName + "\" of \"" + this->describe() + "\": the same attribute cannot be forwarded twice"
+        );
 
-    this->forwardedAttributes[attributeName] = std::make_pair(targetAttributeName, target);
+    this->m_forwardedAttributes[attributeName] = std::make_pair(targetAttributeName, target);
 }
 
 void Box::onChildFocusGained(View* directChild, View* focusedView)
 {
-    lastFocusedView = directChild;
+    m_lastFocusedView = directChild;
     if (this->hasParent())
         this->getParent()->onChildFocusGained(this, focusedView);
 }
@@ -816,27 +797,18 @@ void Box::onChildFocusLost(View* directChild, View* focusedView)
         this->getParent()->onChildFocusLost(this, focusedView);
 }
 
-void Box::setLastFocusedView(View* view)
-{
-    this->lastFocusedView = view;
-}
+void Box::setLastFocusedView(View* view) { this->m_lastFocusedView = view; }
 
 void Box::setDefaultFocusedIndex(int index)
 {
     if (index < 0)
         return;
-    this->defaultFocusedIndex = index;
+    this->m_defaultFocusedIndex = index;
 }
 
-size_t Box::getDefaultFocusedIndex() const
-{
-    return this->defaultFocusedIndex;
-}
+size_t Box::getDefaultFocusedIndex() const { return this->m_defaultFocusedIndex; }
 
-View* Box::getLastFocusedView() const
-{
-    return this->lastFocusedView;
-}
+View* Box::getLastFocusedView() const { return this->m_lastFocusedView; }
 
 bool Box::isChildFocused()
 {
@@ -858,24 +830,13 @@ bool Box::isChildFocused()
     return false;
 }
 
-View* Box::create()
-{
-    return new Box();
-}
+View* Box::create() { return new Box(); }
 
-Padding::Padding()
-{
-    this->setGrow(1.0f);
-}
+Padding::Padding() { this->setGrow(1.0f); }
 
-void Padding::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
-{
-}
+void Padding::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx) {}
 
-View* Padding::create()
-{
-    return new Padding();
-}
+View* Padding::create() { return new Padding(); }
 
 Box::~Box()
 {

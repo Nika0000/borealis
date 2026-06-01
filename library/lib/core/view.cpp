@@ -42,18 +42,18 @@ namespace brls
 
 void AppletFrameItem::setHintView(View* hintView)
 {
-    this->hintView = hintView;
-    this->hintView->ptrLock();
+    this->m_hintView = hintView;
+    this->m_hintView->ptrLock();
 }
 
 AppletFrameItem::~AppletFrameItem()
 {
-    if (hintView)
+    if (m_hintView)
     {
-        if (!hintView->isPtrLocked())
-            delete hintView;
+        if (!m_hintView->isPtrLocked())
+            delete m_hintView;
         else
-            hintView->freeView();
+            m_hintView->freeView();
     }
 }
 
@@ -72,30 +72,27 @@ View::View()
     // Default values
     Style style = Application::getStyle();
 
-    this->highlightCornerRadius = style["brls/highlight/corner_radius"];
-    this->scale                 = Point(1.0f, 1.0f);
+    this->m_highlightCornerRadius = style["brls/highlight/corner_radius"];
+    this->m_scale                 = Point(1.0f, 1.0f);
 }
 
 static int shakeAnimation(float t, float a) // a = amplitude
 {
     // Damped sine wave
-    float w = 0.8f; // period
+    float w = 0.8f;  // period
     float c = 0.35f; // damp factor
     return roundf(a * exp(-(c * t)) * sin(w * t));
 }
 
 void View::shakeHighlight(FocusDirection direction)
 {
-    this->highlightShaking        = true;
-    this->highlightShakeStart     = getCPUTimeUsec() / 1000;
-    this->highlightShakeDirection = direction;
-    this->highlightShakeAmplitude = std::rand() % 15 + 10;
+    this->m_highlightShaking        = true;
+    this->m_highlightShakeStart     = getCPUTimeUsec() / 1000;
+    this->m_highlightShakeDirection = direction;
+    this->m_highlightShakeAmplitude = std::rand() % 15 + 10;
 }
 
-float View::getAlpha(bool child)
-{
-    return this->alpha * (this->parent ? this->parent->getAlpha(true) : 1.0f);
-}
+float View::getAlpha(bool child) { return this->alpha * (this->parent ? this->parent->getAlpha(true) : 1.0f); }
 
 NVGcolor View::a(NVGcolor color)
 {
@@ -121,10 +118,7 @@ void View::interruptGestures(bool onlyIfUnsureState)
         parent->interruptGestures(onlyIfUnsureState);
 }
 
-void View::addGestureRecognizer(GestureRecognizer* recognizer)
-{
-    this->gestureRecognizers.push_back(recognizer);
-}
+void View::addGestureRecognizer(GestureRecognizer* recognizer) { this->m_gestureRecognizers.push_back(recognizer); }
 
 Sound View::gestureRecognizerRequest(TouchState touch, MouseState mouse, View* firstResponder)
 {
@@ -152,7 +146,7 @@ Sound View::gestureRecognizerRequest(TouchState touch, MouseState mouse, View* f
 
 void View::frame(FrameContext* ctx)
 {
-    if (this->visibility != Visibility::VISIBLE)
+    if (this->m_visibility != Visibility::VISIBLE)
         return;
 
     Style style    = Application::getStyle();
@@ -161,8 +155,8 @@ void View::frame(FrameContext* ctx)
     nvgSave(ctx->vg);
 
     // Theme override
-    if (this->themeOverride)
-        ctx->theme = *themeOverride;
+    if (this->m_themeOverride)
+        ctx->theme = *m_themeOverride;
 
     Rect frame   = getFrame();
     float x      = frame.getMinX();
@@ -170,12 +164,12 @@ void View::frame(FrameContext* ctx)
     float width  = frame.getWidth();
     float height = frame.getHeight();
 
-    if (this->scale.x != 1.0f || this->scale.y != 1.0f)
+    if (this->m_scale.x != 1.0f || this->m_scale.y != 1.0f)
     {
         float cx = x + width / 2.0f;
         float cy = y + height / 2.0f;
         nvgTranslate(ctx->vg, cx, cy);
-        nvgScale(ctx->vg, this->scale.x, this->scale.y);
+        nvgScale(ctx->vg, this->m_scale.x, this->m_scale.y);
         nvgTranslate(ctx->vg, -cx, -cy);
     }
 
@@ -185,21 +179,21 @@ void View::frame(FrameContext* ctx)
         this->drawBackground(ctx->vg, ctx, style, frame);
 
         // Draw shadow
-        if (this->shadowType != ShadowType::NONE && (this->showShadow || Application::getInputType() == InputType::TOUCH))
+        if (this->m_shadowType != ShadowType::NONE && (this->m_showShadow || Application::getInputType() == InputType::TOUCH))
             this->drawShadow(ctx->vg, ctx, style, frame);
 
         // Draw border
-        if (this->borderThickness > 0.0f)
+        if (this->m_borderThickness > 0.0f)
             this->drawBorder(ctx->vg, ctx, style, frame);
 
         this->drawLine(ctx, frame);
 
         // Draw highlight background
-        if (this->highlightAlpha > 0.0f && !this->hideHighlightBackground && !this->hideHighlight)
-            this->drawHighlight(ctx->vg, ctx->theme, this->highlightAlpha, style, true);
+        if (this->m_highlightAlpha > 0.0f && !this->m_hideHighlightBackground && !this->m_hideHighlight)
+            this->drawHighlight(ctx->vg, ctx->theme, this->m_highlightAlpha, style, true);
 
         // Collapse clipping
-        if (this->collapseState < 1.0f || this->clipsToBounds)
+        if (this->collapseState < 1.0f || this->m_clipsToBounds)
         {
             nvgSave(ctx->vg);
             nvgIntersectScissor(ctx->vg, x, y, width, height * this->collapseState);
@@ -208,24 +202,25 @@ void View::frame(FrameContext* ctx)
         // Draw the view
         this->draw(ctx->vg, x, y, width, height, style, ctx);
 
-        if (this->wireframeEnabled)
+        if (this->m_wireframeEnabled)
             this->drawWireframe(ctx, frame);
 
         // Reset clipping
-        if (this->collapseState < 1.0f || this->clipsToBounds)
+        if (this->collapseState < 1.0f || this->m_clipsToBounds)
             nvgRestore(ctx->vg);
 
         // draw click animation
-        if (this->clickAlpha > 0.0f && !this->hideClickAnimation)
+        if (this->m_clickAlpha > 0.0f && !this->m_hideClickAnimation)
             this->drawClickAnimation(ctx->vg, ctx, frame);
 
         // draw highlight
-        if (this->highlightAlpha > 0.0f && !this->hideHighlightBorder && !this->hideHighlight && Application::getInputType() != InputType::TOUCH)
-            this->drawHighlight(ctx->vg, ctx->theme, this->highlightAlpha, style, false);
+        if (this->m_highlightAlpha > 0.0f && !this->m_hideHighlightBorder && !this->m_hideHighlight
+            && Application::getInputType() != InputType::TOUCH)
+            this->drawHighlight(ctx->vg, ctx->theme, this->m_highlightAlpha, style, false);
     }
 
     // Cleanup
-    if (this->themeOverride)
+    if (this->m_themeOverride)
         ctx->theme = oldTheme;
 
     nvgRestore(ctx->vg);
@@ -235,10 +230,12 @@ void View::frameHighlight(FrameContext* ctx)
 {
     // This method is now mostly handled in frame() for proper layering
     // Keep it for compatibility but the actual drawing happens in frame()
-    if (this->alpha > 0.0f && this->collapseState != 0.0f && this->highlightAlpha > 0.0f && !this->hideHighlightBorder && !this->hideHighlight)
+    if (this->alpha > 0.0f && this->collapseState != 0.0f && this->m_highlightAlpha > 0.0f && !this->m_hideHighlightBorder
+        && !this->m_hideHighlight)
     {
         // Skip the top-level highlight pass for views inside a clipped ancestor —
-        // they already get their highlight drawn (and clipped) during the normal frame() pass.
+        // they already get their highlight drawn (and clipped) during the normal
+        // frame() pass.
         for (Box* ancestor = this->getParent(); ancestor != nullptr; ancestor = ancestor->getParent())
         {
             if (ancestor->getClipsToBounds())
@@ -247,49 +244,48 @@ void View::frameHighlight(FrameContext* ctx)
 
         nvgSave(ctx->vg);
         // Apply the same scaling pivot as in frame()
-        if (this->scale.x != 1.0f || this->scale.y != 1.0f)
+        if (this->m_scale.x != 1.0f || this->m_scale.y != 1.0f)
         {
             Rect frame = getFrame();
             float cx   = frame.getMinX() + frame.getWidth() / 2.0f;
             float cy   = frame.getMinY() + frame.getHeight() / 2.0f;
             nvgTranslate(ctx->vg, cx, cy);
-            nvgScale(ctx->vg, this->scale.x, this->scale.y);
+            nvgScale(ctx->vg, this->m_scale.x, this->m_scale.y);
             nvgTranslate(ctx->vg, -cx, -cy);
         }
-        this->drawHighlight(ctx->vg, ctx->theme, this->highlightAlpha, Application::getStyle(), false);
+        this->drawHighlight(ctx->vg, ctx->theme, this->m_highlightAlpha, Application::getStyle(), false);
         nvgRestore(ctx->vg);
     }
 }
 
-void View::resetClickAnimation()
-{
-    this->clickAlpha.stop();
-}
+void View::resetClickAnimation() { this->m_clickAlpha.stop(); }
 
 void View::playClickAnimation(bool reverse, bool animateBack, bool force)
 {
-    if (hideClickAnimation && !force)
+    if (m_hideClickAnimation && !force)
         return;
 
     this->resetClickAnimation();
 
     Style style = Application::getStyle();
 
-    this->clickAlpha.reset(reverse ? 1.0f : 0.0f);
+    this->m_clickAlpha.reset(reverse ? 1.0f : 0.0f);
 
-    this->clickAlpha.addStep(
-        reverse ? 0.0f : 1.0f,
-        style["brls/animations/highlight"],
-        reverse ? EasingFunction::quadraticOut : EasingFunction::quadraticIn);
+    this->m_clickAlpha.addStep(
+        reverse ? 0.0f : 1.0f, style["brls/animations/highlight"], reverse ? EasingFunction::quadraticOut : EasingFunction::quadraticIn
+    );
 
-    this->clickAlpha.setEndCallback([this, reverse, animateBack](bool finished)
+    this->m_clickAlpha.setEndCallback(
+        [this, reverse, animateBack](bool finished)
         {
-        if (reverse || !animateBack || Application::getInputType() == InputType::TOUCH)
-            return;
+            if (reverse || !animateBack || Application::getInputType() == InputType::TOUCH)
+                return;
 
-        this->playClickAnimation(true); });
+            this->playClickAnimation(true);
+        }
+    );
 
-    this->clickAlpha.start();
+    this->m_clickAlpha.start();
 }
 
 void View::drawClickAnimation(NVGcontext* vg, FrameContext* ctx, Rect frame)
@@ -297,14 +293,25 @@ void View::drawClickAnimation(NVGcontext* vg, FrameContext* ctx, Rect frame)
     Theme theme    = ctx->theme;
     NVGcolor color = theme["brls/click_pulse"];
 
-    color.a *= this->clickAlpha;
+    color.a *= this->m_clickAlpha;
 
     nvgFillColor(vg, a(color));
     nvgBeginPath(vg);
 
-    bool hasRadii = (this->cornerRadii[0] != 0 || this->cornerRadii[1] != 0 || this->cornerRadii[2] != 0 || this->cornerRadii[3] != 0);
+    bool hasRadii
+        = (this->m_cornerRadii[0] != 0 || this->m_cornerRadii[1] != 0 || this->m_cornerRadii[2] != 0 || this->m_cornerRadii[3] != 0);
     if (hasRadii)
-        nvgRoundedRectVarying(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), this->cornerRadii[0], this->cornerRadii[1], this->cornerRadii[2], this->cornerRadii[3]);
+        nvgRoundedRectVarying(
+            vg,
+            frame.getMinX(),
+            frame.getMinY(),
+            frame.getWidth(),
+            frame.getHeight(),
+            this->m_cornerRadii[0],
+            this->m_cornerRadii[1],
+            this->m_cornerRadii[2],
+            this->m_cornerRadii[3]
+        );
     else
         nvgRoundedRect(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), 4);
 
@@ -314,23 +321,23 @@ void View::drawClickAnimation(NVGcontext* vg, FrameContext* ctx, Rect frame)
 void View::drawLine(FrameContext* ctx, Rect frame)
 {
     // Don't setup and draw empty nvg path if there is no line to draw
-    if (this->lineTop <= 0 && this->lineRight <= 0 && this->lineBottom <= 0 && this->lineLeft <= 0)
+    if (this->m_lineTop <= 0 && this->m_lineRight <= 0 && this->m_lineBottom <= 0 && this->m_lineLeft <= 0)
         return;
 
     nvgBeginPath(ctx->vg);
-    nvgFillColor(ctx->vg, a(this->lineColor));
+    nvgFillColor(ctx->vg, a(this->m_lineColor));
 
-    if (this->lineTop > 0)
-        nvgRect(ctx->vg, frame.getMinX(), frame.getMinY(), frame.size.width, this->lineTop);
+    if (this->m_lineTop > 0)
+        nvgRect(ctx->vg, frame.getMinX(), frame.getMinY(), frame.size.width, this->m_lineTop);
 
-    if (this->lineRight > 0)
-        nvgRect(ctx->vg, frame.getMaxX(), frame.getMinY(), this->lineRight, frame.size.height);
+    if (this->m_lineRight > 0)
+        nvgRect(ctx->vg, frame.getMaxX(), frame.getMinY(), this->m_lineRight, frame.size.height);
 
-    if (this->lineBottom > 0)
-        nvgRect(ctx->vg, frame.getMinX(), frame.getMaxY() - this->lineBottom, frame.size.width, this->lineBottom);
+    if (this->m_lineBottom > 0)
+        nvgRect(ctx->vg, frame.getMinX(), frame.getMaxY() - this->m_lineBottom, frame.size.width, this->m_lineBottom);
 
-    if (this->lineLeft > 0)
-        nvgRect(ctx->vg, frame.getMinX() - this->lineLeft, frame.getMinY(), this->lineLeft, frame.size.height);
+    if (this->m_lineLeft > 0)
+        nvgRect(ctx->vg, frame.getMinX() - this->m_lineLeft, frame.getMinY(), this->m_lineLeft, frame.size.height);
 
     nvgFill(ctx->vg);
 }
@@ -411,7 +418,13 @@ void View::drawWireframe(FrameContext* ctx, Rect frame)
 
     // Left
     if (marginLeft > 0)
-        nvgRect(ctx->vg, frame.getMinX() - marginLeft, frame.getMinY() - marginTop, marginLeft, frame.getHeight() + marginTop + marginBottom);
+        nvgRect(
+            ctx->vg,
+            frame.getMinX() - marginLeft,
+            frame.getMinY() - marginTop,
+            marginLeft,
+            frame.getHeight() + marginTop + marginBottom //
+        );
 
     nvgStroke(ctx->vg);
 }
@@ -419,14 +432,30 @@ void View::drawWireframe(FrameContext* ctx, Rect frame)
 void View::drawBorder(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame)
 {
     nvgBeginPath(vg);
-    nvgStrokeColor(vg, a(this->borderColor));
-    nvgStrokeWidth(vg, this->borderThickness);
+    nvgStrokeColor(vg, a(this->m_borderColor));
+    nvgStrokeWidth(vg, this->m_borderThickness);
 
-    bool hasRadii = (this->cornerRadii[0] != 0 || this->cornerRadii[1] != 0 || this->cornerRadii[2] != 0 || this->cornerRadii[3] != 0);
+    bool hasRadii
+        = (this->m_cornerRadii[0] != 0 || this->m_cornerRadii[1] != 0 || this->m_cornerRadii[2] != 0 || this->m_cornerRadii[3] != 0);
+
     if (hasRadii)
-        nvgRoundedRectVarying(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), this->cornerRadii[0], this->cornerRadii[1], this->cornerRadii[2], this->cornerRadii[3]);
+    {
+        nvgRoundedRectVarying(
+            vg,
+            frame.getMinX(),
+            frame.getMinY(),
+            frame.getWidth(),
+            frame.getHeight(),
+            this->m_cornerRadii[0],
+            this->m_cornerRadii[1],
+            this->m_cornerRadii[2],
+            this->m_cornerRadii[3]
+        );
+    }
     else
-        nvgRoundedRect(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), this->cornerRadius);
+    {
+        nvgRoundedRect(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), this->m_cornerRadius);
+    }
 
     nvgStroke(vg);
 }
@@ -438,7 +467,7 @@ void View::drawShadow(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame
     float shadowOpacity = 0.0f;
     float shadowOffset  = 0.0f;
 
-    switch (this->shadowType)
+    switch (this->m_shadowType)
     {
         case ShadowType::GENERIC:
             shadowWidth   = style["brls/shadow/width"];
@@ -452,13 +481,26 @@ void View::drawShadow(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame
             break;
     }
 
-    float maxRadius      = std::max({ this->cornerRadii[0], this->cornerRadii[1], this->cornerRadii[2], this->cornerRadii[3] });
+    float maxRadius = std::max(
+        {
+            this->m_cornerRadii[0],
+            this->m_cornerRadii[1],
+            this->m_cornerRadii[2],
+            this->m_cornerRadii[3],
+        }
+    );
+
     NVGpaint shadowPaint = nvgBoxGradient(
         vg,
-        frame.getMinX(), frame.getMinY() + shadowWidth,
-        frame.getWidth(), frame.getHeight(),
-        maxRadius * 2, shadowFeather,
-        RGBA(0, 0, 0, shadowOpacity * alpha), TRANSPARENT);
+        frame.getMinX(),
+        frame.getMinY() + shadowWidth,
+        frame.getWidth(),
+        frame.getHeight(),
+        maxRadius * 2,
+        shadowFeather,
+        RGBA(0, 0, 0, shadowOpacity * alpha),
+        TRANSPARENT
+    );
 
     nvgBeginPath(vg);
     nvgRect(
@@ -466,8 +508,19 @@ void View::drawShadow(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame
         frame.getMinX() - shadowOffset,
         frame.getMinY() - shadowOffset,
         frame.getWidth() + shadowOffset * 2,
-        frame.getHeight() + shadowOffset * 3);
-    nvgRoundedRectVarying(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), this->cornerRadii[0], this->cornerRadii[1], this->cornerRadii[2], this->cornerRadii[3]);
+        frame.getHeight() + shadowOffset * 3
+    );
+    nvgRoundedRectVarying(
+        vg,
+        frame.getMinX(),
+        frame.getMinY(),
+        frame.getWidth(),
+        frame.getHeight(),
+        this->m_cornerRadii[0],
+        this->m_cornerRadii[1],
+        this->m_cornerRadii[2],
+        this->m_cornerRadii[3]
+    );
     nvgPathWinding(vg, NVG_HOLE);
     nvgFillPaint(vg, shadowPaint);
     nvgFill(vg);
@@ -480,13 +533,14 @@ void View::collapse(bool animated)
         Style style = Application::getStyle();
 
         this->collapseState.reset();
-
         this->collapseState.addStep(0.0f, style["brls/animations/collapse"], EasingFunction::quadraticOut);
-
-        this->collapseState.setTickCallback([this]
+        this->collapseState.setTickCallback(
+            [this]
             {
-            if (this->hasParent())
-                this->getParent()->invalidate(); });
+                if (this->hasParent())
+                    this->getParent()->invalidate();
+            }
+        );
 
         this->collapseState.start();
     }
@@ -496,10 +550,7 @@ void View::collapse(bool animated)
     }
 }
 
-bool View::isCollapsed()
-{
-    return this->collapseState < 1.0f;
-}
+bool View::isCollapsed() { return this->collapseState < 1.0f; }
 
 void View::expand(bool animated)
 {
@@ -508,13 +559,14 @@ void View::expand(bool animated)
         Style style = Application::getStyle();
 
         this->collapseState.reset();
-
         this->collapseState.addStep(1.0f, style["brls/animations/collapse"], EasingFunction::quadraticOut);
-
-        this->collapseState.setTickCallback([this]
+        this->collapseState.setTickCallback(
+            [this]
             {
-            if (this->hasParent())
-                this->getParent()->invalidate(); });
+                if (this->hasParent())
+                    this->getParent()->invalidate();
+            }
+        );
 
         this->collapseState.start();
     }
@@ -524,10 +576,7 @@ void View::expand(bool animated)
     }
 }
 
-void View::setAlpha(float alpha)
-{
-    this->alpha = alpha;
-}
+void View::setAlpha(float alpha) { this->alpha = alpha; }
 
 void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, bool background)
 {
@@ -537,8 +586,8 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
     nvgSave(vg);
     nvgResetScissor(vg);
 
-    float padding      = this->highlightPadding;
-    float cornerRadius = this->highlightCornerRadius;
+    float padding      = this->m_highlightPadding;
+    float cornerRadius = this->m_highlightCornerRadius;
     float strokeWidth  = style["brls/highlight/stroke_width"];
 
     for (Box* ancestor = this->getParent(); ancestor != nullptr; ancestor = ancestor->getParent())
@@ -546,11 +595,7 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
         if (ancestor->getClipsToBounds())
         {
             Rect clipFrame = ancestor->getFrame();
-            nvgIntersectScissor(vg,
-                clipFrame.getMinX(),
-                clipFrame.getMinY(),
-                clipFrame.getWidth(),
-                clipFrame.getHeight());
+            nvgIntersectScissor(vg, clipFrame.getMinX(), clipFrame.getMinY(), clipFrame.getWidth(), clipFrame.getHeight());
         }
     }
 
@@ -560,30 +605,30 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
     float height = this->getHeight() + padding * 2 + strokeWidth;
 
     // Shake animation
-    if (this->highlightShaking)
+    if (this->m_highlightShaking)
     {
         Time curTime = getCPUTimeUsec() / 1000;
-        Time t       = (curTime - highlightShakeStart) / 10;
+        Time t       = (curTime - m_highlightShakeStart) / 10;
 
         if (t >= style["brls/animations/highlight_shake"])
         {
-            this->highlightShaking = false;
+            this->m_highlightShaking = false;
         }
         else
         {
-            switch (this->highlightShakeDirection)
+            switch (this->m_highlightShakeDirection)
             {
                 case FocusDirection::RIGHT:
-                    x += shakeAnimation(t, this->highlightShakeAmplitude);
+                    x += shakeAnimation(t, this->m_highlightShakeAmplitude);
                     break;
                 case FocusDirection::LEFT:
-                    x -= shakeAnimation(t, this->highlightShakeAmplitude);
+                    x -= shakeAnimation(t, this->m_highlightShakeAmplitude);
                     break;
                 case FocusDirection::DOWN:
-                    y += shakeAnimation(t, this->highlightShakeAmplitude);
+                    y += shakeAnimation(t, this->m_highlightShakeAmplitude);
                     break;
                 case FocusDirection::UP:
-                    y -= shakeAnimation(t, this->highlightShakeAmplitude);
+                    y -= shakeAnimation(t, this->m_highlightShakeAmplitude);
                     break;
             }
         }
@@ -594,7 +639,7 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
     {
         // Background
         NVGcolor highlightBackgroundColor = theme["brls/highlight/background"];
-        nvgFillColor(vg, RGBAf(highlightBackgroundColor.r, highlightBackgroundColor.g, highlightBackgroundColor.b, this->highlightAlpha));
+        nvgFillColor(vg, RGBAf(highlightBackgroundColor.r, highlightBackgroundColor.g, highlightBackgroundColor.b, this->m_highlightAlpha));
         nvgBeginPath(vg);
         nvgRoundedRect(vg, x, y, width, height, cornerRadius);
         nvgFill(vg);
@@ -612,15 +657,20 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
         float shadowOffset = style["brls/highlight/shadow_offset"];
 
         // Shadow
-        NVGpaint shadowPaint = nvgBoxGradient(vg,
-            x, y + style["brls/highlight/shadow_width"],
-            width, height,
-            cornerRadius * 2, style["brls/highlight/shadow_feather"],
-            RGBA(0, 0, 0, style["brls/highlight/shadow_opacity"] * alpha), TRANSPARENT);
+        NVGpaint shadowPaint = nvgBoxGradient(
+            vg, //
+            x,  //
+            y + style["brls/highlight/shadow_width"],
+            width,
+            height,                                                        //
+            cornerRadius * 2,                                              //
+            style["brls/highlight/shadow_feather"],                        //
+            RGBA(0, 0, 0, style["brls/highlight/shadow_opacity"] * alpha), //
+            TRANSPARENT                                                    //
+        );
 
         nvgBeginPath(vg);
-        nvgRect(vg, x - shadowOffset, y - shadowOffset,
-            width + shadowOffset * 2, height + shadowOffset * 3);
+        nvgRect(vg, x - shadowOffset, y - shadowOffset, width + shadowOffset * 2, height + shadowOffset * 3);
         nvgRoundedRect(vg, x, y, width, height, cornerRadius);
         nvgPathWinding(vg, NVG_HOLE);
         nvgFillPaint(vg, shadowPaint);
@@ -632,25 +682,37 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
 
         NVGcolor highlightColor1 = theme["brls/highlight/color1"];
 
-        NVGcolor pulsationColor = RGBAf((color * highlightColor1.r) + (1 - color) * highlightColor1.r,
-            (color * highlightColor1.g) + (1 - color) * highlightColor1.g,
-            (color * highlightColor1.b) + (1 - color) * highlightColor1.b,
-            alpha);
+        NVGcolor pulsationColor = RGBAf(
+            (color * highlightColor1.r) + (1 - color) * highlightColor1.r, //
+            (color * highlightColor1.g) + (1 - color) * highlightColor1.g, //
+            (color * highlightColor1.b) + (1 - color) * highlightColor1.b, //
+            alpha                                                          //
+        );
 
         NVGcolor borderColor = theme["brls/highlight/color2"];
         borderColor.a        = 0.5f * alpha * this->getAlpha();
 
         float strokeWidth = style["brls/highlight/stroke_width"];
 
-        NVGpaint border1Paint = nvgRadialGradient(vg,
-            x + gradientX * width, y + gradientY * height,
-            strokeWidth * 10, strokeWidth * 40,
-            borderColor, TRANSPARENT);
+        NVGpaint border1Paint = nvgRadialGradient(
+            vg,
+            x + gradientX * width,
+            y + gradientY * height,
+            strokeWidth * 10,
+            strokeWidth * 40,
+            borderColor,
+            TRANSPARENT //
+        );
 
-        NVGpaint border2Paint = nvgRadialGradient(vg,
-            x + (1 - gradientX) * width, y + (1 - gradientY) * height,
-            strokeWidth * 10, strokeWidth * 40,
-            borderColor, TRANSPARENT);
+        NVGpaint border2Paint = nvgRadialGradient(
+            vg,
+            x + (1 - gradientX) * width,
+            y + (1 - gradientY) * height,
+            strokeWidth * 10,
+            strokeWidth * 40,
+            borderColor,
+            TRANSPARENT //
+        );
 
         nvgBeginPath(vg);
         nvgStrokeColor(vg, pulsationColor);
@@ -675,10 +737,7 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
     nvgRestore(vg);
 }
 
-void View::setBackground(ViewBackground background)
-{
-    this->background = background;
-}
+void View::setBackground(ViewBackground background) { this->m_background = background; }
 
 void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame)
 {
@@ -689,7 +748,7 @@ void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect f
 
     Theme theme = ctx->theme;
 
-    switch (this->background)
+    switch (this->m_background)
     {
         case ViewBackground::SIDEBAR:
         {
@@ -720,27 +779,45 @@ void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect f
         }
         case ViewBackground::VERTICAL_LINEAR:
         {
-            NVGpaint gradient = nvgLinearGradient(vg, x, y, x, y + height, a(backgroundStartColor), a(backgroundEndColor));
+            NVGpaint gradient = nvgLinearGradient(vg, x, y, x, y + height, a(m_backgroundStartColor), a(m_backgroundEndColor));
             nvgBeginPath(vg);
             nvgFillPaint(vg, gradient);
-            if (std::all_of(this->backgroundRadius.begin(), this->backgroundRadius.end(), [](float i)
-                    { return i == 0.0f; }))
+            if (std::all_of(this->m_backgroundRadius.begin(), this->m_backgroundRadius.end(), [](float i) { return i == 0.0f; }))
                 nvgRect(vg, x, y, width, height);
             else
-                nvgRoundedRectVarying(vg, x, y, width, height, backgroundRadius[0], backgroundRadius[1], backgroundRadius[2], backgroundRadius[3]);
+                nvgRoundedRectVarying(
+                    vg,
+                    x,
+                    y,
+                    width,
+                    height,
+                    m_backgroundRadius[0],
+                    m_backgroundRadius[1],
+                    m_backgroundRadius[2],
+                    m_backgroundRadius[3] //
+                );
             nvgFill(vg);
             break;
         }
         case ViewBackground::HORIZONTAL_LINEAR:
         {
-            NVGpaint gradient = nvgLinearGradient(vg, x, y, x + width, y, a(backgroundStartColor), a(backgroundEndColor));
+            NVGpaint gradient = nvgLinearGradient(vg, x, y, x + width, y, a(m_backgroundStartColor), a(m_backgroundEndColor));
             nvgBeginPath(vg);
             nvgFillPaint(vg, gradient);
-            if (std::all_of(this->backgroundRadius.begin(), this->backgroundRadius.end(), [](float i)
-                    { return i == 0.0f; }))
+            if (std::all_of(this->m_backgroundRadius.begin(), this->m_backgroundRadius.end(), [](float i) { return i == 0.0f; }))
                 nvgRect(vg, x, y, width, height);
             else
-                nvgRoundedRectVarying(vg, x, y, width, height, backgroundRadius[0], backgroundRadius[1], backgroundRadius[2], backgroundRadius[3]);
+                nvgRoundedRectVarying(
+                    vg,
+                    x,
+                    y,
+                    width,
+                    height,
+                    m_backgroundRadius[0],
+                    m_backgroundRadius[1],
+                    m_backgroundRadius[2],
+                    m_backgroundRadius[3] //
+                );
             nvgFill(vg);
             break;
         }
@@ -754,12 +831,25 @@ void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect f
         }
         case ViewBackground::SHAPE_COLOR:
         {
-            nvgFillColor(vg, a(this->backgroundColor));
+            nvgFillColor(vg, a(this->m_backgroundColor));
             nvgBeginPath(vg);
 
-            bool hasRadii = (this->cornerRadii[0] != 0 || this->cornerRadii[1] != 0 || this->cornerRadii[2] != 0 || this->cornerRadii[3] != 0);
+            bool hasRadii
+                = (this->m_cornerRadii[0] != 0 || this->m_cornerRadii[1] != 0 || this->m_cornerRadii[2] != 0
+                   || this->m_cornerRadii[3] != 0);
+
             if (hasRadii)
-                nvgRoundedRectVarying(vg, x, y, width, height, this->cornerRadii[0], this->cornerRadii[1], this->cornerRadii[2], this->cornerRadii[3]);
+                nvgRoundedRectVarying(
+                    vg,
+                    x,
+                    y,
+                    width,
+                    height,
+                    this->m_cornerRadii[0],
+                    this->m_cornerRadii[1],
+                    this->m_cornerRadii[2],
+                    this->m_cornerRadii[3] //
+                );
             else
                 nvgRect(vg, x, y, width, height);
 
@@ -771,42 +861,46 @@ void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect f
     }
 }
 
-ActionIdentifier View::registerAction(std::string hintText, enum ControllerButton button, ActionListener actionListener, bool hidden, bool allowRepeating, enum Sound sound)
+ActionIdentifier View::registerAction(
+    const std::string& hintText,
+    enum ControllerButton button,
+    const ActionListener& actionListener,
+    bool hidden,
+    bool allowRepeating,
+    enum Sound sound
+)
 {
-    ActionIdentifier nextIdentifier = (this->actions.size() == 0) ? 1 : this->actions.back().identifier + 1;
+    ActionIdentifier nextIdentifier = (this->m_actions.size() == 0) ? 1 : this->m_actions.back().identifier + 1;
 
-    if (auto it = std::find(this->actions.begin(), this->actions.end(), button); it != this->actions.end())
+    if (auto it = std::find(this->m_actions.begin(), this->m_actions.end(), button); it != this->m_actions.end())
         *it = { button, nextIdentifier, hintText, true, hidden, allowRepeating, sound, actionListener };
     else
-        this->actions.push_back({ button, nextIdentifier, hintText, true, hidden, allowRepeating, sound, actionListener });
+        this->m_actions.push_back({ button, nextIdentifier, hintText, true, hidden, allowRepeating, sound, actionListener });
 
     return nextIdentifier;
 }
 
 void View::unregisterAction(ActionIdentifier identifier)
 {
-    auto is_matched_action = [identifier](Action action)
-    {
-        return action.identifier == identifier;
-    };
-    if (auto it = std::find_if(this->actions.begin(), this->actions.end(), is_matched_action); it != this->actions.end())
-        this->actions.erase(it);
+    auto is_matched_action = [identifier](const Action& action) { return action.identifier == identifier; };
+    if (auto it = std::find_if(this->m_actions.begin(), this->m_actions.end(), is_matched_action); it != this->m_actions.end())
+        this->m_actions.erase(it);
 }
 
-void View::registerClickAction(ActionListener actionListener)
+void View::registerClickAction(const ActionListener& actionListener)
 {
     this->registerAction("hints/ok"_i18n, BUTTON_A, actionListener, false, false, SOUND_CLICK);
 }
 
-void View::updateActionHint(enum ControllerButton button, std::string hintText)
+void View::updateActionHint(enum ControllerButton button, const std::string& hintText)
 {
-    if (auto it = std::find(this->actions.begin(), this->actions.end(), button); it != this->actions.end())
+    if (auto it = std::find(this->m_actions.begin(), this->m_actions.end(), button); it != this->m_actions.end())
         it->hintText = hintText;
 }
 
 void View::setActionAvailable(enum ControllerButton button, bool available)
 {
-    if (auto it = std::find(this->actions.begin(), this->actions.end(), button); it != this->actions.end())
+    if (auto it = std::find(this->m_actions.begin(), this->m_actions.end(), button); it != this->m_actions.end())
         it->available = available;
 
     Application::getGlobalHintsUpdateEvent()->fire();
@@ -814,45 +908,30 @@ void View::setActionAvailable(enum ControllerButton button, bool available)
 
 void View::setActionsAvailable(bool available)
 {
-    for (size_t i = 0; i < this->actions.size(); i++)
-        this->actions[i].available = available;
+    for (size_t i = 0; i < this->m_actions.size(); i++)
+        this->m_actions[i].available = available;
 
     Application::getGlobalHintsUpdateEvent()->fire();
 }
 
 void View::setParent(Box* parent, void* parentUserdata)
 {
-    if (this->parentUserdata)
-        free(this->parentUserdata);
+    if (this->m_parentUserdata)
+        free(this->m_parentUserdata);
 
-    this->parent         = parent;
-    this->parentUserdata = parentUserdata;
+    this->parent           = parent;
+    this->m_parentUserdata = parentUserdata;
 }
 
-void* View::getParentUserData()
-{
-    return this->parentUserdata;
-}
+void* View::getParentUserData() { return this->m_parentUserdata; }
 
-bool View::isFocused()
-{
-    return this->focused;
-}
+bool View::isFocused() const { return this->focused; }
 
-enum Sound View::getFocusSound()
-{
-    return this->focusSound;
-}
+enum Sound View::getFocusSound() { return this->m_focusSound; }
 
-Box* View::getParent()
-{
-    return this->parent;
-}
+Box* View::getParent() { return this->parent; }
 
-bool View::hasParent()
-{
-    return this->parent;
-}
+bool View::hasParent() { return this->parent; }
 
 void View::setDimensions(float width, float height)
 {
@@ -1024,15 +1103,9 @@ void View::setMarginRight(float right)
     this->invalidate();
 }
 
-float View::getMarginRight()
-{
-    return ntz(YGNodeStyleGetMargin(this->ygNode, YGEdgeRight).value);
-}
+float View::getMarginRight() { return ntz(YGNodeStyleGetMargin(this->ygNode, YGEdgeRight).value); }
 
-float View::getMarginLeft()
-{
-    return ntz(YGNodeStyleGetMargin(this->ygNode, YGEdgeLeft).value);
-}
+float View::getMarginLeft() { return ntz(YGNodeStyleGetMargin(this->ygNode, YGEdgeLeft).value); }
 
 void View::setMarginBottom(float bottom)
 {
@@ -1054,10 +1127,7 @@ void View::setMarginLeft(float left)
     this->invalidate();
 }
 
-void View::setMargins(float margins)
-{
-    this->setMargins(margins, margins, margins, margins);
-}
+void View::setMargins(float margins) { this->setMargins(margins, margins, margins, margins); }
 
 void View::setMargins(float top, float right, float bottom, float left)
 {
@@ -1209,81 +1279,59 @@ void View::invalidate()
     if (YGNodeHasMeasureFunc(this->ygNode))
         YGNodeMarkDirty(this->ygNode);
 
-    if (this->hasParent() && !this->detached)
+    if (this->hasParent() && !this->m_detached)
         this->getParent()->invalidate();
     else
         YGNodeCalculateLayout(this->ygNode, YGUndefined, YGUndefined, YGDirectionLTR);
 }
 
-Rect View::getFrame()
-{
-    return Rect(getX(), getY(), getWidth(), getHeight());
-}
+Rect View::getFrame() { return Rect(getX(), getY(), getWidth(), getHeight()); }
 
 float View::getX()
 {
     if (this->hasParent())
-        return this->getParent()->getX() + YGNodeLayoutGetLeft(this->ygNode) + this->translation.x + (isDetached() ? this->detachedOrigin.x : 0);
-    return YGNodeLayoutGetLeft(this->ygNode) + this->translation.x;
+        return this->getParent()->getX() + YGNodeLayoutGetLeft(this->ygNode) + this->m_translation.x
+               + (isDetached() ? this->m_detachedOrigin.x : 0);
+    return YGNodeLayoutGetLeft(this->ygNode) + this->m_translation.x;
 }
 
 float View::getY()
 {
     if (this->hasParent())
-        return this->getParent()->getY() + YGNodeLayoutGetTop(this->ygNode) + this->translation.y + (isDetached() ? this->detachedOrigin.y : 0);
-    return YGNodeLayoutGetTop(this->ygNode) + this->translation.y;
+        return this->getParent()->getY() + YGNodeLayoutGetTop(this->ygNode) + this->m_translation.y
+               + (isDetached() ? this->m_detachedOrigin.y : 0);
+    return YGNodeLayoutGetTop(this->ygNode) + this->m_translation.y;
 }
 
-Rect View::getLocalFrame()
-{
-    return Rect(getLocalX(), getLocalY(), getWidth(), getHeight());
-}
+Rect View::getLocalFrame() { return Rect(getLocalX(), getLocalY(), getWidth(), getHeight()); }
 
 float View::getLocalX()
 {
-    return YGNodeLayoutGetLeft(this->ygNode) + this->translation.x + (isDetached() ? this->detachedOrigin.x : 0);
+    return YGNodeLayoutGetLeft(this->ygNode) + this->m_translation.x + (isDetached() ? this->m_detachedOrigin.x : 0);
 }
 
-float View::getLocalY()
-{
-    return YGNodeLayoutGetTop(this->ygNode) + this->translation.y + (isDetached() ? this->detachedOrigin.y : 0);
-}
+float View::getLocalY() { return YGNodeLayoutGetTop(this->ygNode) + this->m_translation.y + (isDetached() ? this->m_detachedOrigin.y : 0); }
 
 float View::getHeight(bool includeCollapse)
 {
     return YGNodeLayoutGetHeight(this->ygNode) * (includeCollapse ? this->collapseState.getValue() : 1.0f);
 }
 
-float View::getWidth()
-{
-    return YGNodeLayoutGetWidth(this->ygNode);
-}
+float View::getWidth() { return YGNodeLayoutGetWidth(this->ygNode); }
 
-void View::detach()
-{
-    this->detached = true;
-}
+void View::detach() { this->m_detached = true; }
 
 void View::setDetachedPosition(float x, float y)
 {
-    this->detachedOrigin.x = x;
-    this->detachedOrigin.y = y;
+    this->m_detachedOrigin.x = x;
+    this->m_detachedOrigin.y = y;
 }
 
-void View::setDetachedPositionX(float x)
-{
-    this->detachedOrigin.x = x;
-}
+void View::setDetachedPositionX(float x) { this->m_detachedOrigin.x = x; }
 
-void View::setDetachedPositionY(float y)
-{
-    this->detachedOrigin.y = y;
-}
+void View::setDetachedPositionY(float y) { this->m_detachedOrigin.y = y; }
 
-bool View::isDetached()
-{
-    return this->detached;
-}
+bool View::isDetached() const { return this->m_detached; }
 
 void View::onFocusGained()
 {
@@ -1291,9 +1339,9 @@ void View::onFocusGained()
 
     Style style = Application::getStyle();
 
-    this->highlightAlpha.reset();
-    this->highlightAlpha.addStep(1.0f, style["brls/animations/highlight"], EasingFunction::quadraticOut);
-    this->highlightAlpha.start();
+    this->m_highlightAlpha.reset();
+    this->m_highlightAlpha.addStep(1.0f, style["brls/animations/highlight"], EasingFunction::quadraticOut);
+    this->m_highlightAlpha.start();
 
     this->focusEvent.fire(this);
 
@@ -1301,15 +1349,9 @@ void View::onFocusGained()
         this->getParent()->onChildFocusGained(this, this);
 }
 
-GenericEvent* View::getFocusEvent()
-{
-    return &this->focusEvent;
-}
+GenericEvent* View::getFocusEvent() { return &this->focusEvent; }
 
-GenericEvent* View::getFocusLostEvent()
-{
-    return &this->focusLostEvent;
-}
+GenericEvent* View::getFocusLostEvent() { return &this->focusLostEvent; }
 
 void View::onFocusLost()
 {
@@ -1317,9 +1359,9 @@ void View::onFocusLost()
 
     Style style = Application::getStyle();
 
-    this->highlightAlpha.reset();
-    this->highlightAlpha.addStep(0.0f, style["brls/animations/highlight"], EasingFunction::quadraticOut);
-    this->highlightAlpha.start();
+    this->m_highlightAlpha.reset();
+    this->m_highlightAlpha.addStep(0.0f, style["brls/animations/highlight"], EasingFunction::quadraticOut);
+    this->m_highlightAlpha.start();
 
     this->focusLostEvent.fire(this);
 
@@ -1327,10 +1369,7 @@ void View::onFocusLost()
         this->getParent()->onChildFocusLost(this, this);
 }
 
-void View::setInFadeAnimation(bool inFadeAnimation)
-{
-    this->inFadeAnimation = inFadeAnimation;
-}
+void View::setInFadeAnimation(bool translucent) { this->m_inFadeAnimation = translucent; }
 
 void View::removeFromSuperView(bool free)
 {
@@ -1338,19 +1377,13 @@ void View::removeFromSuperView(bool free)
         parent->removeView(this, free);
 }
 
-bool View::isTranslucent()
-{
-    return this->fadeIn || this->inFadeAnimation;
-}
+bool View::isTranslucent() { return this->m_fadeIn || this->m_inFadeAnimation; }
 
-void View::show(std::function<void(void)> cb)
-{
-    this->show(cb, true, this->getShowAnimationDuration(TransitionAnimation::FADE));
-}
+void View::show(const std::function<void(void)>& cb) { this->show(cb, true, this->getShowAnimationDuration(TransitionAnimation::FADE)); }
 
-void View::show(std::function<void(void)> cb, bool animate, float animationDuration)
+void View::show(const std::function<void(void)>& cb, bool animate, float animationDuration)
 {
-    if (!this->hidden)
+    if (!this->m_hidden)
     {
         this->onShowAnimationEnd();
         cb();
@@ -1359,9 +1392,9 @@ void View::show(std::function<void(void)> cb, bool animate, float animationDurat
 
     brls::Logger::debug("Showing {}", this->describe());
 
-    this->hidden = false;
+    this->m_hidden = false;
 
-    this->fadeIn = true;
+    this->m_fadeIn = true;
 
     if (animate)
     {
@@ -1369,31 +1402,36 @@ void View::show(std::function<void(void)> cb, bool animate, float animationDurat
 
         this->alpha.addStep(1.0f, animationDuration, EasingFunction::quadraticOut);
 
-        this->alpha.setEndCallback([this, cb](bool finished)
+        this->alpha.setEndCallback(
+            [this, cb](bool finished)
             {
-            this->fadeIn = false;
-            this->onShowAnimationEnd();
-            cb(); });
+                this->m_fadeIn = false;
+                this->onShowAnimationEnd();
+                cb();
+            }
+        );
 
         this->alpha.start();
     }
     else
     {
-        this->alpha  = 1.0f;
-        this->fadeIn = false;
+        this->alpha    = 1.0f;
+        this->m_fadeIn = false;
         this->onShowAnimationEnd();
         cb();
     }
 }
 
-void View::hide(std::function<void(void)> cb)
-{
-    this->hide(cb, true, this->getShowAnimationDuration(TransitionAnimation::FADE));
-}
+void View::hide(const std::function<void(void)>& cb) { this->hide(cb, true, this->getShowAnimationDuration(TransitionAnimation::FADE)); }
 
-void View::hide(std::function<void(void)> cb, bool animated, float animationDuration)
+void View::hide(
+    const std::function<void(void)>& cb,
+    bool animated,
+
+    float animationDuration
+)
 {
-    if (this->hidden)
+    if (this->m_hidden)
     {
         cb();
         return;
@@ -1401,8 +1439,8 @@ void View::hide(std::function<void(void)> cb, bool animated, float animationDura
 
     brls::Logger::debug("Hiding {}", this->describe());
 
-    this->hidden = true;
-    this->fadeIn = false;
+    this->m_hidden = true;
+    this->m_fadeIn = false;
 
     if (animated)
     {
@@ -1410,9 +1448,13 @@ void View::hide(std::function<void(void)> cb, bool animated, float animationDura
 
         this->alpha.addStep(0.0f, animationDuration, EasingFunction::quadraticOut);
 
-        this->alpha.setEndCallback([cb](bool finished)
+        this->alpha.setEndCallback(
+            [cb](bool finished)
             {
-            if (finished) cb(); });
+                if (finished)
+                    cb();
+            }
+        );
 
         this->alpha.start();
     }
@@ -1433,74 +1475,49 @@ float View::getShowAnimationDuration(TransitionAnimation animation)
     return style["brls/animations/show"];
 }
 
-bool View::isHidden()
-{
-    return this->hidden;
-}
+bool View::isHidden() const { return this->m_hidden; }
 
-void View::overrideTheme(Theme* newTheme)
-{
-    this->themeOverride = newTheme;
-}
+void View::overrideTheme(Theme* newTheme) { this->m_themeOverride = newTheme; }
 
-void View::onParentFocusGained(View* focusedView)
-{
-}
+void View::onParentFocusGained(View* focusedView) {}
 
-void View::onParentFocusLost(View* focusedView)
-{
-}
+void View::onParentFocusLost(View* focusedView) {}
 
-View* View::getNextFocus(FocusDirection direction, View* currentView)
-{
-    return getParent()->getNextFocus(direction, currentView);
-}
+View* View::getNextFocus(FocusDirection direction, View* currentView) { return getParent()->getNextFocus(direction, currentView); }
 
 void View::setCustomNavigationRoute(FocusDirection direction, View* target)
 {
-    if (!this->focusable)
+    if (!this->m_focusable)
         fatal("Only focusable views can have a custom navigation route");
 
-    this->customFocusByPtr[direction] = target;
+    this->m_customFocusByPtr[direction] = target;
 }
 
-void View::setCustomNavigationRoute(FocusDirection direction, std::string targetId)
+void View::setCustomNavigationRoute(FocusDirection direction, const std::string& targetId)
 {
-    if (!this->focusable)
+    if (!this->m_focusable)
         fatal("Only focusable views can have a custom navigation route");
 
-    this->customFocusById[direction] = targetId;
+    this->m_customFocusById[direction] = targetId;
 }
 
-bool View::hasCustomNavigationRouteByPtr(FocusDirection direction)
-{
-    return this->customFocusByPtr.count(direction) > 0;
-}
+bool View::hasCustomNavigationRouteByPtr(FocusDirection direction) { return this->m_customFocusByPtr.count(direction) > 0; }
 
-bool View::hasCustomNavigationRouteById(FocusDirection direction)
-{
-    return this->customFocusById.count(direction) > 0;
-}
+bool View::hasCustomNavigationRouteById(FocusDirection direction) { return this->m_customFocusById.count(direction) > 0; }
 
-View* View::getCustomNavigationRoutePtr(FocusDirection direction)
-{
-    return this->customFocusByPtr[direction];
-}
+View* View::getCustomNavigationRoutePtr(FocusDirection direction) { return this->m_customFocusByPtr[direction]; }
 
-std::string View::getCustomNavigationRouteId(FocusDirection direction)
-{
-    return this->customFocusById[direction];
-}
+std::string View::getCustomNavigationRouteId(FocusDirection direction) { return this->m_customFocusById[direction]; }
 
 View::~View()
 {
     this->resetClickAnimation();
 
     // Parent userdata
-    if (this->parentUserdata)
+    if (this->m_parentUserdata)
     {
-        free(this->parentUserdata);
-        this->parentUserdata = nullptr;
+        free(this->m_parentUserdata);
+        this->m_parentUserdata = nullptr;
     }
 
     // Focus sanity check
@@ -1508,12 +1525,12 @@ View::~View()
         Application::giveFocus(nullptr);
 
     Application::tryDeinitFirstResponder(this);
-    for (GestureRecognizer* recognizer : this->gestureRecognizers)
+    for (GestureRecognizer* recognizer : this->m_gestureRecognizers)
         delete recognizer;
 
     alpha.stop();
-    clickAlpha.stop();
-    highlightAlpha.stop();
+    m_clickAlpha.stop();
+    m_highlightAlpha.stop();
     collapseState.stop();
 
     YGNodeFree(this->ygNode);
@@ -1548,30 +1565,30 @@ std::string View::getFilePathXMLAttributeValue(std::string value)
     return value;
 }
 
-bool View::applyXMLAttribute(std::string name, std::string value)
+bool View::applyXMLAttribute(const std::string& name, const std::string& value)
 {
     // String -> string
-    if (this->stringAttributes.count(name) > 0)
+    if (this->m_stringAttributes.count(name) > 0)
     {
         if (startsWith(value, "@i18n/"))
         {
-            this->stringAttributes[name](View::getStringXMLAttributeValue(value));
+            this->m_stringAttributes[name](View::getStringXMLAttributeValue(value));
             return true;
         }
 
-        this->stringAttributes[name](value);
+        this->m_stringAttributes[name](value);
         return true;
     }
 
     // File path -> file path
     if (startsWith(value, "@res/"))
     {
-        if (this->filePathAttributes.count(name) > 0)
+        if (this->m_filePathAttributes.count(name) > 0)
         {
 #ifdef USE_LIBROMFS
-            this->filePathAttributes[name](value);
+            this->m_filePathAttributes[name](value);
 #else
-            this->filePathAttributes[name](View::getFilePathXMLAttributeValue(value));
+            this->m_filePathAttributes[name](View::getFilePathXMLAttributeValue(value));
 #endif
             return true;
         }
@@ -1582,9 +1599,9 @@ bool View::applyXMLAttribute(std::string name, std::string value)
     }
     else
     {
-        if (this->filePathAttributes.count(name) > 0)
+        if (this->m_filePathAttributes.count(name) > 0)
         {
-            this->filePathAttributes[name](value);
+            this->m_filePathAttributes[name](value);
             return true;
         }
 
@@ -1594,9 +1611,9 @@ bool View::applyXMLAttribute(std::string name, std::string value)
     // Auto -> auto
     if (value == "auto")
     {
-        if (this->autoAttributes.count(name) > 0)
+        if (this->m_autoAttributes.count(name) > 0)
         {
-            this->autoAttributes[name]();
+            this->m_autoAttributes[name]();
             return true;
         }
         else
@@ -1613,9 +1630,9 @@ bool View::applyXMLAttribute(std::string name, std::string value)
         try
         {
             float floatValue = std::stof(newFloat);
-            if (this->floatAttributes.count(name) > 0)
+            if (this->m_floatAttributes.count(name) > 0)
             {
-                this->floatAttributes[name](floatValue);
+                this->m_floatAttributes[name](floatValue);
                 return true;
             }
             else
@@ -1641,9 +1658,9 @@ bool View::applyXMLAttribute(std::string name, std::string value)
             if (floatValue < -100 || floatValue > 100)
                 return false;
 
-            if (this->percentageAttributes.count(name) > 0)
+            if (this->m_percentageAttributes.count(name) > 0)
             {
-                this->percentageAttributes[name](floatValue);
+                this->m_percentageAttributes[name](floatValue);
                 return true;
             }
             else
@@ -1660,12 +1677,13 @@ bool View::applyXMLAttribute(std::string name, std::string value)
     else if (startsWith(value, "@style/"))
     {
         // Parse the style name
-        std::string styleName = value.substr(7); // length of "@style/"
-        float value           = Application::getStyle()[styleName]; // will throw logic_error if the metric doesn't exist
+        std::string styleName = value.substr(7);                    // length of "@style/"
+        float value           = Application::getStyle()[styleName]; // will throw logic_error if the
+                                                                    // metric doesn't exist
 
-        if (this->floatAttributes.count(name) > 0)
+        if (this->m_floatAttributes.count(name) > 0)
         {
-            this->floatAttributes[name](value);
+            this->m_floatAttributes[name](value);
             return true;
         }
         else
@@ -1692,9 +1710,9 @@ bool View::applyXMLAttribute(std::string name, std::string value)
             {
                 return false;
             }
-            else if (this->colorAttributes.count(name) > 0)
+            else if (this->m_colorAttributes.count(name) > 0)
             {
-                this->colorAttributes[name](nvgRGB(r, g, b));
+                this->m_colorAttributes[name](nvgRGB(r, g, b));
                 return true;
             }
             else
@@ -1719,9 +1737,9 @@ bool View::applyXMLAttribute(std::string name, std::string value)
             {
                 return false;
             }
-            else if (this->colorAttributes.count(name) > 0)
+            else if (this->m_colorAttributes.count(name) > 0)
             {
-                this->colorAttributes[name](nvgRGBA(r, g, b, a));
+                this->m_colorAttributes[name](nvgRGBA(r, g, b, a));
                 return true;
             }
             else
@@ -1738,12 +1756,13 @@ bool View::applyXMLAttribute(std::string name, std::string value)
     else if (startsWith(value, "@theme/"))
     {
         // Parse the color name
-        std::string colorName = value.substr(7); // length of "@theme/"
-        NVGcolor value        = Application::getTheme()[colorName]; // will throw logic_error if the color doesn't exist
+        std::string colorName = value.substr(7);                    // length of "@theme/"
+        NVGcolor value        = Application::getTheme()[colorName]; // will throw logic_error if the
+                                                                    // color doesn't exist
 
-        if (this->colorAttributes.count(name) > 0)
+        if (this->m_colorAttributes.count(name) > 0)
         {
-            this->colorAttributes[name](value);
+            this->m_colorAttributes[name](value);
             return true;
         }
         else
@@ -1754,11 +1773,11 @@ bool View::applyXMLAttribute(std::string name, std::string value)
     // Equals true or false -> bool
     else if (value == "true" || value == "false")
     {
-        bool boolValue = value == "true" ? true : false;
+        bool boolValue = value == "true";
 
-        if (this->boolAttributes.count(name) > 0)
+        if (this->m_boolAttributes.count(name) > 0)
         {
-            this->boolAttributes[name](boolValue);
+            this->m_boolAttributes[name](boolValue);
             return true;
         }
         else
@@ -1771,9 +1790,9 @@ bool View::applyXMLAttribute(std::string name, std::string value)
     try
     {
         float newValue = std::stof(value);
-        if (this->floatAttributes.count(name) > 0)
+        if (this->m_floatAttributes.count(name) > 0)
         {
-            this->floatAttributes[name](newValue);
+            this->m_floatAttributes[name](newValue);
             return true;
         }
         else
@@ -1806,12 +1825,9 @@ void View::applyXMLAttributes(tinyxml2::XMLElement* element)
     }
 }
 
-bool View::isXMLAttributeValid(std::string attributeName)
-{
-    return this->knownAttributes.count(attributeName) > 0;
-}
+bool View::isXMLAttributeValid(const std::string& attributeName) { return this->m_knownAttributes.count(attributeName) > 0; }
 
-View* View::createFromXMLResource(std::string name)
+View* View::createFromXMLResource(const std::string& name)
 {
     // Check if custom xml file exists
     if (!View::CUSTOM_RESOURCES_PATH.empty() && std::ifstream { View::CUSTOM_RESOURCES_PATH + "xml/" + name }.good())
@@ -1849,7 +1865,7 @@ View* View::createFromXMLString(std::string_view xml)
     return view;
 }
 
-View* View::createFromXMLFile(std::string path)
+View* View::createFromXMLFile(const std::string& path)
 {
     std::shared_ptr<tinyxml2::XMLDocument> document = getXMLCache(path);
 
@@ -1929,93 +1945,53 @@ View* View::createFromXMLElement(tinyxml2::XMLElement* element)
     return view;
 }
 
-void View::handleXMLElement(tinyxml2::XMLElement* element)
-{
-    fatal("Raw views cannot have child XML tags");
-}
+void View::handleXMLElement(tinyxml2::XMLElement* element) { fatal("Raw views cannot have child XML tags"); }
 
-void View::setMaximumAllowedXMLElements(unsigned max)
-{
-    this->maximumAllowedXMLElements = max;
-}
+void View::setMaximumAllowedXMLElements(unsigned max) { this->m_maximumAllowedXMLElements = max; }
 
-unsigned View::getMaximumAllowedXMLElements()
-{
-    return this->maximumAllowedXMLElements;
-}
+unsigned View::getMaximumAllowedXMLElements() const { return this->m_maximumAllowedXMLElements; }
 
 void View::registerCommonAttributes()
 {
     // Width
-    this->registerAutoXMLAttribute("width", [this]
-        { this->setWidth(View::AUTO); });
-
-    this->registerFloatXMLAttribute("width", [this](float value)
-        { this->setWidth(value); });
-
-    this->registerPercentageXMLAttribute("width", [this](float value)
-        { this->setWidthPercentage(value); });
+    this->registerAutoXMLAttribute("width", [this] { this->setWidth(View::AUTO); });
+    this->registerFloatXMLAttribute("width", [this](float value) { this->setWidth(value); });
+    this->registerPercentageXMLAttribute("width", [this](float value) { this->setWidthPercentage(value); });
 
     // Height
-    this->registerAutoXMLAttribute("height", [this]
-        { this->setHeight(View::AUTO); });
-
-    this->registerFloatXMLAttribute("height", [this](float value)
-        { this->setHeight(value); });
-
-    this->registerPercentageXMLAttribute("height", [this](float value)
-        { this->setHeightPercentage(value); });
+    this->registerAutoXMLAttribute("height", [this] { this->setHeight(View::AUTO); });
+    this->registerFloatXMLAttribute("height", [this](float value) { this->setHeight(value); });
+    this->registerPercentageXMLAttribute("height", [this](float value) { this->setHeightPercentage(value); });
 
     // Min width
-    this->registerAutoXMLAttribute("minWidth", [this]
-        { this->setMinWidth(View::AUTO); });
-
-    this->registerFloatXMLAttribute("minWidth", [this](float value)
-        { this->setMinWidth(value); });
-
-    this->registerPercentageXMLAttribute("minWidth", [this](float percentage)
-        { this->setMinWidthPercentage(percentage); });
+    this->registerAutoXMLAttribute("minWidth", [this] { this->setMinWidth(View::AUTO); });
+    this->registerFloatXMLAttribute("minWidth", [this](float value) { this->setMinWidth(value); });
+    this->registerPercentageXMLAttribute("minWidth", [this](float percentage) { this->setMinWidthPercentage(percentage); });
 
     // Min height
-    this->registerAutoXMLAttribute("minHeight", [this]
-        { this->setMinHeight(View::AUTO); });
-
-    this->registerFloatXMLAttribute("minHeight", [this](float value)
-        { this->setMinHeight(value); });
-
-    this->registerPercentageXMLAttribute("minHeight", [this](float percentage)
-        { this->setMinHeightPercentage(percentage); });
+    this->registerAutoXMLAttribute("minHeight", [this] { this->setMinHeight(View::AUTO); });
+    this->registerFloatXMLAttribute("minHeight", [this](float value) { this->setMinHeight(value); });
+    this->registerPercentageXMLAttribute("minHeight", [this](float percentage) { this->setMinHeightPercentage(percentage); });
 
     // Max width
-    this->registerAutoXMLAttribute("maxWidth", [this]
-        { this->setMaxWidth(View::AUTO); });
-
-    this->registerFloatXMLAttribute("maxWidth", [this](float value)
-        { this->setMaxWidth(value); });
-
-    this->registerPercentageXMLAttribute("maxWidth", [this](float percentage)
-        { this->setMaxWidthPercentage(percentage); });
+    this->registerAutoXMLAttribute("maxWidth", [this] { this->setMaxWidth(View::AUTO); });
+    this->registerFloatXMLAttribute("maxWidth", [this](float value) { this->setMaxWidth(value); });
+    this->registerPercentageXMLAttribute("maxWidth", [this](float percentage) { this->setMaxWidthPercentage(percentage); });
 
     // Max height
-    this->registerAutoXMLAttribute("maxHeight", [this]
-        { this->setMaxHeight(View::AUTO); });
-
-    this->registerFloatXMLAttribute("maxHeight", [this](float value)
-        { this->setMaxHeight(value); });
-
-    this->registerPercentageXMLAttribute("maxHeight", [this](float percentage)
-        { this->setMaxHeightPercentage(percentage); });
+    this->registerAutoXMLAttribute("maxHeight", [this] { this->setMaxHeight(View::AUTO); });
+    this->registerFloatXMLAttribute("maxHeight", [this](float value) { this->setMaxHeight(value); });
+    this->registerPercentageXMLAttribute("maxHeight", [this](float percentage) { this->setMaxHeightPercentage(percentage); });
 
     // Grow and shrink
-    this->registerFloatXMLAttribute("grow", [this](float value)
-        { this->setGrow(value); });
-
-    this->registerFloatXMLAttribute("shrink", [this](float value)
-        { this->setShrink(value); });
+    this->registerFloatXMLAttribute("grow", [this](float value) { this->setGrow(value); });
+    this->registerFloatXMLAttribute("shrink", [this](float value) { this->setShrink(value); });
 
     // Alignment
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "alignSelf", AlignSelf, this->setAlignSelf,
+        "alignSelf",
+        AlignSelf,
+        this->setAlignSelf,
         {
             { "auto", AlignSelf::AUTO },
             { "flexStart", AlignSelf::FLEX_START },
@@ -2025,131 +2001,87 @@ void View::registerCommonAttributes()
             { "baseline", AlignSelf::BASELINE },
             { "spaceBetween", AlignSelf::SPACE_BETWEEN },
             { "spaceAround", AlignSelf::SPACE_AROUND },
-        });
+        }
+    );
 
     // Margins all
-    this->registerFloatXMLAttribute("margin", [this](float value)
-        { this->setMargins(value, value, value, value); });
-
-    this->registerAutoXMLAttribute("margin", [this]
-        { this->setMargins(View::AUTO, View::AUTO, View::AUTO, View::AUTO); });
+    this->registerFloatXMLAttribute("margin", [this](float value) { this->setMargins(value, value, value, value); });
+    this->registerAutoXMLAttribute("margin", [this] { this->setMargins(View::AUTO, View::AUTO, View::AUTO, View::AUTO); });
 
     // Margin top
-    this->registerFloatXMLAttribute("marginTop", [this](float value)
-        { this->setMarginTop(value); });
-
-    this->registerAutoXMLAttribute("marginTop", [this]
-        { this->setMarginTop(View::AUTO); });
+    this->registerFloatXMLAttribute("marginTop", [this](float value) { this->setMarginTop(value); });
+    this->registerAutoXMLAttribute("marginTop", [this] { this->setMarginTop(View::AUTO); });
 
     // Margin right
-    this->registerFloatXMLAttribute("marginRight", [this](float value)
-        { this->setMarginRight(value); });
-
-    this->registerAutoXMLAttribute("marginRight", [this]
-        { this->setMarginRight(View::AUTO); });
+    this->registerFloatXMLAttribute("marginRight", [this](float value) { this->setMarginRight(value); });
+    this->registerAutoXMLAttribute("marginRight", [this] { this->setMarginRight(View::AUTO); });
 
     // Margin bottom
-    this->registerFloatXMLAttribute("marginBottom", [this](float value)
-        { this->setMarginBottom(value); });
-
-    this->registerAutoXMLAttribute("marginBottom", [this]
-        { this->setMarginBottom(View::AUTO); });
+    this->registerFloatXMLAttribute("marginBottom", [this](float value) { this->setMarginBottom(value); });
+    this->registerAutoXMLAttribute("marginBottom", [this] { this->setMarginBottom(View::AUTO); });
 
     // Margin left
-    this->registerFloatXMLAttribute("marginLeft", [this](float value)
-        { this->setMarginLeft(value); });
-
-    this->registerAutoXMLAttribute("marginLeft", [this]
-        { this->setMarginLeft(View::AUTO); });
+    this->registerFloatXMLAttribute("marginLeft", [this](float value) { this->setMarginLeft(value); });
+    this->registerAutoXMLAttribute("marginLeft", [this] { this->setMarginLeft(View::AUTO); });
 
     // Line
-    this->registerColorXMLAttribute("lineColor", [this](NVGcolor color)
-        { this->setLineColor(color); });
-
-    this->registerFloatXMLAttribute("lineTop", [this](float value)
-        { this->setLineTop(value); });
-
-    this->registerFloatXMLAttribute("lineRight", [this](float value)
-        { this->setLineRight(value); });
-
-    this->registerFloatXMLAttribute("lineBottom", [this](float value)
-        { this->setLineBottom(value); });
-
-    this->registerFloatXMLAttribute("lineLeft", [this](float value)
-        { this->setLineLeft(value); });
+    this->registerColorXMLAttribute("lineColor", [this](NVGcolor color) { this->setLineColor(color); });
+    this->registerFloatXMLAttribute("lineTop", [this](float value) { this->setLineTop(value); });
+    this->registerFloatXMLAttribute("lineRight", [this](float value) { this->setLineRight(value); });
+    this->registerFloatXMLAttribute("lineBottom", [this](float value) { this->setLineBottom(value); });
+    this->registerFloatXMLAttribute("lineLeft", [this](float value) { this->setLineLeft(value); });
 
     // Position
-    this->registerFloatXMLAttribute("positionTop", [this](float value)
-        { this->setPositionTop(value); });
-
-    this->registerFloatXMLAttribute("positionRight", [this](float value)
-        { this->setPositionRight(value); });
-
-    this->registerFloatXMLAttribute("positionBottom", [this](float value)
-        { this->setPositionBottom(value); });
-
-    this->registerFloatXMLAttribute("positionLeft", [this](float value)
-        { this->setPositionLeft(value); });
-
-    this->registerPercentageXMLAttribute("positionTop", [this](float value)
-        { this->setPositionTopPercentage(value); });
-
-    this->registerPercentageXMLAttribute("positionRight", [this](float value)
-        { this->setPositionRightPercentage(value); });
-
-    this->registerPercentageXMLAttribute("positionBottom", [this](float value)
-        { this->setPositionBottomPercentage(value); });
-
-    this->registerPercentageXMLAttribute("positionLeft", [this](float value)
-        { this->setPositionLeftPercentage(value); });
+    this->registerFloatXMLAttribute("positionTop", [this](float value) { this->setPositionTop(value); });
+    this->registerFloatXMLAttribute("positionRight", [this](float value) { this->setPositionRight(value); });
+    this->registerFloatXMLAttribute("positionBottom", [this](float value) { this->setPositionBottom(value); });
+    this->registerFloatXMLAttribute("positionLeft", [this](float value) { this->setPositionLeft(value); });
+    this->registerPercentageXMLAttribute("positionTop", [this](float value) { this->setPositionTopPercentage(value); });
+    this->registerPercentageXMLAttribute("positionRight", [this](float value) { this->setPositionRightPercentage(value); });
+    this->registerPercentageXMLAttribute("positionBottom", [this](float value) { this->setPositionBottomPercentage(value); });
+    this->registerPercentageXMLAttribute("positionLeft", [this](float value) { this->setPositionLeftPercentage(value); });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "positionType", PositionType, this->setPositionType,
+        "positionType",
+        PositionType,
+        this->setPositionType,
         {
             { "relative", PositionType::RELATIVE },
             { "absolute", PositionType::ABSOLUTE },
-        });
+        }
+    );
 
     // Custom focus routes
-    this->registerStringXMLAttribute("focusUp", [this](std::string value)
-        { this->setCustomNavigationRoute(FocusDirection::UP, value); });
+    this->registerStringXMLAttribute(
+        "focusUp", [this](const std::string& value) { this->setCustomNavigationRoute(FocusDirection::UP, value); }
+    );
 
-    this->registerStringXMLAttribute("focusRight", [this](std::string value)
-        { this->setCustomNavigationRoute(FocusDirection::RIGHT, value); });
+    this->registerStringXMLAttribute(
+        "focusRight", [this](const std::string& value) { this->setCustomNavigationRoute(FocusDirection::RIGHT, value); }
+    );
 
-    this->registerStringXMLAttribute("focusDown", [this](std::string value)
-        { this->setCustomNavigationRoute(FocusDirection::DOWN, value); });
+    this->registerStringXMLAttribute(
+        "focusDown", [this](const std::string& value) { this->setCustomNavigationRoute(FocusDirection::DOWN, value); }
+    );
 
-    this->registerStringXMLAttribute("focusLeft", [this](std::string value)
-        { this->setCustomNavigationRoute(FocusDirection::LEFT, value); });
+    this->registerStringXMLAttribute(
+        "focusLeft", [this](const std::string& value) { this->setCustomNavigationRoute(FocusDirection::LEFT, value); }
+    );
 
     // Shape
-    this->registerColorXMLAttribute("backgroundColor", [this](NVGcolor value)
-        { this->setBackgroundColor(value); });
-
-    this->registerColorXMLAttribute("borderColor", [this](NVGcolor value)
-        { this->setBorderColor(value); });
-
-    this->registerFloatXMLAttribute("borderThickness", [this](float value)
-        { this->setBorderThickness(value); });
-
-    this->registerFloatXMLAttribute("cornerRadius", [this](float value)
-        { this->setCornerRadius(value); });
-
-    this->registerFloatXMLAttribute("cornerTopLeftRadius", [this](float value)
-        { this->cornerRadii[0] = value; });
-
-    this->registerFloatXMLAttribute("cornerTopRightRadius", [this](float value)
-        { this->cornerRadii[1] = value; });
-
-    this->registerFloatXMLAttribute("cornerBottomRightRadius", [this](float value)
-        { this->cornerRadii[2] = value; });
-
-    this->registerFloatXMLAttribute("cornerBottomLeftRadius", [this](float value)
-        { this->cornerRadii[3] = value; });
+    this->registerColorXMLAttribute("backgroundColor", [this](NVGcolor value) { this->setBackgroundColor(value); });
+    this->registerColorXMLAttribute("borderColor", [this](NVGcolor value) { this->setBorderColor(value); });
+    this->registerFloatXMLAttribute("borderThickness", [this](float value) { this->setBorderThickness(value); });
+    this->registerFloatXMLAttribute("cornerRadius", [this](float value) { this->setCornerRadius(value); });
+    this->registerFloatXMLAttribute("cornerTopLeftRadius", [this](float value) { this->m_cornerRadii[0] = value; });
+    this->registerFloatXMLAttribute("cornerTopRightRadius", [this](float value) { this->m_cornerRadii[1] = value; });
+    this->registerFloatXMLAttribute("cornerBottomRightRadius", [this](float value) { this->m_cornerRadii[2] = value; });
+    this->registerFloatXMLAttribute("cornerBottomLeftRadius", [this](float value) { this->m_cornerRadii[3] = value; });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "shadowType", ShadowType, this->setShadowType,
+        "shadowType",
+        ShadowType,
+        this->setShadowType,
         {
             {
                 "none",
@@ -2163,138 +2095,112 @@ void View::registerCommonAttributes()
                 "custom",
                 ShadowType::CUSTOM,
             },
-        });
+        }
+    );
 
     // Misc
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "visibility", Visibility, this->setVisibility,
+        "visibility",
+        Visibility,
+        this->setVisibility,
         {
             { "visible", Visibility::VISIBLE },
             { "invisible", Visibility::INVISIBLE },
             { "gone", Visibility::GONE },
-        });
+        }
+    );
 
-    this->registerStringXMLAttribute("id", [this](std::string value)
-        { this->setId(value); });
+    this->registerStringXMLAttribute("id", [this](const std::string& value) { this->setId(std::move(value)); });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "background", ViewBackground, this->setBackground,
+        "background",
+        ViewBackground,
+        this->setBackground,
         {
             { "sidebar", ViewBackground::SIDEBAR },
             { "backdrop", ViewBackground::BACKDROP },
             { "vertical_linear", ViewBackground::VERTICAL_LINEAR },
             { "horizontal_linear", ViewBackground::HORIZONTAL_LINEAR },
-        });
+        }
+    );
 
     // background start and end color for vertical linear style
-    this->registerColorXMLAttribute("backgroundStartColor", [this](NVGcolor value)
-        { this->backgroundStartColor = value; });
-    this->registerColorXMLAttribute("backgroundEndColor", [this](NVGcolor value)
-        { this->backgroundEndColor = value; });
+    this->registerColorXMLAttribute("backgroundStartColor", [this](NVGcolor value) { this->m_backgroundStartColor = value; });
+    this->registerColorXMLAttribute("backgroundEndColor", [this](NVGcolor value) { this->m_backgroundEndColor = value; });
 
     // background corner radius for vertical linear style
-    this->registerFloatXMLAttribute("backgroundTopLeftRadius", [this](float value)
-        { this->backgroundRadius[0] = value; });
-    this->registerFloatXMLAttribute("backgroundTopRightRadius", [this](float value)
-        { this->backgroundRadius[1] = value; });
-    this->registerFloatXMLAttribute("backgroundBottomRightRadius", [this](float value)
-        { this->backgroundRadius[2] = value; });
-    this->registerFloatXMLAttribute("backgroundBottomLeftRadius", [this](float value)
-        { this->backgroundRadius[3] = value; });
+    this->registerFloatXMLAttribute("backgroundTopLeftRadius", [this](float value) { this->m_backgroundRadius[0] = value; });
+    this->registerFloatXMLAttribute("backgroundTopRightRadius", [this](float value) { this->m_backgroundRadius[1] = value; });
+    this->registerFloatXMLAttribute("backgroundBottomRightRadius", [this](float value) { this->m_backgroundRadius[2] = value; });
+    this->registerFloatXMLAttribute("backgroundBottomLeftRadius", [this](float value) { this->m_backgroundRadius[3] = value; });
 
-    this->registerBoolXMLAttribute("focusable", [this](bool value)
-        { this->setFocusable(value); });
+    this->registerBoolXMLAttribute("focusable", [this](bool value) { this->setFocusable(value); });
 
-    this->registerBoolXMLAttribute("wireframe", [this](bool value)
-        { this->setWireframeEnabled(value); });
+    this->registerBoolXMLAttribute("wireframe", [this](bool value) { this->setWireframeEnabled(value); });
 
     // Highlight
-    this->registerBoolXMLAttribute("hideHighlightBackground", [this](bool value)
-        { this->setHideHighlightBackground(value); });
-
-    // Highlight
-    this->registerBoolXMLAttribute("hideHighlightBorder", [this](bool value)
-        { this->setHideHighlightBorder(value); });
-
-    // Highlight
-    this->registerBoolXMLAttribute("hideClickAnimation", [this](bool value)
-        { this->setHideClickAnimation(value); });
-
-    // Highlight
-    this->registerBoolXMLAttribute("hideHighlight", [this](bool value)
-        { this->setHideHighlight(value); });
-
-    this->registerFloatXMLAttribute("highlightPadding", [this](float value)
-        { this->setHighlightPadding(value); });
-
-    this->registerFloatXMLAttribute("highlightCornerRadius", [this](float value)
-        { this->setHighlightCornerRadius(value); });
+    this->registerBoolXMLAttribute("hideHighlightBackground", [this](bool value) { this->setHideHighlightBackground(value); });
+    this->registerBoolXMLAttribute("hideHighlightBorder", [this](bool value) { this->setHideHighlightBorder(value); });
+    this->registerBoolXMLAttribute("hideClickAnimation", [this](bool value) { this->setHideClickAnimation(value); });
+    this->registerBoolXMLAttribute("hideHighlight", [this](bool value) { this->setHideHighlight(value); });
+    this->registerFloatXMLAttribute("highlightPadding", [this](float value) { this->setHighlightPadding(value); });
+    this->registerFloatXMLAttribute("highlightCornerRadius", [this](float value) { this->setHighlightCornerRadius(value); });
 
     // Misc
-    this->registerStringXMLAttribute("title", [this](std::string value)
-        { this->getAppletFrameItem()->title = value; });
+    this->registerStringXMLAttribute("title", [this](std::string value) { this->getAppletFrameItem()->title = std::move(value); });
 
-    this->registerFilePathXMLAttribute("icon", [this](std::string value)
-        { this->getAppletFrameItem()->setIconFromFile(value); });
+    this->registerFilePathXMLAttribute(
+        "icon", [this](std::string value) { this->getAppletFrameItem()->setIconFromFile(std::move(value)); }
+    );
 
-    this->registerFloatXMLAttribute("detachedX", [this](float value)
+    this->registerFloatXMLAttribute(
+        "detachedX",
+        [this](float value)
         {
-        this->detach();
-        this->setDetachedPositionX(value); });
+            this->detach();
+            this->setDetachedPositionX(value);
+        }
+    );
 
-    this->registerFloatXMLAttribute("detachedY", [this](float value)
+    this->registerFloatXMLAttribute(
+        "detachedY",
+        [this](float value)
         {
-        this->detach();
-        this->setDetachedPositionY(value); });
+            this->detach();
+            this->setDetachedPositionY(value);
+        }
+    );
 
-    this->registerFloatXMLAttribute("alpha", [this](float value)
-        { this->setAlpha(value); });
+    this->registerFloatXMLAttribute("alpha", [this](float value) { this->setAlpha(value); });
 
-    this->registerBoolXMLAttribute("clipsToBounds", [this](float value)
-        { this->setClipsToBounds(value); });
+    this->registerBoolXMLAttribute("clipsToBounds", [this](bool value) { this->setClipsToBounds(value); });
 
-    this->registerBoolXMLAttribute("culled", [this](float value)
-        { this->setCulled(value); });
+    this->registerBoolXMLAttribute("culled", [this](bool value) { this->setCulled(value); });
 
-    this->registerFloatXMLAttribute("aspectRatio", [this](float value)
-        { this->setAspectRatio(value); });
+    this->registerFloatXMLAttribute("aspectRatio", [this](float value) { this->setAspectRatio(value); });
 }
 
-void View::setTranslationY(float translationY)
-{
-    this->translation.y = translationY;
-}
+void View::setTranslationY(float translationY) { this->m_translation.y = translationY; }
 
-void View::setTranslationX(float translationX)
-{
-    this->translation.x = translationX;
-}
+void View::setTranslationX(float translationX) { this->m_translation.x = translationX; }
 
-Point View::getScale()
-{
-    return this->scale;
-}
+Point View::getScale() { return this->m_scale; }
 
-void View::setScaleX(float scaleX)
-{
-    this->scale.x = scaleX;
-}
+void View::setScaleX(float scaleX) { this->m_scale.x = scaleX; }
 
-void View::setScaleY(float scaleY)
-{
-    this->scale.y = scaleY;
-}
+void View::setScaleY(float scaleY) { this->m_scale.y = scaleY; }
 
 void View::setScale(float scale)
 {
-    this->scale.x = scale;
-    this->scale.y = scale;
+    this->m_scale.x = scale;
+    this->m_scale.y = scale;
 }
 
 void View::setVisibility(Visibility visibility)
 {
     // Only change YG properties and invalidate if going from or to GONE
-    if ((this->visibility == Visibility::GONE && visibility != Visibility::GONE) || (this->visibility != Visibility::GONE && visibility == Visibility::GONE))
+    if ((this->m_visibility == Visibility::GONE && visibility != Visibility::GONE)
+        || (this->m_visibility != Visibility::GONE && visibility == Visibility::GONE))
     {
         if (visibility == Visibility::GONE)
             YGNodeStyleSetDisplay(this->ygNode, YGDisplayNone);
@@ -2304,7 +2210,7 @@ void View::setVisibility(Visibility visibility)
         this->invalidate();
     }
 
-    this->visibility = visibility;
+    this->m_visibility = visibility;
 
     if (visibility == Visibility::VISIBLE)
         this->willAppear();
@@ -2312,67 +2218,61 @@ void View::setVisibility(Visibility visibility)
         this->willDisappear();
 }
 
-Visibility View::getVisibility()
-{
-    return visibility;
-}
+Visibility View::getVisibility() { return m_visibility; }
 
-void View::printXMLAttributeErrorMessage(tinyxml2::XMLElement* element, std::string name, std::string value)
+void View::printXMLAttributeErrorMessage(tinyxml2::XMLElement* element, const std::string& name, const std::string& value)
 {
-    if (this->knownAttributes.find(name) != this->knownAttributes.end())
+    if (this->m_knownAttributes.find(name) != this->m_knownAttributes.end())
         fatal("Illegal value \"" + value + "\" for \"" + std::string(element->Name()) + "\" XML attribute \"" + name + "\"");
     else
         fatal("Unknown XML attribute \"" + name + "\" for tag \"" + std::string(element->Name()) + "\" (with value \"" + value + "\")");
 }
 
-void View::registerFloatXMLAttribute(std::string name, FloatAttributeHandler handler)
+void View::registerFloatXMLAttribute(const std::string& name, const FloatAttributeHandler& handler)
 {
-    this->floatAttributes[name] = handler;
-    this->knownAttributes.insert(name);
+    this->m_floatAttributes[name] = handler;
+    this->m_knownAttributes.insert(name);
 }
 
-void View::registerPercentageXMLAttribute(std::string name, FloatAttributeHandler handler)
+void View::registerPercentageXMLAttribute(const std::string& name, const FloatAttributeHandler& handler)
 {
-    this->percentageAttributes[name] = handler;
-    this->knownAttributes.insert(name);
+    this->m_percentageAttributes[name] = handler;
+    this->m_knownAttributes.insert(name);
 }
 
-void View::registerAutoXMLAttribute(std::string name, AutoAttributeHandler handler)
+void View::registerAutoXMLAttribute(const std::string& name, const AutoAttributeHandler& handler)
 {
-    this->autoAttributes[name] = handler;
-    this->knownAttributes.insert(name);
+    this->m_autoAttributes[name] = handler;
+    this->m_knownAttributes.insert(name);
 }
 
-void View::registerStringXMLAttribute(std::string name, StringAttributeHandler handler)
+void View::registerStringXMLAttribute(const std::string& name, const StringAttributeHandler& handler)
 {
-    this->stringAttributes[name] = handler;
-    this->knownAttributes.insert(name);
+    this->m_stringAttributes[name] = handler;
+    this->m_knownAttributes.insert(name);
 }
 
-void View::registerColorXMLAttribute(std::string name, ColorAttributeHandler handler)
+void View::registerColorXMLAttribute(const std::string& name, const ColorAttributeHandler& handler)
 {
-    this->colorAttributes[name] = handler;
-    this->knownAttributes.insert(name);
+    this->m_colorAttributes[name] = handler;
+    this->m_knownAttributes.insert(name);
 }
 
-void View::registerBoolXMLAttribute(std::string name, BoolAttributeHandler handler)
+void View::registerBoolXMLAttribute(const std::string& name, const BoolAttributeHandler& handler)
 {
-    this->boolAttributes[name] = handler;
-    this->knownAttributes.insert(name);
+    this->m_boolAttributes[name] = handler;
+    this->m_knownAttributes.insert(name);
 }
 
-void View::registerFilePathXMLAttribute(std::string name, FilePathAttributeHandler handler)
+void View::registerFilePathXMLAttribute(const std::string& name, const FilePathAttributeHandler& handler)
 {
-    this->filePathAttributes[name] = handler;
-    this->knownAttributes.insert(name);
+    this->m_filePathAttributes[name] = handler;
+    this->m_knownAttributes.insert(name);
 }
 
-float ntz(float value)
-{
-    return std::isnan(value) ? 0.0f : value;
-}
+float ntz(float value) { return std::isnan(value) ? 0.0f : value; }
 
-View* View::getView(std::string id)
+View* View::getView(const std::string& id)
 {
     if (id == this->id)
         return this;
@@ -2380,7 +2280,7 @@ View* View::getView(std::string id)
     return nullptr;
 }
 
-View* View::getNearestView(std::string id)
+View* View::getNearestView(const std::string& id)
 {
     // First try a children of ours
     View* child = this->getView(id);
@@ -2395,7 +2295,7 @@ View* View::getNearestView(std::string id)
     return nullptr;
 }
 
-void View::setId(std::string id)
+void View::setId(const std::string& id)
 {
     if (id == "")
         fatal("ID cannot be empty");
@@ -2403,10 +2303,7 @@ void View::setId(std::string id)
     this->id = id;
 }
 
-bool View::isFocusable()
-{
-    return this->focusable && this->visibility == Visibility::VISIBLE;
-}
+bool View::isFocusable() { return this->m_focusable && this->m_visibility == Visibility::VISIBLE; }
 
 View* View::getDefaultFocus()
 {
@@ -2419,15 +2316,12 @@ View* View::getDefaultFocus()
 View* View::hitTest(Point point)
 {
     // Check if can focus ourself first
-    if (!this->isFocusable() || alpha == 0.0f || visibility != Visibility::VISIBLE)
+    if (!this->isFocusable() || alpha == 0.0f || m_visibility != Visibility::VISIBLE)
         return nullptr;
 
     Rect frame = getFrame();
-    //    Logger::debug(describe() + ": --- " + frame.describe());
-
     if (frame.pointInside(point))
     {
-        //        Logger::debug(describe() + ": OK");
         return this;
     }
 
@@ -2445,22 +2339,16 @@ std::shared_ptr<tinyxml2::XMLDocument> View::getXMLCache(std::string_view path)
     return xmlCache[hash];
 }
 
-void View::setWireframeEnabled(bool wireframe)
-{
-    this->wireframeEnabled = wireframe;
-}
+void View::setWireframeEnabled(bool wireframe) { this->m_wireframeEnabled = wireframe; }
 
-bool View::isWireframeEnabled()
-{
-    return this->wireframeEnabled;
-}
+bool View::isWireframeEnabled() const { return this->m_wireframeEnabled; }
 
 AppletFrame* View::getAppletFrame()
 {
     View* view = this;
     while (view)
     {
-        AppletFrame* applet = dynamic_cast<AppletFrame*>(view);
+        auto* applet = dynamic_cast<AppletFrame*>(view);
         if (applet)
             return applet;
 
@@ -2495,28 +2383,16 @@ void View::dismiss(std::function<void(void)> cb)
     if (!applet)
         return;
 
-    applet->popContentView(cb);
+    applet->popContentView(std::move(cb));
 }
 
-void View::ptrLock()
-{
-    ptrLockCounter++;
-}
+void View::ptrLock() { m_ptrLockCounter++; }
 
-void View::ptrUnlock()
-{
-    ptrLockCounter--;
-}
+void View::ptrUnlock() { m_ptrLockCounter--; }
 
-bool View::isPtrLocked()
-{
-    return ptrLockCounter > 0;
-}
+bool View::isPtrLocked() const { return m_ptrLockCounter > 0; }
 
-void View::freeView()
-{
-    Application::addToFreeQueue(this);
-}
+void View::freeView() { Application::addToFreeQueue(this); }
 
 Activity* View::getParentActivity()
 {
@@ -2529,9 +2405,6 @@ Activity* View::getParentActivity()
     return nullptr;
 }
 
-void View::setParentActivity(Activity* activity)
-{
-    parentActivity = activity;
-}
+void View::setParentActivity(Activity* activity) { parentActivity = activity; }
 
 } // namespace brls

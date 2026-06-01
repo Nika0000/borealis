@@ -42,52 +42,59 @@
 #include <romfs/romfs.hpp>
 #endif
 
-// Registers an "enum" XML attribute, which is just a string attribute with a map string -> enum inside
-// When using this macro please use the same (wonky) formatting as what you see in Box.cpp or View.cpp
-// otherwise clang-format will screw it up
-#define BRLS_REGISTER_ENUM_XML_ATTRIBUTE(name, enumType, method, ...) \
-    this->registerStringXMLAttribute(name, [this](std::string value) {                   \
-        std::unordered_map<std::string, enumType> enumMap = __VA_ARGS__;                 \
-        if (enumMap.count(value) > 0)                                                    \
-            method(enumMap[value]);                                                      \
-        else                                                                             \
-            brls::fatal("Illegal value \"" + value + "\" for XML attribute \"" + name + "\""); })
+// Registers an "enum" XML attribute, which is just a string attribute with a
+// map string -> enum inside When using this macro please use the same (wonky)
+// formatting as what you see in Box.cpp or View.cpp otherwise clang-format will
+// screw it up
+#define BRLS_REGISTER_ENUM_XML_ATTRIBUTE(name, enumType, method, ...)                                                                      \
+    this->registerStringXMLAttribute(                                                                                                      \
+        name,                                                                                                                              \
+        [this](const std::string& value)                                                                                                   \
+        {                                                                                                                                  \
+            std::unordered_map<std::string, enumType> enumMap = __VA_ARGS__;                                                               \
+            if (enumMap.count(value) > 0)                                                                                                  \
+                method(enumMap[value]);                                                                                                    \
+            else                                                                                                                           \
+                brls::fatal("Illegal value \"" + value + "\" for XML attribute \"" + name + "\"");                                         \
+        }                                                                                                                                  \
+    )
 
-// Shortcut to register an A key action (generic click) on a view given its id, that calls any function or method
-// To be used in activities or derivates of Box (internally uses the getView() method)
-// The function or method must return a boolean (true if the action was consumed, false otherwise) and take a single brls::View*
-// parameter (useful to know what was clicked if you use the same listener for multiple views)
-#define BRLS_REGISTER_CLICK_BY_ID(id, method) \
-    this->getView(id)->registerClickAction([this](brls::View* view) { return method(view); })
+// Shortcut to register an A key action (generic click) on a view given its id,
+// that calls any function or method To be used in activities or derivates of
+// Box (internally uses the getView() method) The function or method must return
+// a boolean (true if the action was consumed, false otherwise) and take a
+// single brls::View* parameter (useful to know what was clicked if you use the
+// same listener for multiple views)
+#define BRLS_REGISTER_CLICK_BY_ID(id, method) this->getView(id)->registerClickAction([this](brls::View* view) { return method(view); })
 
-#define ASYNC_RETAIN                             \
-    if (!deletionToken && !deletionTokenCounter) \
-    {                                            \
-        deletionToken        = new bool(false);  \
-        deletionTokenCounter = new int(0);       \
-    }                                            \
-    (*deletionTokenCounter)++;                   \
-    bool* token       = deletionToken;           \
+#define ASYNC_RETAIN                                                                                                                       \
+    if (!deletionToken && !deletionTokenCounter)                                                                                           \
+    {                                                                                                                                      \
+        deletionToken        = new bool(false);                                                                                            \
+        deletionTokenCounter = new int(0);                                                                                                 \
+    }                                                                                                                                      \
+    (*deletionTokenCounter)++;                                                                                                             \
+    bool* token       = deletionToken;                                                                                                     \
     int* tokenCounter = deletionTokenCounter;
 
-#define ASYNC_RELEASE                           \
-    bool release = *token;                      \
-    int counter  = *tokenCounter;               \
-    if (counter > 0)                            \
-    {                                           \
-        (*tokenCounter)--;                      \
-        if (*tokenCounter == 0)                 \
-        {                                       \
-            delete token;                       \
-            delete tokenCounter;                \
-            if (!release)                       \
-            {                                   \
-                deletionToken        = nullptr; \
-                deletionTokenCounter = nullptr; \
-            }                                   \
-        }                                       \
-    }                                           \
-    if (release)                                \
+#define ASYNC_RELEASE                                                                                                                      \
+    bool release = *token;                                                                                                                 \
+    int counter  = *tokenCounter;                                                                                                          \
+    if (counter > 0)                                                                                                                       \
+    {                                                                                                                                      \
+        (*tokenCounter)--;                                                                                                                 \
+        if (*tokenCounter == 0)                                                                                                            \
+        {                                                                                                                                  \
+            delete token;                                                                                                                  \
+            delete tokenCounter;                                                                                                           \
+            if (!release)                                                                                                                  \
+            {                                                                                                                              \
+                deletionToken        = nullptr;                                                                                            \
+                deletionTokenCounter = nullptr;                                                                                            \
+            }                                                                                                                              \
+        }                                                                                                                                  \
+    }                                                                                                                                      \
+    if (release)                                                                                                                           \
         return;
 
 #define ASYNC_TOKEN this, token, tokenCounter
@@ -101,7 +108,7 @@
 namespace brls
 {
 
-const NVGcolor TRANSPARENT = nvgRGBA(0, 0, 0, 0);
+inline const NVGcolor TRANSPARENT = nvgRGBA(0, 0, 0, 0);
 
 // Focus direction when navigating
 enum class FocusDirection
@@ -138,9 +145,9 @@ enum class AlignSelf
 // View visibility
 enum class Visibility
 {
-    VISIBLE, // the view is visible
+    VISIBLE,   // the view is visible
     INVISIBLE, // the view is invisible but still takes some space
-    GONE, // the view is invisible and doesn't take any space
+    GONE,      // the view is invisible and doesn't take any space
 };
 
 // Position attribute behavior
@@ -155,8 +162,8 @@ enum class PositionType
 // showing / hiding a view.
 enum class TransitionAnimation
 {
-    FADE, // the old activity fades away and the new one fades in
-    SLIDE_LEFT, // the old activity slides out to the left and the new one slides in from the right
+    FADE,        // the old activity fades away and the new one fades in
+    SLIDE_LEFT,  // the old activity slides out to the left and the new one slides in from the right
     SLIDE_RIGHT, // inverted SLIDE_LEFT
     NONE,
     LINEAR,
@@ -165,9 +172,9 @@ enum class TransitionAnimation
 // A View shape's shadow type
 enum class ShadowType
 {
-    NONE, // do not draw any shadow around the shape
+    NONE,    // do not draw any shadow around the shape
     GENERIC, // generic all-purpose shadow
-    CUSTOM, // customized shadow (use the provided methods to tweak it)
+    CUSTOM,  // customized shadow (use the provided methods to tweak it)
 };
 
 struct AppletFrameItem
@@ -175,7 +182,7 @@ struct AppletFrameItem
     std::string title;
     std::string iconPath;
 
-    void setIconFromRes(std::string name)
+    void setIconFromRes(const std::string& name)
     {
 #ifdef USE_LIBROMFS
         iconPath = "@res/" + name;
@@ -184,18 +191,15 @@ struct AppletFrameItem
 #endif
     }
 
-    void setIconFromFile(std::string path)
-    {
-        iconPath = path;
-    }
+    void setIconFromFile(std::string path) { iconPath = std::move(path); }
 
     void setHintView(View* hintView);
-    View* getHintView() { return hintView; }
+    View* getHintView() { return m_hintView; }
 
     ~AppletFrameItem();
 
   private:
-    View* hintView = nullptr;
+    View* m_hintView = nullptr;
 };
 
 extern const NVGcolor transparent;
@@ -234,7 +238,7 @@ float ntz(float value);
 class View
 {
   private:
-    ViewBackground background = ViewBackground::NONE;
+    ViewBackground m_background = ViewBackground::NONE;
 
     void drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame);
     void drawShadow(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame);
@@ -244,98 +248,100 @@ class View
     void drawWireframe(FrameContext* ctx, Rect frame);
     void drawLine(FrameContext* ctx, Rect frame);
 
-    Animatable highlightAlpha   = 0.0f;
-    float highlightPadding      = 0.0f;
-    float highlightCornerRadius = 0.0f;
+    Animatable m_highlightAlpha   = 0.0f;
+    float m_highlightPadding      = 0.0f;
+    float m_highlightCornerRadius = 0.0f;
 
-    Animatable clickAlpha = 0.0f; // animated between 0 and 1
+    Animatable m_clickAlpha = 0.0f; // animated between 0 and 1
 
-    bool highlightShaking = false;
-    Time highlightShakeStart;
-    FocusDirection highlightShakeDirection;
-    float highlightShakeAmplitude;
+    bool m_highlightShaking = false;
+    Time m_highlightShakeStart;
+    FocusDirection m_highlightShakeDirection;
+    float m_highlightShakeAmplitude;
 
-    bool fadeIn          = false; // is the fade in animation running?
-    bool inFadeAnimation = false; // is any fade animation running?
+    bool m_fadeIn          = false; // is the fade in animation running?
+    bool m_inFadeAnimation = false; // is any fade animation running?
 
-    Theme* themeOverride = nullptr;
+    Theme* m_themeOverride = nullptr;
 
-    bool hidden    = false;
-    bool focusable = false;
+    bool m_hidden    = false;
+    bool m_focusable = false;
 
-    enum Sound focusSound = SOUND_FOCUS_CHANGE;
+    enum Sound m_focusSound = SOUND_FOCUS_CHANGE;
 
-    bool hideHighlightBackground = false;
-    bool hideHighlightBorder     = false;
-    bool hideHighlight           = false;
-    bool hideClickAnimation      = false;
+    bool m_hideHighlightBackground = false;
+    bool m_hideHighlightBorder     = false;
+    bool m_hideHighlight           = false;
+    bool m_hideClickAnimation      = false;
 
-    bool detached = false;
-    Point detachedOrigin;
+    bool m_detached = false;
+    Point m_detachedOrigin;
 
-    Point translation;
-    Point scale;
+    Point m_translation;
+    Point m_scale;
 
-    bool wireframeEnabled = false;
-    bool clipsToBounds    = false;
+    bool m_wireframeEnabled = false;
+    bool m_clipsToBounds    = false;
 
-    std::vector<Action> actions;
-    std::vector<GestureRecognizer*> gestureRecognizers;
+    std::vector<Action> m_actions;
+    std::vector<GestureRecognizer*> m_gestureRecognizers;
 
     /**
      * Parent user data, typically the index of the view
      * in the internal layout structure
      */
-    void* parentUserdata = nullptr;
+    void* m_parentUserdata = nullptr;
 
-    bool culled = true; // will be culled by the parent Box, if any
+    bool m_culled = true; // will be culled by the parent Box, if any
 
-    float aspectRatio = 0;
+    float m_aspectRatio = 0;
 
-    std::unordered_map<std::string, AutoAttributeHandler> autoAttributes;
-    std::unordered_map<std::string, FloatAttributeHandler> percentageAttributes;
-    std::unordered_map<std::string, FloatAttributeHandler> floatAttributes;
-    std::unordered_map<std::string, StringAttributeHandler> stringAttributes;
-    std::unordered_map<std::string, ColorAttributeHandler> colorAttributes;
-    std::unordered_map<std::string, BoolAttributeHandler> boolAttributes;
-    std::unordered_map<std::string, FilePathAttributeHandler> filePathAttributes;
+    std::unordered_map<std::string, AutoAttributeHandler> m_autoAttributes;
+    std::unordered_map<std::string, FloatAttributeHandler> m_percentageAttributes;
+    std::unordered_map<std::string, FloatAttributeHandler> m_floatAttributes;
+    std::unordered_map<std::string, StringAttributeHandler> m_stringAttributes;
+    std::unordered_map<std::string, ColorAttributeHandler> m_colorAttributes;
+    std::unordered_map<std::string, BoolAttributeHandler> m_boolAttributes;
+    std::unordered_map<std::string, FilePathAttributeHandler> m_filePathAttributes;
 
-    std::set<std::string> knownAttributes;
+    std::set<std::string> m_knownAttributes;
 
     void registerCommonAttributes();
-    void printXMLAttributeErrorMessage(tinyxml2::XMLElement* element, std::string name, std::string value);
+    void printXMLAttributeErrorMessage(tinyxml2::XMLElement* element, const std::string& name, const std::string& value);
 
-    unsigned maximumAllowedXMLElements = UINT_MAX;
+    unsigned m_maximumAllowedXMLElements = UINT_MAX;
 
-    NVGcolor lineColor = TRANSPARENT;
-    float lineTop      = 0;
-    float lineRight    = 0;
-    float lineBottom   = 0;
-    float lineLeft     = 0;
+    NVGcolor m_lineColor = TRANSPARENT;
+    float m_lineTop      = 0;
+    float m_lineRight    = 0;
+    float m_lineBottom   = 0;
+    float m_lineLeft     = 0;
 
-    Visibility visibility = Visibility::VISIBLE;
+    Visibility m_visibility = Visibility::VISIBLE;
 
-    NVGcolor backgroundColor = TRANSPARENT;
+    NVGcolor m_backgroundColor = TRANSPARENT;
 
     // Background gradient colors for vertical linear style
-    NVGcolor backgroundStartColor = TRANSPARENT;
-    NVGcolor backgroundEndColor   = nvgRGBA(0, 0, 0, 200);
-    // Background corner radii for vertical linear style: top-left, top-right, bottom-right, bottom-left
-    std::array<float, 4> backgroundRadius { 0.0f, 0.0f, 0.0f, 0.0f };
+    NVGcolor m_backgroundStartColor = TRANSPARENT;
+    NVGcolor m_backgroundEndColor   = nvgRGBA(0, 0, 0, 200);
 
-    NVGcolor borderColor             = TRANSPARENT;
-    float borderThickness            = 0.0f;
-    float cornerRadius               = 0.0f;
-    std::array<float, 4> cornerRadii = { 0.0f, 0.0f, 0.0f, 0.0f }; // TL, TR, BR, BL
-    ShadowType shadowType            = ShadowType::NONE;
-    bool showShadow                  = true;
+    // Background corner radii for vertical linear
+    // style: top-left, top-right, bottom-right, bottom-left
+    std::array<float, 4> m_backgroundRadius { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    std::unordered_map<FocusDirection, std::string> customFocusById;
-    std::unordered_map<FocusDirection, View*> customFocusByPtr;
+    NVGcolor m_borderColor             = TRANSPARENT;
+    float m_borderThickness            = 0.0f;
+    float m_cornerRadius               = 0.0f;
+    std::array<float, 4> m_cornerRadii = { 0.0f, 0.0f, 0.0f, 0.0f }; // TL, TR, BR, BL
+    ShadowType m_shadowType            = ShadowType::NONE;
+    bool m_showShadow                  = true;
 
-    AppletFrameItem appletFrameItem;
+    std::unordered_map<FocusDirection, std::string> m_customFocusById;
+    std::unordered_map<FocusDirection, View*> m_customFocusByPtr;
 
-    int ptrLockCounter = 0;
+    AppletFrameItem m_appletFrameItem;
+
+    int m_ptrLockCounter = 0;
 
   protected:
     Animatable collapseState = 1.0f;
@@ -350,62 +356,92 @@ class View
 
     YGNode* ygNode;
 
-    std::string id = "";
+    std::string id;
 
     // Helper functions to apply this view's alpha to a color
     NVGcolor a(NVGcolor color);
     NVGpaint a(NVGpaint paint);
 
-    NVGcolor RGB(unsigned r, unsigned g, unsigned b)
-    {
-        return this->a(nvgRGB(r, g, b));
-    }
+    NVGcolor RGB(unsigned r, unsigned g, unsigned b) { return this->a(nvgRGB(r, g, b)); }
 
-    NVGcolor RGBA(unsigned r, unsigned g, unsigned b, unsigned a)
-    {
-        return this->a(nvgRGBA(r, g, b, a));
-    }
+    NVGcolor RGBA(unsigned r, unsigned g, unsigned b, unsigned a) { return this->a(nvgRGBA(r, g, b, a)); }
 
-    NVGcolor RGBf(float r, float g, float b)
-    {
-        return this->a(nvgRGBf(r, g, b));
-    }
+    NVGcolor RGBf(float r, float g, float b) { return this->a(nvgRGBf(r, g, b)); }
 
-    NVGcolor RGBAf(float r, float g, float b, float a)
-    {
-        return this->a(nvgRGBAf(r, g, b, a));
-    }
+    NVGcolor RGBAf(float r, float g, float b, float a) { return this->a(nvgRGBAf(r, g, b, a)); }
 
     /**
      * Should the hint alpha be animated when
      * pushing the view?
      */
-    virtual bool animateHint()
-    {
-        return false;
-    }
+    virtual bool animateHint() { return false; }
 
   public:
+    /**
+     * Special value used for width/height/margin/position to indicate
+     * that the layout engine should determine the value automatically.
+     */
     static constexpr float AUTO = NAN;
 
+    /**
+     * Custom resources path override. When set, XML and resource loading
+     * will check this path before falling back to the default resources.
+     */
     inline static std::string CUSTOM_RESOURCES_PATH;
 
     View();
     virtual ~View();
 
+    /**
+     * Sets the background type of the view.
+     */
     void setBackground(ViewBackground background);
 
+    /**
+     * Plays a shake animation on the highlight in the given direction.
+     * Used to indicate that navigation in that direction is not possible.
+     */
     void shakeHighlight(FocusDirection direction);
 
+    /**
+     * Returns the absolute frame (position and size) of the view.
+     */
     Rect getFrame();
+
+    /**
+     * Returns the absolute X position of the view.
+     */
     float getX();
+
+    /**
+     * Returns the absolute Y position of the view.
+     */
     float getY();
 
+    /**
+     * Returns the local frame (position relative to parent and size) of the view.
+     */
     Rect getLocalFrame();
+
+    /**
+     * Returns the X position of the view relative to its parent.
+     */
     float getLocalX();
+
+    /**
+     * Returns the Y position of the view relative to its parent.
+     */
     float getLocalY();
 
+    /**
+     * Returns the width of the view as computed by the layout engine.
+     */
     float getWidth();
+
+    /**
+     * Returns the height of the view as computed by the layout engine.
+     * @param includeCollapse if true, the height is scaled by the collapse state.
+     */
     float getHeight(bool includeCollapse = true);
 
     /**
@@ -420,16 +456,16 @@ class View
     /**
      * Called when a layout pass ends on that view.
      */
-    virtual void onLayout() { };
+    virtual void onLayout() {};
 
     /**
      * Returns the view with the corresponding id in the view or its children,
      * or nullptr if it hasn't been found.
      *
-     * Research is done recursively by traversing the tree starting from this view.
-     * This view's parents are not traversed.
+     * Research is done recursively by traversing the tree starting from this
+     * view. This view's parents are not traversed.
      */
-    virtual View* getView(std::string id);
+    virtual View* getView(const std::string& id);
 
     // -----------------------------------------------------------
     // Flex layout properties
@@ -465,7 +501,8 @@ class View
     /**
      * Shortcut to setWidth + setHeight.
      *
-     * Only does one layout pass instead of two when using the two methods separately.
+     * Only does one layout pass instead of two when using the two methods
+     * separately.
      */
     void setDimensions(float width, float height);
 
@@ -587,7 +624,8 @@ class View
      * Only works with views that have parents - top level views that are pushed
      * on the stack don't have parents.
      *
-     * Only does one layout pass instead of four when using the four methods separately.
+     * Only does one layout pass instead of four when using the four methods
+     * separately.
      */
     void setMargins(float margin);
 
@@ -601,7 +639,8 @@ class View
      * Only works with views that have parents - top level views that are pushed
      * on the stack don't have parents.
      *
-     * Only does one layout pass instead of four when using the four methods separately.
+     * Only does one layout pass instead of four when using the four methods
+     * separately.
      */
     void setMargins(float top, float right, float bottom, float left);
 
@@ -629,7 +668,14 @@ class View
      */
     void setMarginRight(float right);
 
+    /**
+     * Returns the right margin of the view.
+     */
     float getMarginRight();
+
+    /**
+     * Returns the left margin of the view.
+     */
     float getMarginLeft();
 
     /**
@@ -642,10 +688,10 @@ class View
      * Use brls::View::AUTO to have the layout automatically select the
      * margin.
      */
-    void setMarginBottom(float right);
+    void setMarginBottom(float bottom);
 
     /**
-     * Sets the right margin of the view, aka the space that separates
+     * Sets the left margin of the view, aka the space that separates
      * this view and the surrounding ones.
      *
      * Only works with views that have parents - top level views that are pushed
@@ -675,8 +721,8 @@ class View
      * If relative, it will simply offset the view by the given amount.
      *
      * If absolute, it will behave like the "display: absolute;" CSS property
-     * and move the view freely in its parent. Use 0 to snap to the parent top edge.
-     * Absolute positioning ignores padding.
+     * and move the view freely in its parent. Use 0 to snap to the parent top
+     * edge. Absolute positioning ignores padding.
      *
      * Use View::AUTO to disable (not the same as 0).
      */
@@ -691,8 +737,8 @@ class View
      * If relative, it will simply offset the view by the given amount.
      *
      * If absolute, it will behave like the "display: absolute;" CSS property
-     * and move the view freely in its parent. Use 0 to snap to the parent right edge.
-     * Absolute positioning ignores padding.
+     * and move the view freely in its parent. Use 0 to snap to the parent right
+     * edge. Absolute positioning ignores padding.
      *
      * Use View::AUTO to disable (not the same as 0).
      */
@@ -707,8 +753,8 @@ class View
      * If relative, it will simply offset the view by the given amount.
      *
      * If absolute, it will behave like the "display: absolute;" CSS property
-     * and move the view freely in its parent. Use 0 to snap to the parent bottom edge.
-     * Absolute positioning ignores padding.
+     * and move the view freely in its parent. Use 0 to snap to the parent bottom
+     * edge. Absolute positioning ignores padding.
      *
      * Use View::AUTO to disable (not the same as 0).
      */
@@ -723,8 +769,8 @@ class View
      * If relative, it will simply offset the view by the given amount.
      *
      * If absolute, it will behave like the "display: absolute;" CSS property
-     * and move the view freely in its parent. Use 0 to snap to the parent left edge.
-     * Absolute positioning ignores padding.
+     * and move the view freely in its parent. Use 0 to snap to the parent left
+     * edge. Absolute positioning ignores padding.
      *
      * Use View::AUTO to disable (not the same as 0).
      */
@@ -773,7 +819,7 @@ class View
     /**
      * Sets the id of the view.
      */
-    void setId(std::string id);
+    void setId(const std::string& id);
 
     /**
      * Overrides align items of the parent box.
@@ -792,10 +838,7 @@ class View
      *
      * The "line" is separate from the shape "border".
      */
-    inline void setLineColor(NVGcolor color)
-    {
-        this->lineColor = color;
-    }
+    inline void setLineColor(NVGcolor color) { this->m_lineColor = color; }
 
     /**
      * Sets the top line thickness. Use setLineColor()
@@ -803,10 +846,7 @@ class View
      *
      * The "line" is separate from the shape "border".
      */
-    inline void setLineTop(float thickness)
-    {
-        this->lineTop = thickness;
-    }
+    inline void setLineTop(float thickness) { this->m_lineTop = thickness; }
 
     /**
      * Sets the right line thickness. Use setLineColor()
@@ -814,10 +854,7 @@ class View
      *
      * The "line" is separate from the shape "border".
      */
-    inline void setLineRight(float thickness)
-    {
-        this->lineRight = thickness;
-    }
+    inline void setLineRight(float thickness) { this->m_lineRight = thickness; }
 
     /**
      * Sets the bottom line thickness. Use setLineColor()
@@ -825,10 +862,7 @@ class View
      *
      * The "line" is separate from the shape "border".
      */
-    inline void setLineBottom(float thickness)
-    {
-        this->lineBottom = thickness;
-    }
+    inline void setLineBottom(float thickness) { this->m_lineBottom = thickness; }
 
     /**
      * Sets the left line thickness. Use setLineColor()
@@ -836,40 +870,31 @@ class View
      *
      * The "line" is separate from the shape "border".
      */
-    inline void setLineLeft(float thickness)
-    {
-        this->lineLeft = thickness;
-    }
+    inline void setLineLeft(float thickness) { this->m_lineLeft = thickness; }
 
     /**
      * Sets the view shape background color.
      */
     inline void setBackgroundColor(NVGcolor color)
     {
-        this->backgroundColor = color;
+        this->m_backgroundColor = color;
         this->setBackground(ViewBackground::SHAPE_COLOR);
     }
 
     /**
      * Sets the view shape border color.
      */
-    inline void setBorderColor(NVGcolor color)
-    {
-        this->borderColor = color;
-    }
+    inline void setBorderColor(NVGcolor color) { this->m_borderColor = color; }
 
     /**
      * Sets the view shape border thickness.
      */
-    inline void setBorderThickness(float thickness)
-    {
-        this->borderThickness = thickness;
-    }
+    inline void setBorderThickness(float thickness) { this->m_borderThickness = thickness; }
 
-    inline float getBorderThickness()
-    {
-        return this->borderThickness;
-    }
+    /**
+     * Returns the view shape border thickness.
+     */
+    inline float getBorderThickness() const { return this->m_borderThickness; }
 
     /**
      * Sets the view shape corner radius (uniform).
@@ -877,11 +902,11 @@ class View
      */
     inline void setCornerRadius(float radius)
     {
-        this->cornerRadius   = radius;
-        this->cornerRadii[0] = radius;
-        this->cornerRadii[1] = radius;
-        this->cornerRadii[2] = radius;
-        this->cornerRadii[3] = radius;
+        this->m_cornerRadius   = radius;
+        this->m_cornerRadii[0] = radius;
+        this->m_cornerRadii[1] = radius;
+        this->m_cornerRadii[2] = radius;
+        this->m_cornerRadii[3] = radius;
     }
 
     /**
@@ -890,93 +915,74 @@ class View
      */
     inline void setCornerRadius(float topLeft, float topRight, float bottomRight, float bottomLeft)
     {
-        this->cornerRadii[0] = topLeft;
-        this->cornerRadii[1] = topRight;
-        this->cornerRadii[2] = bottomRight;
-        this->cornerRadii[3] = bottomLeft;
-        this->cornerRadius   = (topLeft == topRight && topRight == bottomRight && bottomRight == bottomLeft) ? topLeft : 0.0f;
+        this->m_cornerRadii[0] = topLeft;
+        this->m_cornerRadii[1] = topRight;
+        this->m_cornerRadii[2] = bottomRight;
+        this->m_cornerRadii[3] = bottomLeft;
+        this->m_cornerRadius   = (topLeft == topRight && topRight == bottomRight && bottomRight == bottomLeft) ? topLeft : 0.0f;
     }
 
-    inline float getCornerRadius()
-    {
-        return this->cornerRadius;
-    }
+    /**
+     * Returns the uniform corner radius, or 0 if radii differ per corner.
+     */
+    inline float getCornerRadius() const { return this->m_cornerRadius; }
 
     /**
      * Sets the view shape shadow type.
      * Default is NONE.
      */
-    inline void setShadowType(ShadowType type)
-    {
-        this->shadowType = type;
-    }
+    inline void setShadowType(ShadowType type) { this->m_shadowType = type; }
 
     /**
      * Sets the shadow visibility.
      */
-    inline void setShadowVisibility(bool visible)
-    {
-        this->showShadow = visible;
-    }
+    inline void setShadowVisibility(bool visible) { this->m_showShadow = visible; }
 
     /**
      * If set to true, the highlight background will be hidden for this view
-     * (the white rectangle that goes behind the view, replacing the usual background shape).
+     * (the white rectangle that goes behind the view, replacing the usual
+     * background shape).
      */
-    inline void setHideHighlightBackground(bool hide)
-    {
-        this->hideHighlightBackground = hide;
-    }
+    inline void setHideHighlightBackground(bool hide) { this->m_hideHighlightBackground = hide; }
 
     /**
      * If set to true, the highlight border will be hidden for this view.
      */
-    inline void setHideHighlightBorder(bool hide)
-    {
-        this->hideHighlightBorder = hide;
-    }
+    inline void setHideHighlightBorder(bool hide) { this->m_hideHighlightBorder = hide; }
 
     /**
      * If set to true, the highlight will be hidden for this view.
      */
-    inline void setHideHighlight(bool hide)
-    {
-        this->hideHighlight = hide;
-    }
+    inline void setHideHighlight(bool hide) { this->m_hideHighlight = hide; }
 
-    inline void setHideClickAnimation(bool hide)
-    {
-        this->hideClickAnimation = hide;
-    }
+    /**
+     * If set to true, the click animation will be hidden for this view.
+     */
+    inline void setHideClickAnimation(bool hide) { this->m_hideClickAnimation = hide; }
 
     /**
      * Sets the highlight padding of the view, aka the space between the
-     * highlight rectangle and the view. The highlight rect is enlarged, the view is untouched.
+     * highlight rectangle and the view. The highlight rect is enlarged, the view
+     * is untouched.
      */
-    inline void setHighlightPadding(float padding)
-    {
-        this->highlightPadding = padding;
-    }
+    inline void setHighlightPadding(float padding) { this->m_highlightPadding = padding; }
 
     /**
      * Sets the highlight rectangle corner radius.
      */
-    inline void setHighlightCornerRadius(float radius)
-    {
-        this->highlightCornerRadius = radius;
-    }
+    inline void setHighlightCornerRadius(float radius) { this->m_highlightCornerRadius = radius; }
 
     // -----------------------------------------------------------
 
     /**
-     * Returns the "nearest" view with the corresponding id, or nullptr if none has
-     * been found. "Nearest" means the closest in the vicinity
-     * of this view. The siblings are searched as well as its children.
+     * Returns the "nearest" view with the corresponding id, or nullptr if none
+     * has been found. "Nearest" means the closest in the vicinity of this view.
+     * The siblings are searched as well as its children.
      *
      * Research is done by traversing the tree upwards, starting from this view.
      * The current algorithm is very inefficient.
      */
-    virtual View* getNearestView(std::string id);
+    virtual View* getNearestView(const std::string& id);
 
     /**
      * Creates a view from the given XML file content.
@@ -1009,7 +1015,7 @@ class View
      * Use registerXMLView() to add your own views to the table so that
      * you can use them in your own XML files.
      */
-    static View* createFromXMLFile(std::string path);
+    static View* createFromXMLFile(const std::string& path);
 
     /**
      * Creates a view from the given XML resource file name.
@@ -1020,7 +1026,7 @@ class View
      * Use registerXMLView() to add your own views to the table so that
      * you can use them in your own XML files.
      */
-    static View* createFromXMLResource(std::string name);
+    static View* createFromXMLResource(const std::string& name);
 
     /**
      * Handles a child XML element.
@@ -1047,7 +1053,7 @@ class View
      * You can add your own attributes to by calling registerXMLAttribute()
      * in the view constructor.
      */
-    virtual bool applyXMLAttribute(std::string name, std::string value);
+    virtual bool applyXMLAttribute(const std::string& name, const std::string& value);
 
     /**
      * Register a new XML attribute with the given name and handler
@@ -1056,26 +1062,28 @@ class View
      *
      * The method will be called if the attribute has the value "auto".
      */
-    void registerAutoXMLAttribute(std::string name, AutoAttributeHandler handler);
+    void registerAutoXMLAttribute(const std::string& name, const AutoAttributeHandler& handler);
 
     /**
      * Register a new XML attribute with the given name and handler
      * method. You can have multiple attributes registered with the same
      * name but different types / handlers, except if the type is string.
      *
-     * The method will be called if the attribute has a percentage value (an integer with "%" suffix).
-     * The given float value is guaranteed to be between 0.0f and 1.0f.
+     * The method will be called if the attribute has a percentage value (an
+     * integer with "%" suffix). The given float value is guaranteed to be between
+     * 0.0f and 1.0f.
      */
-    void registerPercentageXMLAttribute(std::string name, FloatAttributeHandler handler);
+    void registerPercentageXMLAttribute(const std::string& name, const FloatAttributeHandler& handler);
 
     /**
      * Register a new XML attribute with the given name and handler
      * method. You can have multiple attributes registered with the same
      * name but different types / handlers, except if the type is string.
      *
-     * The method will be called if the attribute has an integer, float, @style or "px" value.
+     * The method will be called if the attribute has an integer, float, @style or
+     * "px" value.
      */
-    void registerFloatXMLAttribute(std::string name, FloatAttributeHandler handler);
+    void registerFloatXMLAttribute(const std::string& name, const FloatAttributeHandler& handler);
 
     /**
      * Register a new XML attribute with the given name and handler
@@ -1084,47 +1092,51 @@ class View
      *
      * The method will be called if the attribute has a string or @i18n value.
      *
-     * If you use string as a type, you can only have one handler for the attribute.
+     * If you use string as a type, you can only have one handler for the
+     * attribute.
      */
-    void registerStringXMLAttribute(std::string name, StringAttributeHandler handler);
+    void registerStringXMLAttribute(const std::string& name, const StringAttributeHandler& handler);
 
     /**
      * Register a new XML attribute with the given name and handler
      * method. You can have multiple attributes registered with the same
      * name but different types / handlers, except if the type is string.
      *
-     * The method will be called if the attribute has a color value ("#XXXXXX" or "#XXXXXXXX")
-     * or a @theme value.
+     * The method will be called if the attribute has a color value ("#XXXXXX" or
+     * "#XXXXXXXX") or a @theme value.
      */
-    void registerColorXMLAttribute(std::string name, ColorAttributeHandler handler);
+    void registerColorXMLAttribute(const std::string& name, const ColorAttributeHandler& handler);
 
     /**
      * Register a new XML attribute with the given name and handler
      * method. You can have multiple attributes registered with the same
      * name but different types / handlers, except if the type is string.
      *
-     * The method will be called if the attribute has a boolean value ("true" or "false").
+     * The method will be called if the attribute has a boolean value ("true" or
+     * "false").
      */
-    void registerBoolXMLAttribute(std::string name, BoolAttributeHandler handler);
+    void registerBoolXMLAttribute(const std::string& name, const BoolAttributeHandler& handler);
 
     /**
      * Register a new XML attribute with the given name and handler
      * method. You can have multiple attributes registered with the same
      * name but different types / handlers, except if the type is string.
      *
-     * The method will be called if the attribute has a file path value ("@res/" or raw path).
+     * The method will be called if the attribute has a file path value ("@res/"
+     * or raw path).
      */
-    void registerFilePathXMLAttribute(std::string name, FilePathAttributeHandler handler);
+    void registerFilePathXMLAttribute(const std::string& name, const FilePathAttributeHandler& handler);
 
     /**
-     * Get the XML document for the XML file, creating a new one if none is cached.
+     * Get the XML document for the XML file, creating a new one if none is
+     * cached.
      */
     static std::shared_ptr<tinyxml2::XMLDocument> getXMLCache(std::string_view path);
 
     /**
      * Returns if the given XML attribute name is valid for that view.
      */
-    bool isXMLAttributeValid(std::string attributeName);
+    bool isXMLAttributeValid(const std::string& attributeName);
 
     /**
      * Sets the maximum number of allowed children XML elements
@@ -1132,7 +1144,10 @@ class View
      */
     void setMaximumAllowedXMLElements(unsigned max);
 
-    unsigned getMaximumAllowedXMLElements();
+    /**
+     * Returns the maximum number of allowed children XML elements.
+     */
+    unsigned getMaximumAllowedXMLElements() const;
 
     /**
      * If set to true, will force the view to be translucent.
@@ -1145,11 +1160,11 @@ class View
      * Required to be able to use actions that need
      * focus on that view (such as an A press).
      */
-    inline void setFocusable(bool focusable)
-    {
-        this->focusable = focusable;
-    }
+    inline void setFocusable(bool focusable) { this->m_focusable = focusable; }
 
+    /**
+     * Returns whether this view is focusable and visible.
+     */
     bool isFocusable();
 
     /**
@@ -1160,11 +1175,11 @@ class View
     /**
      * Sets the sound to play when this view gets focused.
      */
-    inline void setFocusSound(enum Sound sound)
-    {
-        this->focusSound = sound;
-    }
+    inline void setFocusSound(enum Sound sound) { this->m_focusSound = sound; }
 
+    /**
+     * Returns the sound to play when this view gets focused.
+     */
     virtual enum Sound getFocusSound();
 
     /**
@@ -1179,7 +1194,10 @@ class View
      */
     void detach();
 
-    bool isDetached();
+    /**
+     * Returns whether this view is detached from its parent's layout.
+     */
+    bool isDetached() const;
 
     /**
      * Sets the position of the view, if detached.
@@ -1199,30 +1217,48 @@ class View
     /**
      * Gets detached position of the view.
      */
-    Point getDetachedPosition() const
-    {
-        return detachedOrigin;
-    }
+    Point getDetachedPosition() const { return m_detachedOrigin; }
 
+    /**
+     * Sets the parent box of this view and optional user data.
+     */
     void setParent(Box* parent, void* parentUserdata = nullptr);
+
+    /**
+     * Returns the parent box of this view, or nullptr if none.
+     */
     Box* getParent();
+
+    /**
+     * Returns whether this view has a parent.
+     */
     bool hasParent();
 
+    /**
+     * Returns the parent user data pointer associated with this view.
+     */
     void* getParentUserData();
 
     /**
-     * Registers an action with the given parameters. The listener will be fired when the user presses
-     * the key when the view is focused.
+     * Registers an action with the given parameters. The listener will be fired
+     * when the user presses the key when the view is focused.
      *
-     * The listener should return true if the action was consumed, false otherwise.
-     * The sound will only be played if the listener returned true.
+     * The listener should return true if the action was consumed, false
+     * otherwise. The sound will only be played if the listener returned true.
      *
      * A hidden action will not show up in the bottom-right hints.
      *
-     * Returns the identifier for the action, so it can be unregistered later on. Returns ACTION_NONE if the
-     * action was not registered.
+     * Returns the identifier for the action, so it can be unregistered later on.
+     * Returns ACTION_NONE if the action was not registered.
      */
-    ActionIdentifier registerAction(std::string hintText, enum ControllerButton button, ActionListener actionListener, bool hidden = false, bool allowRepeating = false, enum Sound sound = SOUND_NONE);
+    ActionIdentifier registerAction(
+        const std::string& hintText,
+        enum ControllerButton button,
+        const ActionListener& actionListener,
+        bool hidden         = false,
+        bool allowRepeating = false,
+        enum Sound sound    = SOUND_NONE
+    );
 
     /**
      * Unregisters an action with the given identifier.
@@ -1232,31 +1268,56 @@ class View
     /**
      * Shortcut to register a generic "A OK" click action.
      */
-    void registerClickAction(ActionListener actionListener);
+    void registerClickAction(const ActionListener& actionListener);
 
-    void updateActionHint(enum ControllerButton button, std::string hintText);
+    /**
+     * Updates the hint text for the action bound to the given button.
+     */
+    void updateActionHint(enum ControllerButton button, const std::string& hintText);
+
+    /**
+     * Sets whether the action bound to the given button is available.
+     */
     void setActionAvailable(enum ControllerButton button, bool available);
+
+    /**
+     * Sets whether all actions on this view are available.
+     */
     void setActionsAvailable(bool available);
 
+    /**
+     * Stops any currently running click animation.
+     */
     void resetClickAnimation();
+
+    /**
+     * Plays the click feedback animation on this view.
+     * @param reverse if true, plays the animation in reverse.
+     * @param animateBack if true, automatically plays the reverse after completing.
+     * @param force if true, plays even if click animation is hidden.
+     */
     void playClickAnimation(bool reverse = false, bool animateBack = true, bool force = false);
 
+    /**
+     * Returns the demangled class name of this view.
+     */
     std::string getClassString() const
     {
-        // Taken from: https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname/4541470#4541470
+        // Taken from:
+        // https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname/4541470#4541470
         const char* name = typeid(*this).name();
 #ifndef _MSC_VER
         int status = 0;
-        std::unique_ptr<char, void (*)(void*)> res {
-            abi::__cxa_demangle(name, NULL, NULL, &status),
-            std::free
-        };
+        std::unique_ptr<char, void (*)(void*)> res { abi::__cxa_demangle(name, NULL, NULL, &status), std::free };
         return (status == 0) ? res.get() : name;
 #else
         return name;
 #endif
     }
 
+    /**
+     * Returns a human-readable description of this view (class name and id).
+     */
     std::string describe() const
     {
         std::string classString = this->getClassString();
@@ -1267,23 +1328,20 @@ class View
         return classString;
     }
 
-    YGNode* getYGNode()
-    {
-        return this->ygNode;
-    }
+    /**
+     * Returns the underlying Yoga layout node for this view.
+     */
+    YGNode* getYGNode() { return this->ygNode; }
 
-    const std::vector<Action>& getActions()
-    {
-        return this->actions;
-    }
+    /**
+     * Returns the vector of all actions registered on this view.
+     */
+    const std::vector<Action>& getActions() { return this->m_actions; }
 
     /**
      * Get the vector of all gesture recognizers attached to that view.
      */
-    const std::vector<GestureRecognizer*>& getGestureRecognizers()
-    {
-        return this->gestureRecognizers;
-    }
+    const std::vector<GestureRecognizer*>& getGestureRecognizers() { return this->m_gestureRecognizers; }
 
     /**
      * Interrupt every recognizer on this view.
@@ -1351,17 +1409,17 @@ class View
      * Called when the show() animation (fade in)
      * ends
      */
-    virtual void onShowAnimationEnd() { };
+    virtual void onShowAnimationEnd() {};
 
     /**
      * Shows the view with a fade in animation.
      */
-    virtual void show(std::function<void(void)> cb);
+    virtual void show(const std::function<void(void)>& cb);
 
     /**
      * Shows the view with a fade in animation, or no animation at all.
      */
-    virtual void show(std::function<void(void)> cb, bool animate, float animationDuration);
+    virtual void show(const std::function<void(void)>& cb, bool animate, float animationDuration);
 
     /**
      * Returns the duration of the view show / hide animation.
@@ -1373,8 +1431,14 @@ class View
      */
     void collapse(bool animated = true);
 
+    /**
+     * Returns whether this view is currently collapsed or collapsing.
+     */
     bool isCollapsed();
 
+    /**
+     * Sets the opacity of this view directly (without animation).
+     */
     void setAlpha(float alpha);
 
     /**
@@ -1386,14 +1450,17 @@ class View
     /**
      * Hides the view with a fade out animation.
      */
-    virtual void hide(std::function<void(void)> cb);
+    virtual void hide(const std::function<void(void)>& cb);
 
     /**
      * Hides the view with a fade out animation, or no animation at all.
      */
-    virtual void hide(std::function<void(void)> cb, bool animate, float animationDuration);
+    virtual void hide(const std::function<void(void)>& cb, bool animate, float animationDuration);
 
-    bool isHidden();
+    /**
+     * Returns whether this view is currently hidden.
+     */
+    bool isHidden() const;
 
     /**
      * Is this view translucent?
@@ -1404,7 +1471,10 @@ class View
      */
     virtual bool isTranslucent();
 
-    bool isFocused();
+    /**
+     * Returns whether this view currently has focus.
+     */
+    bool isFocused() const;
 
     /**
      * Returns the default view to focus when focusing this view
@@ -1413,23 +1483,25 @@ class View
      * Returning nullptr means that the view is not focusable
      * (and neither are its children)
      *
-     * By default, a view is focusable if the flag is set to true with setFocusable()
-     * and if the view is visible.
+     * By default, a view is focusable if the flag is set to true with
+     * setFocusable() and if the view is visible.
      *
      * When pressing a key, the flow is :
-     *    1. starting from the currently focused view's parent, traverse the tree upwards and
-     *       repeatedly call getNextFocus() on every view until we find a next view to focus or meet the end of the tree
-     *    2. if a view is found, getNextFocus() will internally call getDefaultFocus() for the selected child
+     *    1. starting from the currently focused view's parent, traverse the tree
+     * upwards and repeatedly call getNextFocus() on every view until we find a
+     * next view to focus or meet the end of the tree
+     *    2. if a view is found, getNextFocus() will internally call
+     * getDefaultFocus() for the selected child
      *    3. give focus to the result, if it exists
      */
     virtual View* getDefaultFocus();
 
     /**
-     * Returns the view to focus with the corresponding screen coordinates in the view or its children,
-     * or nullptr if it hasn't been found.
+     * Returns the view to focus with the corresponding screen coordinates in the
+     * view or its children, or nullptr if it hasn't been found.
      *
-     * Research is done recursively by traversing the tree starting from this view.
-     * This view's parents are not traversed.
+     * Research is done recursively by traversing the tree starting from this
+     * view. This view's parents are not traversed.
      */
     virtual View* hitTest(Point point);
 
@@ -1452,15 +1524,29 @@ class View
      * Sets a custom navigation route from this view to the target one, by ID.
      * The final target view will be the "nearest" with the given ID.
      *
-     * Resolution of the ID to View is made when the navigation event occurs, not when the
-     * route is registered.
+     * Resolution of the ID to View is made when the navigation event occurs, not
+     * when the route is registered.
      */
-    void setCustomNavigationRoute(FocusDirection direction, std::string targetId);
+    void setCustomNavigationRoute(FocusDirection direction, const std::string& targetId);
 
+    /**
+     * Returns whether a custom navigation route by pointer exists for the given direction.
+     */
     bool hasCustomNavigationRouteByPtr(FocusDirection direction);
+
+    /**
+     * Returns whether a custom navigation route by ID exists for the given direction.
+     */
     bool hasCustomNavigationRouteById(FocusDirection direction);
 
+    /**
+     * Returns the custom navigation route target view for the given direction.
+     */
     View* getCustomNavigationRoutePtr(FocusDirection direction);
+
+    /**
+     * Returns the custom navigation route target ID for the given direction.
+     */
     std::string getCustomNavigationRouteId(FocusDirection direction);
 
     /**
@@ -1474,7 +1560,8 @@ class View
     virtual void onFocusLost();
 
     /**
-     * Fired when focus is gained on this view's parent, or the parent of the parent...
+     * Fired when focus is gained on this view's parent, or the parent of the
+     * parent...
      */
     virtual void onParentFocusGained(View* focusedView);
 
@@ -1493,15 +1580,36 @@ class View
         // Nothing by default
     }
 
+    /**
+     * Returns the event fired when this view gains focus.
+     */
     GenericEvent* getFocusEvent();
+
+    /**
+     * Returns the event fired when this view loses focus.
+     */
     GenericEvent* getFocusLostEvent();
 
+    /**
+     * The opacity of this view. Animatable between 0.0f and 1.0f.
+     */
     Animatable alpha = 1.0f;
 
+    /**
+     * Returns the effective alpha of the view, multiplied by parent alpha.
+     * @param child used internally to distinguish parent alpha queries.
+     */
     virtual float getAlpha(bool child = false);
 
-    float getClickAlpha() { return this->clickAlpha; }
-    void setClickAlpha(float a) { this->clickAlpha = a; }
+    /**
+     * Returns the current click animation alpha value.
+     */
+    float getClickAlpha() { return this->m_clickAlpha; }
+
+    /**
+     * Sets the click animation alpha value directly.
+     */
+    void setClickAlpha(float a) { this->m_clickAlpha = a; }
 
     /**
      * Forces this view and its children to use
@@ -1515,36 +1623,38 @@ class View
      * To disable culling for all child views
      * of a Box use setCullingEnabled on the box.
      */
-    void setCulled(bool culled)
-    {
-        this->culled = culled;
-    }
+    void setCulled(bool culled) { this->m_culled = culled; }
 
-    bool isCulled()
-    {
-        return this->culled;
-    }
+    /**
+     * Returns whether this view is currently culled (not drawn by its parent).
+     */
+    bool isCulled() const { return this->m_culled; }
 
+    /**
+     * Sets the aspect ratio constraint for this view.
+     * The value represents width / height.
+     */
     void setAspectRatio(float value)
     {
         if (value <= 0)
             return;
-        this->aspectRatio = value;
+        this->m_aspectRatio = value;
         YGNodeStyleSetAspectRatio(this->ygNode, value);
         this->invalidate();
     }
 
-    float getAspectRatio()
-    {
-        return this->aspectRatio;
-    }
+    /**
+     * Returns the aspect ratio constraint of this view, or 0 if not set.
+     */
+    float getAspectRatio() const { return this->m_aspectRatio; }
 
     /**
-     * Sets the background corner radii of the view. Only for vertical linear style.
+     * Sets the background corner radii of the view. Only for vertical linear
+     * style.
      */
     void setBackgroundCornerRadii(float topLeft, float topRight, float bottomRight, float bottomLeft)
     {
-        this->backgroundRadius = { topLeft, topRight, bottomRight, bottomLeft };
+        this->m_backgroundRadius = { topLeft, topRight, bottomRight, bottomLeft };
     }
 
     /**
@@ -1553,7 +1663,7 @@ class View
      * Translation is applied after the layout phase. Use relative position
      * and setPosition methods if possible instead.
      */
-    void setTranslationY(float translateY);
+    void setTranslationY(float translationY);
 
     /**
      * Sets the X translation of this view.
@@ -1561,7 +1671,7 @@ class View
      * Translation is applied after the layout phase. Use relative position
      * and setPosition methods if possible instead.
      */
-    void setTranslationX(float translateX);
+    void setTranslationX(float translationX);
 
     /**
      * Sets the horizontal scale of this view.
@@ -1600,7 +1710,10 @@ class View
      */
     void setWireframeEnabled(bool wireframe);
 
-    bool isWireframeEnabled();
+    /**
+     * Returns whether wireframe mode is enabled for this view.
+     */
+    bool isWireframeEnabled() const;
 
     /**
      * Resolves the value of the given XML attribute string.
@@ -1611,41 +1724,77 @@ class View
 
     /**
      * Resolves the value of the given XML attribute file path.
-     * Returns the full path of the resource if it starts with "@res/", returns the
-     * path as it is otherwise.
+     * Returns the full path of the resource if it starts with "@res/", returns
+     * the path as it is otherwise.
      */
     static std::string getFilePathXMLAttributeValue(std::string value);
 
-    AppletFrameItem* getAppletFrameItem()
-    {
-        return &this->appletFrameItem;
-    }
+    /**
+     * Returns the applet frame item metadata (title, icon) for this view.
+     */
+    AppletFrameItem* getAppletFrameItem() { return &this->m_appletFrameItem; }
 
+    /**
+     * Updates the applet frame with this view's title and icon metadata.
+     */
     void updateAppletFrameItem();
 
-    bool getClipsToBounds() const
-    {
-        return clipsToBounds;
-    }
+    /**
+     * Returns whether this view clips its children to its bounds.
+     */
+    bool getClipsToBounds() const { return m_clipsToBounds; }
 
-    void setClipsToBounds(bool value)
-    {
-        clipsToBounds = value;
-    }
+    /**
+     * Sets whether this view clips its children to its bounds.
+     */
+    void setClipsToBounds(bool value) { m_clipsToBounds = value; }
 
+    /**
+     * Returns the nearest AppletFrame ancestor of this view, or nullptr.
+     */
     virtual AppletFrame* getAppletFrame();
 
+    /**
+     * Pushes a view onto the nearest AppletFrame's content stack.
+     */
     void present(View* view);
-    virtual void dismiss(std::function<void(void)> cb = [] { });
+
+    /**
+     * Pops the current view from the nearest AppletFrame's content stack.
+     */
+    virtual void dismiss(std::function<void(void)> cb = [] {});
 
     bool* deletionToken       = nullptr;
     int* deletionTokenCounter = nullptr;
+
+    /**
+     * Increments the pointer lock counter, preventing deletion.
+     */
     void ptrLock();
+
+    /**
+     * Decrements the pointer lock counter.
+     */
     void ptrUnlock();
-    bool isPtrLocked();
+
+    /**
+     * Returns whether this view is pointer-locked (deletion deferred).
+     */
+    bool isPtrLocked() const;
+
+    /**
+     * Enqueues this view for deferred deletion.
+     */
     void freeView();
 
+    /**
+     * Returns the Activity that owns this view, traversing parents if needed.
+     */
     Activity* getParentActivity();
+
+    /**
+     * Sets the Activity that owns this view.
+     */
     void setParentActivity(Activity* activity);
 };
 
