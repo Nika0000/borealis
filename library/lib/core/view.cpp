@@ -237,10 +237,17 @@ void View::frameHighlight(FrameContext* ctx)
     // Keep it for compatibility but the actual drawing happens in frame()
     if (this->alpha > 0.0f && this->collapseState != 0.0f && this->highlightAlpha > 0.0f && !this->hideHighlightBorder && !this->hideHighlight)
     {
+        // Skip the top-level highlight pass for views inside a clipped ancestor —
+        // they already get their highlight drawn (and clipped) during the normal frame() pass.
+        for (Box* ancestor = this->getParent(); ancestor != nullptr; ancestor = ancestor->getParent())
+        {
+            if (ancestor->getClipsToBounds())
+                return;
+        }
+
         nvgSave(ctx->vg);
         // Apply the same scaling pivot as in frame()
         if (this->scale.x != 1.0f || this->scale.y != 1.0f)
-
         {
             Rect frame = getFrame();
             float cx   = frame.getMinX() + frame.getWidth() / 2.0f;
@@ -533,6 +540,19 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
     float padding      = this->highlightPadding;
     float cornerRadius = this->highlightCornerRadius;
     float strokeWidth  = style["brls/highlight/stroke_width"];
+
+    for (Box* ancestor = this->getParent(); ancestor != nullptr; ancestor = ancestor->getParent())
+    {
+        if (ancestor->getClipsToBounds())
+        {
+            Rect clipFrame = ancestor->getFrame();
+            nvgIntersectScissor(vg,
+                clipFrame.getMinX(),
+                clipFrame.getMinY(),
+                clipFrame.getWidth(),
+                clipFrame.getHeight());
+        }
+    }
 
     float x      = this->getX() - padding - strokeWidth / 2;
     float y      = this->getY() - padding - strokeWidth / 2;
