@@ -19,3 +19,6 @@
 [submodule "library/lib/extern/yoga"]
 	path = library/lib/extern/yoga
 	url = https://github.com/facebook/yoga.git
+[submodule "library/lib/extern/tweeny"]
+	path = library/lib/extern/tweeny
+	url = https://github.com/mobius3/tweeny
