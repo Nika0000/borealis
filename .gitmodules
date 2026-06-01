@@ -16,3 +16,6 @@
 [submodule "library/lib/extern/nanovg"]
 	path = library/lib/extern/nanovg
 	url = https://github.com/Nika0000/nanovg.git
+[submodule "library/lib/extern/yoga"]
+	path = library/lib/extern/yoga
+	url = https://github.com/facebook/yoga.git

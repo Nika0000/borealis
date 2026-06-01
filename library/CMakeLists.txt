@@ -26,7 +26,10 @@ endif()
 
 # yoga
 add_subdirectory(${BOREALIS_PATH}/lib/extern/yoga/yoga EXCLUDE_FROM_ALL)
-target_compile_options(yogacore PRIVATE -fvisibility=default)
+target_compile_options(yogacore PRIVATE -fvisibility=default -Wno-error)
+if (NOT MSVC)
+    target_compile_options(yogacore PRIVATE -frtti)
+endif()
 
 # opencc
 if (BRLS_USE_OPENCC)
@@ -304,7 +307,6 @@ target_include_directories(borealis PUBLIC ${BOREALIS_INCLUDE})
 target_link_libraries(borealis fmt tweeny yogacore ${BRLS_PLATFORM_LIBS})
 target_compile_options(borealis PUBLIC
         -DBRLS_RESOURCES=${BRLS_PLATFORM_RESOURCES_PATH}
-        -DYG_ENABLE_EVENTS
         -ffunction-sections
         -fdata-sections
         ${BRLS_PLATFORM_OPTION}

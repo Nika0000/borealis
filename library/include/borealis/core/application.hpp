@@ -97,6 +97,19 @@ class Application
     static Platform* getPlatform();
 
     /**
+     * Returns the shared Yoga layout configuration, creating it on first use.
+     */
+    static YGConfigRef getYogaConfig()
+    {
+        if (!yogaConfig)
+        {
+            yogaConfig = YGConfigNew();
+            YGConfigSetUseWebDefaults(yogaConfig, true);
+        }
+        return yogaConfig;
+    }
+
+    /**
      * Returns the audio player instance used for UI sounds.
      */
     static AudioPlayer* getAudioPlayer();
@@ -550,6 +563,7 @@ class Application
     inline static bool interactive               = false;
 
     inline static Platform* platform = nullptr;
+    inline static YGConfigRef yogaConfig = nullptr;
 
     inline static std::string title;
 

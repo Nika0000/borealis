@@ -69,15 +69,15 @@ static void computeLabelHeight(Label* label, float width, YGMeasureMode widthMod
     }
 }
 
-static YGSize labelMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
+static YGSize labelMeasureFunc(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
 {
     NVGcontext* vg       = Application::getNVGContext();
     auto* label          = (Label*)YGNodeGetContext(node);
     std::string fullText = label->getFullText();
 
     YGSize size = {
-        .width  = width,
-        .height = height,
+        .width  = std::isnan(width) ? 0.0f : width,
+        .height = std::isnan(height) ? 0.0f : height,
     };
 
     if (fullText.empty())
@@ -201,6 +201,11 @@ static YGSize labelMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthM
     {
         computeLabelHeight(label, width, widthMode, height, heightMode, &size, bounds);
     }
+
+    if (std::isnan(size.width))
+        size.width = 0;
+    if (std::isnan(size.height))
+        size.height = 0;
 
     return size;
 }

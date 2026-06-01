@@ -52,10 +52,6 @@
 #include <stdexcept>
 #include <string>
 
-#ifndef YG_ENABLE_EVENTS
-#error Please enable Yoga events with the YG_ENABLE_EVENTS define
-#endif
-
 #include <chrono>
 #include <set>
 #include <thread>
@@ -139,14 +135,13 @@ void Application::createWindow(const std::string& windowTitle)
     Application::title        = windowTitle;
 
     // Init yoga
-    YGConfig* defaultConfig = YGConfigGetDefault();
-    defaultConfig->setUseWebDefaults(true);
+    Application::getYogaConfig();
     using namespace facebook;
 
     facebook::yoga::Event::subscribe(
-        [](const YGNode& node, facebook::yoga::Event::Type eventType, facebook::yoga::Event::Data eventData)
+        [](YGNodeConstRef node, facebook::yoga::Event::Type eventType, facebook::yoga::Event::Data eventData)
         {
-            View* view = (View*) node.getContext();
+            View* view = (View*) YGNodeGetContext(node);
 
             if (!view)
                 return;

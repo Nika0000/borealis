@@ -23,7 +23,7 @@
 #include <nanovg.h>
 #include <stdio.h>
 #include <tinyxml2.h>
-#include <yoga/YGNode.h>
+#include <yoga/Yoga.h>
 
 #include <borealis/core/actions.hpp>
 #include <borealis/core/animation.hpp>

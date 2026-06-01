@@ -16,6 +16,8 @@
     limitations under the License.
 */
 
+#include <cmath>
+
 #include <borealis/core/application.hpp>
 #include <borealis/core/util.hpp>
 #include <borealis/views/image.hpp>
@@ -26,7 +28,7 @@
 namespace brls
 {
 
-static float measureWidth(YGNodeRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, float originalWidth, ImageScalingType type)
+static float measureWidth(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, float originalWidth, ImageScalingType type)
 {
     if (widthMode == YGMeasureModeUndefined)
         return originalWidth;
@@ -43,7 +45,7 @@ static float measureWidth(YGNodeRef node, float width, YGMeasureMode widthMode, 
     return width;
 }
 
-static float measureHeight(YGNodeRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, float originalHeight, ImageScalingType type)
+static float measureHeight(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, float originalHeight, ImageScalingType type)
 {
     if (heightMode == YGMeasureModeUndefined)
         return originalHeight;
@@ -60,17 +62,17 @@ static float measureHeight(YGNodeRef node, float width, YGMeasureMode widthMode,
     return height;
 }
 
-static YGSize imageMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
+static YGSize imageMeasureFunc(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
 {
-    Image* image                 = (Image*)node->getContext();
+    Image* image                 = (Image*)YGNodeGetContext(node);
     int texture                  = image->getTexture();
     float originalWidth          = image->getOriginalImageWidth();
     float originalHeight         = image->getOriginalImageHeight();
     ImageScalingType scalingType = image->getScalingType();
 
     YGSize size = {
-        .width  = width,
-        .height = height,
+        .width  = std::isnan(width) ? 0.0f : width,
+        .height = std::isnan(height) ? 0.0f : height,
     };
 
     if (texture == 0)
@@ -122,6 +124,11 @@ static YGSize imageMeasureFunc(YGNodeRef node, float width, YGMeasureMode widthM
         size.width  = measureWidth(node, width, widthMode, height, heightMode, originalWidth, scalingType);
         size.height = measureHeight(node, width, widthMode, height, heightMode, originalHeight, scalingType);
     }
+
+    if (std::isnan(size.width))
+        size.width = 0;
+    if (std::isnan(size.height))
+        size.height = 0;
 
     return size;
 }
