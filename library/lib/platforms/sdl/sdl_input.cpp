@@ -28,8 +28,8 @@ namespace brls
 extern void init_device_rumble();
 extern void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned int durationMs);
 #else
-void init_device_rumble() { }
-void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned int durationMs) { }
+void init_device_rumble() {}
+void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned int durationMs) {}
 #endif
 
 #define SDL_GAMEPAD_BUTTON_NONE SIZE_MAX
@@ -48,19 +48,19 @@ static const BrlsKeyboardScancode sdlToBrlsKeyboardScancode(SDL_Scancode scancod
 
     // 1 - 9
     if (scancode >= SDL_SCANCODE_1 && scancode <= SDL_SCANCODE_9)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_1 + static_cast<int>(scancode) - SDL_SCANCODE_1);
+        return (BrlsKeyboardScancode) (BRLS_KBD_KEY_1 + static_cast<int>(scancode) - SDL_SCANCODE_1);
 
     // KP1 - KP9
     if (scancode >= SDL_SCANCODE_KP_1 && scancode <= SDL_SCANCODE_KP_9)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_KP_1 + static_cast<int>(scancode) - SDL_SCANCODE_KP_1);
+        return (BrlsKeyboardScancode) (BRLS_KBD_KEY_KP_1 + static_cast<int>(scancode) - SDL_SCANCODE_KP_1);
 
     // A - Z
     if (scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_Z)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_A + static_cast<int>(scancode) - SDL_SCANCODE_A);
+        return (BrlsKeyboardScancode) (BRLS_KBD_KEY_A + static_cast<int>(scancode) - SDL_SCANCODE_A);
 
     // F1 - F12
     if (scancode >= SDL_SCANCODE_F1 && scancode <= SDL_SCANCODE_F12)
-        return (BrlsKeyboardScancode)(BRLS_KBD_KEY_F1 + static_cast<int>(scancode) - SDL_SCANCODE_F1);
+        return (BrlsKeyboardScancode) (BRLS_KBD_KEY_F1 + static_cast<int>(scancode) - SDL_SCANCODE_F1);
 
     switch (scancode)
     {
@@ -182,19 +182,19 @@ static const SDL_Scancode brlsToSdlKeyboardScancode(BrlsKeyboardScancode scancod
 
     // 1 - 9
     if (scancode >= BRLS_KBD_KEY_1 && scancode <= BRLS_KBD_KEY_9)
-        return (SDL_Scancode)(SDL_SCANCODE_1 + static_cast<int>(scancode) - BRLS_KBD_KEY_1);
+        return (SDL_Scancode) (SDL_SCANCODE_1 + static_cast<int>(scancode) - BRLS_KBD_KEY_1);
 
     // KP1 - KP9
     if (scancode >= BRLS_KBD_KEY_KP_1 && scancode <= BRLS_KBD_KEY_KP_9)
-        return (SDL_Scancode)(SDL_SCANCODE_KP_1 + static_cast<int>(scancode) - BRLS_KBD_KEY_KP_1);
+        return (SDL_Scancode) (SDL_SCANCODE_KP_1 + static_cast<int>(scancode) - BRLS_KBD_KEY_KP_1);
 
     // A - Z
     if (scancode >= BRLS_KBD_KEY_A && scancode <= BRLS_KBD_KEY_Z)
-        return (SDL_Scancode)(SDL_SCANCODE_A + static_cast<int>(scancode) - BRLS_KBD_KEY_A);
+        return (SDL_Scancode) (SDL_SCANCODE_A + static_cast<int>(scancode) - BRLS_KBD_KEY_A);
 
     // F1 - F12
     if (scancode >= BRLS_KBD_KEY_F1 && scancode <= BRLS_KBD_KEY_F12)
-        return (SDL_Scancode)(SDL_SCANCODE_F1 + static_cast<int>(scancode) - BRLS_KBD_KEY_F1);
+        return (SDL_Scancode) (SDL_SCANCODE_F1 + static_cast<int>(scancode) - BRLS_KBD_KEY_F1);
 
     switch (scancode)
     {
@@ -311,54 +311,54 @@ static const SDL_Scancode brlsToSdlKeyboardScancode(BrlsKeyboardScancode scancod
 
 // LT and RT do not exist here because they are axes
 static const size_t SDL_BUTTONS_MAPPING[SDL_GAMEPAD_BUTTON_MAX] = {
-    BUTTON_A, // SDL_CONTROLLER_BUTTON_A
-    BUTTON_B, // SDL_CONTROLLER_BUTTON_B
-    BUTTON_X, // SDL_CONTROLLER_BUTTON_X
-    BUTTON_Y, // SDL_CONTROLLER_BUTTON_Y
-    BUTTON_BACK, // SDL_CONTROLLER_BUTTON_BACK
+    BUTTON_A,     // SDL_CONTROLLER_BUTTON_A
+    BUTTON_B,     // SDL_CONTROLLER_BUTTON_B
+    BUTTON_X,     // SDL_CONTROLLER_BUTTON_X
+    BUTTON_Y,     // SDL_CONTROLLER_BUTTON_Y
+    BUTTON_BACK,  // SDL_CONTROLLER_BUTTON_BACK
     BUTTON_GUIDE, // SDL_CONTROLLER_BUTTON_GUIDE
     BUTTON_START, // SDL_CONTROLLER_BUTTON_START
-    BUTTON_LSB, //    SDL_CONTROLLER_BUTTON_LEFTSTICK
-    BUTTON_RSB, //    SDL_CONTROLLER_BUTTON_RIGHTSTICK
-    BUTTON_LB, //    SDL_CONTROLLER_BUTTON_LEFTSHOULDER
-    BUTTON_RB, //    SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
-    BUTTON_UP, //    SDL_CONTROLLER_BUTTON_DPAD_UP
-    BUTTON_DOWN, //    SDL_CONTROLLER_BUTTON_DPAD_DOWN
-    BUTTON_LEFT, //    SDL_CONTROLLER_BUTTON_DPAD_LEFT
+    BUTTON_LSB,   //    SDL_CONTROLLER_BUTTON_LEFTSTICK
+    BUTTON_RSB,   //    SDL_CONTROLLER_BUTTON_RIGHTSTICK
+    BUTTON_LB,    //    SDL_CONTROLLER_BUTTON_LEFTSHOULDER
+    BUTTON_RB,    //    SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
+    BUTTON_UP,    //    SDL_CONTROLLER_BUTTON_DPAD_UP
+    BUTTON_DOWN,  //    SDL_CONTROLLER_BUTTON_DPAD_DOWN
+    BUTTON_LEFT,  //    SDL_CONTROLLER_BUTTON_DPAD_LEFT
     BUTTON_RIGHT, //    SDL_CONTROLLER_BUTTON_DPAD_RIGHT
 };
 
 static const size_t SDL_GAMEPAD_TO_KEYBOARD[SDL_GAMEPAD_BUTTON_MAX] = {
-    SDL_SCANCODE_RETURN, // SDL_CONTROLLER_BUTTON_A
-    SDL_SCANCODE_ESCAPE, // SDL_CONTROLLER_BUTTON_B
-    SDL_SCANCODE_X, // SDL_CONTROLLER_BUTTON_X
-    SDL_SCANCODE_Y, // SDL_CONTROLLER_BUTTON_Y
-    SDL_SCANCODE_F1, // SDL_CONTROLLER_BUTTON_BACK
+    SDL_SCANCODE_RETURN,  // SDL_CONTROLLER_BUTTON_A
+    SDL_SCANCODE_ESCAPE,  // SDL_CONTROLLER_BUTTON_B
+    SDL_SCANCODE_X,       // SDL_CONTROLLER_BUTTON_X
+    SDL_SCANCODE_Y,       // SDL_CONTROLLER_BUTTON_Y
+    SDL_SCANCODE_F1,      // SDL_CONTROLLER_BUTTON_BACK
     SDL_SCANCODE_UNKNOWN, // SDL_CONTROLLER_BUTTON_GUIDE
-    SDL_SCANCODE_F2, // SDL_CONTROLLER_BUTTON_START
-    SDL_SCANCODE_Q, // SDL_CONTROLLER_BUTTON_LEFTSTICK
-    SDL_SCANCODE_P, // SDL_CONTROLLER_BUTTON_RIGHTSTICK
-    SDL_SCANCODE_L, // SDL_CONTROLLER_BUTTON_LEFTSHOULDER
-    SDL_SCANCODE_R, // SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
-    SDL_SCANCODE_UP, // SDL_CONTROLLER_BUTTON_DPAD_UP
-    SDL_SCANCODE_DOWN, // SDL_CONTROLLER_BUTTON_DPAD_DOWN
-    SDL_SCANCODE_LEFT, // SDL_CONTROLLER_BUTTON_DPAD_LEFT
-    SDL_SCANCODE_RIGHT, // SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+    SDL_SCANCODE_F2,      // SDL_CONTROLLER_BUTTON_START
+    SDL_SCANCODE_Q,       // SDL_CONTROLLER_BUTTON_LEFTSTICK
+    SDL_SCANCODE_P,       // SDL_CONTROLLER_BUTTON_RIGHTSTICK
+    SDL_SCANCODE_L,       // SDL_CONTROLLER_BUTTON_LEFTSHOULDER
+    SDL_SCANCODE_R,       // SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
+    SDL_SCANCODE_UP,      // SDL_CONTROLLER_BUTTON_DPAD_UP
+    SDL_SCANCODE_DOWN,    // SDL_CONTROLLER_BUTTON_DPAD_DOWN
+    SDL_SCANCODE_LEFT,    // SDL_CONTROLLER_BUTTON_DPAD_LEFT
+    SDL_SCANCODE_RIGHT,   // SDL_CONTROLLER_BUTTON_DPAD_RIGHT
 };
 
 static const ControllerType SDL_GAMEPAD_TYPE_MAPPING[SDL_GAMEPAD_TYPE_COUNT] = {
-    ControllerType::UNKNOWN, // SDL_GAMEPAD_TYPE_UNKNOWN
-    ControllerType::STANDARD, // SDL_GAMEPAD_TYPE_STANDARD
-    ControllerType::XBOX360, // SDL_GAMEPAD_TYPE_XBOX360
-    ControllerType::XBOXONE, // SDL_GAMEPAD_TYPE_XBOXONE
-    ControllerType::PS3, // SDL_GAMEPAD_TYPE_PS3
-    ControllerType::PS4, // SDL_GAMEPAD_TYPE_PS4
-    ControllerType::PS5, // SDL_GAMEPAD_TYPE_PS5
-    ControllerType::NINTENDO_SWITCH_PRO, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO
-    ControllerType::NINTENDO_SWITCH_JOYCON_LEFT, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT
+    ControllerType::UNKNOWN,                      // SDL_GAMEPAD_TYPE_UNKNOWN
+    ControllerType::STANDARD,                     // SDL_GAMEPAD_TYPE_STANDARD
+    ControllerType::XBOX360,                      // SDL_GAMEPAD_TYPE_XBOX360
+    ControllerType::XBOXONE,                      // SDL_GAMEPAD_TYPE_XBOXONE
+    ControllerType::PS3,                          // SDL_GAMEPAD_TYPE_PS3
+    ControllerType::PS4,                          // SDL_GAMEPAD_TYPE_PS4
+    ControllerType::PS5,                          // SDL_GAMEPAD_TYPE_PS5
+    ControllerType::NINTENDO_SWITCH_PRO,          // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO
+    ControllerType::NINTENDO_SWITCH_JOYCON_LEFT,  // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT
     ControllerType::NINTENDO_SWITCH_JOYCON_RIGHT, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT
-    ControllerType::NINTENDO_SWITCH_JOYCON_PAIR, // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR
-    ControllerType::GAMECUBE, // SDL_GAMEPAD_TYPE_GAMECUBE
+    ControllerType::NINTENDO_SWITCH_JOYCON_PAIR,  // SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR
+    ControllerType::GAMECUBE,                     // SDL_GAMEPAD_TYPE_GAMECUBE
 };
 
 static ControllerFeatures sdlGetControllerFeatures(SDL_Gamepad* gamepad)
@@ -394,12 +394,7 @@ static ControllerFeatures sdlGetControllerFeatures(SDL_Gamepad* gamepad)
 static std::unordered_map<SDL_Scancode, int> keyboardKeys {};
 
 static const size_t SDL_AXIS_MAPPING[SDL_GAMEPAD_AXIS_MAX] = {
-    LEFT_X,
-    LEFT_Y,
-    RIGHT_X,
-    RIGHT_Y,
-    LEFT_Z,
-    RIGHT_Z,
+    LEFT_X, LEFT_Y, RIGHT_X, RIGHT_Y, LEFT_Z, RIGHT_Z,
 };
 
 std::vector<std::pair<size_t, std::pair<SDL_JoystickID, SDL_Gamepad*>>> controllers;
@@ -453,9 +448,7 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
             SDL_Joystick* joystick = SDL_GetGamepadJoystick(controller);
             SDL_JoystickID jid     = SDL_GetJoystickID(joystick);
 
-            auto it = std::find_if(controllers.begin(), controllers.end(),
-                [jid](const auto& c)
-                { return c.second.first == jid; });
+            auto it = std::find_if(controllers.begin(), controllers.end(), [jid](const auto& c) { return c.second.first == jid; });
 
             if (it == controllers.end())
             {
@@ -464,11 +457,12 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
                 ControllerType brlsType = sdlControllerTypeToBrls(SDL_GetGamepadType(controller));
                 Application::getPlatform()->getInputManager()->getControllerConnectionEvent()->fire(
                     ControllerInfo {
-                        .index    = (uint32_t)index,
+                        .index    = (uint32_t) index,
                         .type     = brlsType,
                         .features = sdlGetControllerFeatures(controller),
                         .state    = ControllerConnectionState::CONNECTED,
-                    });
+                    }
+                );
             }
             else
             {
@@ -490,11 +484,12 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
                 controllers.erase(it);
                 Application::getPlatform()->getInputManager()->getControllerConnectionEvent()->fire(
                     ControllerInfo {
-                        .index    = (uint32_t)index,
+                        .index    = (uint32_t) index,
                         .type     = brlsType,
                         .features = features,
                         .state    = ControllerConnectionState::DISCONNECTED,
-                    });
+                    }
+                );
                 break;
             }
         }
@@ -519,8 +514,7 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
     return true;
 }
 
-SDLInputManager::SDLInputManager(SDL_Window* window)
-    : window(window)
+SDLInputManager::SDLInputManager(SDL_Window* window) : window(window)
 {
 
     int32_t flags = SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD;
@@ -582,15 +576,22 @@ SDLInputManager::SDLInputManager(SDL_Window* window)
 
     SDL_AddEventWatch(sdlEventWatcher, this->window);
 
-    Application::getRunLoopEvent()->subscribe([this]()
+    Application::getRunLoopEvent()->subscribe(
+        [this]()
         {
-        if(fabs(scrollOffset.y) < 1) scrollOffset.y = 0;
-        else scrollOffset.y *= 0.8;
-        if(fabs(scrollOffset.x) < 1) scrollOffset.x = 0;
-        else scrollOffset.x *= 0.8;
+            if (fabs(scrollOffset.y) < 1)
+                scrollOffset.y = 0;
+            else
+                scrollOffset.y *= 0.8;
+            if (fabs(scrollOffset.x) < 1)
+                scrollOffset.x = 0;
+            else
+                scrollOffset.x *= 0.8;
 
-        pointerOffset.x = 0;
-        pointerOffset.y = 0; });
+            pointerOffset.x = 0;
+            pointerOffset.y = 0;
+        }
+    );
 
     init_device_rumble();
 }
@@ -603,10 +604,7 @@ SDLInputManager::~SDLInputManager()
     }
 }
 
-short SDLInputManager::getControllersConnectedCount()
-{
-    return controllers.size();
-}
+short SDLInputManager::getControllersConnectedCount() { return controllers.size(); }
 
 std::vector<ControllerInfo> SDLInputManager::getConnectedControllers()
 {
@@ -616,12 +614,14 @@ std::vector<ControllerInfo> SDLInputManager::getConnectedControllers()
     {
         SDL_Gamepad* gamepad    = c.second.second;
         ControllerType brlsType = sdlControllerTypeToBrls(SDL_GetGamepadType(gamepad));
-        result.push_back(ControllerInfo {
-            .index    = (uint32_t)c.first,
-            .type     = brlsType,
-            .features = sdlGetControllerFeatures(gamepad),
-            .state    = ControllerConnectionState::CONNECTED,
-        });
+        result.push_back(
+            ControllerInfo {
+                .index    = (uint32_t) c.first,
+                .type     = brlsType,
+                .features = sdlGetControllerFeatures(gamepad),
+                .state    = ControllerConnectionState::CONNECTED,
+            }
+        );
     }
     return result;
 }
@@ -659,7 +659,7 @@ void SDLInputManager::updateUnifiedControllerState(ControllerState* state)
         size_t brlsButton = SDL_BUTTONS_MAPPING[i];
         size_t key        = SDL_GAMEPAD_TO_KEYBOARD[i];
         if (key != SDL_SCANCODE_UNKNOWN)
-            state->buttons[brlsButton] |= getKeyboardKeys((SDL_Scancode)key);
+            state->buttons[brlsButton] |= getKeyboardKeys((SDL_Scancode) key);
     }
     if (Application::isSwapInputKeys())
     {
@@ -687,7 +687,7 @@ void SDLInputManager::updateUnifiedControllerState(ControllerState* state)
 
 void SDLInputManager::updateControllerState(ControllerState* state, int controller)
 {
-    if (controllers.size() <= (size_t)controller)
+    if (controllers.size() <= (size_t) controller)
         return;
 
     SDL_Gamepad* c = controllers[controller].second.second;
@@ -696,27 +696,24 @@ void SDLInputManager::updateControllerState(ControllerState* state, int controll
     {
         // Translate SDL gamepad to borealis controller
         size_t brlsButton          = SDL_BUTTONS_MAPPING[i];
-        state->buttons[brlsButton] = (bool)SDL_GetGamepadButton(c, (SDL_GamepadButton)i);
+        state->buttons[brlsButton] = (bool) SDL_GetGamepadButton(c, (SDL_GamepadButton) i);
     }
 
     state->buttons[BUTTON_LT] = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > 3276.7f;
     state->buttons[BUTTON_RT] = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 3276.7f;
 
-    state->buttons[BUTTON_NAV_UP]    = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTY) < -16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTY) < -16383.5f || state->buttons[BUTTON_UP];
-    state->buttons[BUTTON_NAV_RIGHT] = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTX) > 16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTX) > 16383.5f || state->buttons[BUTTON_RIGHT];
-    state->buttons[BUTTON_NAV_DOWN]  = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTY) > 16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTY) > 16383.5f || state->buttons[BUTTON_DOWN];
-    state->buttons[BUTTON_NAV_LEFT]  = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTX) < -16383.5f || SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_RIGHTX) < -16383.5f || state->buttons[BUTTON_LEFT];
+    state->buttons[BUTTON_NAV_UP]    = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTY) < -16383.5f || state->buttons[BUTTON_UP];
+    state->buttons[BUTTON_NAV_RIGHT] = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTX) > 16383.5f || state->buttons[BUTTON_RIGHT];
+    state->buttons[BUTTON_NAV_DOWN]  = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTY) > 16383.5f || state->buttons[BUTTON_DOWN];
+    state->buttons[BUTTON_NAV_LEFT]  = SDL_GetGamepadAxis(c, SDL_GAMEPAD_AXIS_LEFTX) < -16383.5f || state->buttons[BUTTON_LEFT];
 
     for (size_t i = 0; i < SDL_GAMEPAD_AXIS_MAX; i++)
     {
-        state->axes[SDL_AXIS_MAPPING[i]] = SDL_GetGamepadAxis(c, (SDL_GamepadAxis)i) / 32768.0;
+        state->axes[SDL_AXIS_MAPPING[i]] = SDL_GetGamepadAxis(c, (SDL_GamepadAxis) i) / 32768.0;
     }
 }
 
-bool SDLInputManager::getKeyboardKeyState(BrlsKeyboardScancode key)
-{
-    return getKeyboardKeys(brlsToSdlKeyboardScancode(key));
-}
+bool SDLInputManager::getKeyboardKeyState(BrlsKeyboardScancode key) { return getKeyboardKeys(brlsToSdlKeyboardScancode(key)); }
 
 void SDLInputManager::updateTouchStates(std::vector<RawTouchState>* states)
 {
@@ -736,7 +733,7 @@ void SDLInputManager::updateTouchStates(std::vector<RawTouchState>* states)
 
             RawTouchState state;
             state.pressed    = true;
-            state.fingerId   = (int)finger->id;
+            state.fingerId   = (int) finger->id;
             state.position.x = Application::contentWidth * finger->x;
             state.position.y = Application::contentHeight * finger->y;
             states->push_back(state);
@@ -777,7 +774,7 @@ void SDLInputManager::setPointerLock(bool lock)
 
 void SDLInputManager::setCursorType(CursorType type)
 {
-    SDL_Cursor* cursor = SDL_CreateSystemCursor((SDL_SystemCursor)type);
+    SDL_Cursor* cursor = SDL_CreateSystemCursor((SDL_SystemCursor) type);
     SDL_SetCursor(cursor);
 }
 
@@ -810,7 +807,13 @@ void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFr
     SDL_RumbleGamepad(c, lowFreqMotor, highFreqMotor, 30000);
 }
 
-void SDLInputManager::sendRumble(unsigned short controller, unsigned short lowFreqMotor, unsigned short highFreqMotor, unsigned short leftTriggerFreqMotor, unsigned short rightTriggerFreqMotor)
+void SDLInputManager::sendRumble(
+    unsigned short controller,
+    unsigned short lowFreqMotor,
+    unsigned short highFreqMotor,
+    unsigned short leftTriggerFreqMotor,
+    unsigned short rightTriggerFreqMotor
+)
 {
     if (controllers.size() <= controller)
     {
@@ -884,7 +887,7 @@ void SDLInputManager::updateControllerSensorsUpdate(SDL_GamepadSensorEvent event
 
 void SDLInputManager::updateKeyboardState(SDL_KeyboardEvent event)
 {
-    auto* self = (SDLInputManager*)Application::getPlatform()->getInputManager();
+    auto* self = (SDLInputManager*) Application::getPlatform()->getInputManager();
     KeyState state {};
     state.key     = sdlToBrlsKeyboardScancode(event.scancode);
     state.pressed = event.type == SDL_EVENT_KEY_DOWN;

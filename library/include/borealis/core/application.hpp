@@ -83,7 +83,7 @@ class Application
      * Creates the application window with the given title.
      * Must be called after calling init().
      */
-    static void createWindow(std::string title);
+    static void createWindow(const std::string& title);
 
     /**
      * Application main loop iteration.
@@ -91,18 +91,36 @@ class Application
      */
     static bool mainLoop();
 
+    /**
+     * Returns the platform abstraction layer instance.
+     */
     static Platform* getPlatform();
+
+    /**
+     * Returns the audio player instance used for UI sounds.
+     */
     static AudioPlayer* getAudioPlayer();
 
+    /**
+     * Returns the notification manager used to display in-app notifications.
+     */
     static NotificationManager* getNotificationManager();
 
+    /**
+     * Returns the NanoVG context used for rendering.
+     */
     static NVGcontext* getNVGContext();
+
+    /** Content area dimensions in logical pixels. */
     inline static float contentWidth, contentHeight;
 
+    /** Current window dimensions in physical pixels. */
     inline static unsigned windowWidth, windowHeight;
 
+    /** Current window position on screen. */
     inline static int windowXPos, windowYPos;
 
+    /** Current safe area insets of the window. */
     inline static SafeAreaInsets windowSafeArea;
 
     /**
@@ -139,6 +157,9 @@ class Application
      */
     static void setWindowSafeArea(SafeAreaInsets safeArea);
 
+    /**
+     * Returns the current activities stack.
+     */
     static std::vector<Activity*> getActivitiesStack();
 
     /**
@@ -152,7 +173,11 @@ class Application
      * The first activity to be pushed cannot be popped.
      * @param replace If true, the previous activity will be removed.
      */
-    static void pushActivity(Activity* view, bool replace = false, TransitionAnimation animation = TransitionAnimation::FADE);
+    static void pushActivity(
+        Activity* activity,
+        bool replace                  = false,
+        TransitionAnimation animation = TransitionAnimation::FADE //
+    );
 
     /**
      * Pops the last pushed activity from the stack
@@ -160,7 +185,11 @@ class Application
      *
      * return false if no actifity to pop.
      */
-    static bool popActivity(TransitionAnimation animation = TransitionAnimation::FADE, std::function<void(void)> cb = [] { }, bool free = true);
+    static bool popActivity(
+        TransitionAnimation animation       = TransitionAnimation::FADE,
+        const std::function<void(void)>& cb = [] {},
+        bool free                           = true //
+    );
 
     /**
      * Removes a specific activity from the stack.
@@ -175,45 +204,66 @@ class Application
      */
     static void giveFocus(View* view);
 
-    inline static Style getStyle()
-    {
-        return brls::getStyle();
-    }
+    inline static Style getStyle() { return brls::getStyle(); }
 
+    /**
+     * Returns the current theme.
+     */
     static Theme getTheme();
+
+    /**
+     * Returns the current theme variant (light or dark).
+     */
     static ThemeVariant getThemeVariant();
 
+    /**
+     * Returns the IME (Input Method Editor) manager for text input.
+     */
     static ImeManager* getImeManager();
 
     /**
      * Loads a font from a given file and stores it in the font stash.
      * Returns true if the operation succeeded.
      */
-    static bool loadFontFromFile(std::string fontName, std::string filePath);
+    static bool loadFontFromFile(const std::string& fontName, const std::string& filePath);
 
     /**
      * Loads a font from a given memory buffer and stores it in the font stash.
      * Returns true if the operation succeeded.
      */
-    static bool loadFontFromMemory(std::string fontName, void* data, size_t size, bool freeData);
+    static bool loadFontFromMemory(const std::string& fontName, void* data, size_t size, bool freeData);
 
     /**
      * Returns the nanovg handle to the given font name, or FONT_INVALID if
      * no such font is currently loaded.
      */
-    static int getFont(std::string fontName);
+    static int getFont(const std::string& fontName);
 
+    /**
+     * Returns the nanovg handle for the default application font.
+     */
     static int getDefaultFont();
 
+    /**
+     * Displays an in-app notification with the given text.
+     * @param duration Display duration in milliseconds. 0 uses the default duration.
+     */
     static void notify(const std::string& text, size_t duration = 0);
 
+    /**
+     * Processes a controller button press event.
+     * @param repeating True if this is a repeated press from holding the button.
+     */
     static void onControllerButtonPressed(enum ControllerButton button, bool repeating);
 
     /**
      * "Crashes" the app (displays a fullscreen CrashFrame)
      */
-    static void crash(std::string text);
+    static void crash(const std::string& text);
 
+    /**
+     * Requests application exit. The application will quit at the end of the current frame.
+     */
     static void quit();
 
     /**
@@ -227,6 +277,9 @@ class Application
      */
     static void unblockInputs();
 
+    /**
+     * Returns true if user inputs of the given type are currently blocked.
+     */
     static bool isInputBlocked(InputType type = InputType::ALL);
 
     /**
@@ -244,9 +297,17 @@ class Application
      */
     static void setForegroundMode(bool mode = true);
 
-    static void setCommonFooter(std::string footer);
+    /**
+     * Sets the common footer text displayed at the bottom of the screen.
+     */
+    static void setCommonFooter(const std::string& footer);
+
+    /**
+     * Returns a pointer to the common footer text string.
+     */
     static std::string* getCommonFooter();
 
+    /** Window content scaling factor (DPI scaling). */
     inline static float windowScale;
 
     /**
@@ -254,8 +315,19 @@ class Application
      */
     static void setGlobalQuit(bool enabled);
 
+    /**
+     * Enables or disables the FPS counter overlay.
+     */
     static void setFPSStatus(bool enabled);
+
+    /**
+     * Returns whether the FPS counter overlay is enabled.
+     */
     static bool getFPSStatus();
+
+    /**
+     * Returns the current frames per second.
+     */
     static size_t getFPS();
 
     /**
@@ -307,29 +379,87 @@ class Application
      * default is false;
      */
     static void setAutomaticDeactivation(bool value);
+
+    /**
+     * Returns whether automatic deactivation (FPS throttling on idle) is enabled.
+     */
     static bool getAutomaticDeactivation();
+
+    /**
+     * Returns true if an active event has occurred recently.
+     */
     static bool hasActiveEvent();
+
+    /**
+     * Signals an active event, resetting the inactivity timer.
+     */
     static void setActiveEvent(bool value);
+
+    /**
+     * Sets the inactivity timeout before FPS is throttled.
+     * @param millisecond Timeout in microseconds.
+     */
     static void setDeactivatedTime(int millisecond);
+
+    /**
+     * Sets the target FPS when the application is in deactivated (idle) state.
+     */
     static void setDeactivatedFPS(int value);
+
+    /**
+     * Returns the target FPS used during the deactivated (idle) state.
+     */
     static int getDeactivatedFPS();
+
+    /**
+     * Returns the frame time corresponding to the deactivated FPS.
+     */
     static double getDeactivatedFrameTime();
 
+    /** Fired when focus changes between views. */
     static GenericEvent* getGlobalFocusChangeEvent();
+
+    /** Fired when action hints should be refreshed. */
     static VoidEvent* getGlobalHintsUpdateEvent();
+
+    /** Fired when the input type changes (e.g. gamepad to touch). */
     static Event<InputType>* getGlobalInputTypeChangeEvent();
+
+    /** Fired every iteration of the main run loop. */
     static VoidEvent* getRunLoopEvent();
+
+    /** Fired after each frame is rendered. */
     static VoidEvent* getPostFrameEvent();
+
+    /** Fired when the application begins exiting. */
     static VoidEvent* getExitEvent();
+
+    /** Fired after exit cleanup is complete. */
     static VoidEvent* getExitDoneEvent();
+
+    /** Fired when the window size changes. */
     static VoidEvent* getWindowSizeChangedEvent();
+
+    /** Fired when the window safe area insets change. */
     static Event<SafeAreaInsets>* getWindowSafeAreaChangedEvent();
+
+    /** Fired after the window has been created and is ready. */
     static VoidEvent* getWindowCreationDoneEvent();
+
+    /** Fired when a window close request is received. */
     static VoidEvent* getWindowShouldCloseEvent();
+
+    /** Fired when the window gains or loses OS focus. */
     static Event<bool>* getWindowFocusChangedEvent();
 
+    /**
+     * Returns the currently focused view, or nullptr if nothing is focused.
+     */
     static View* getCurrentFocus();
 
+    /**
+     * Returns the application window title.
+     */
     static std::string getTitle();
 
     /**
@@ -341,65 +471,73 @@ class Application
      *
      * You should not add any children in the function, it is already taken care of.
      */
-    static void registerXMLView(std::string name, XMLViewCreator creator);
+    static void registerXMLView(const std::string& name, XMLViewCreator creator);
 
-    static bool XMLViewsRegisterContains(std::string name);
-    static XMLViewCreator getXMLViewCreator(std::string name);
+    /**
+     * Returns true if a view with the given XML tag name has been registered.
+     */
+    static bool XMLViewsRegisterContains(const std::string& name);
+
+    /**
+     * Returns the creator function for the given XML view tag name.
+     */
+    static XMLViewCreator getXMLViewCreator(const std::string& name);
 
     /**
      * Returns the current system locale.
      */
     static std::string getLocale();
 
+    /**
+     * Adds a view to the deletion pool to be freed at the end of the frame.
+     */
     static void addToFreeQueue(View* view);
 
     /**
      * Returns the current input type.
      */
-    inline static InputType getInputType()
-    {
-        return inputType;
-    }
+    inline static InputType getInputType() { return inputType; }
 
-    inline static void enableDebuggingView(bool enable)
-    {
-        debuggingViewEnabled = enable;
-    }
+    inline static void enableDebuggingView(bool enable) { debuggingViewEnabled = enable; }
 
-    inline static bool isDebuggingViewEnabled()
-    {
-        return debuggingViewEnabled;
-    }
+    inline static bool isDebuggingViewEnabled() { return debuggingViewEnabled; }
 
+    /**
+     * Sets whether confirm/cancel input keys should be swapped.
+     */
     static void setSwapInputKeys(bool swap);
 
-    inline static bool isSwapInputKeys()
-    {
-        return swapInputKeys;
-    }
+    /**
+     * Returns true if confirm/cancel input keys are swapped.
+     */
+    inline static bool isSwapInputKeys() { return swapInputKeys; }
 
-    inline static void setDrawCoursor(bool draw)
-    {
-        drawCoursor = draw;
-    }
+    /**
+     * Enables or disables drawing of the cursor.
+     */
+    inline static void setDrawCoursor(bool draw) { drawCoursor = draw; }
 
-    inline static bool isDrawCursor()
-    {
-        return drawCoursor;
-    }
+    /**
+     * Returns true if the cursor is being drawn.
+     */
+    inline static bool isDrawCursor() { return drawCoursor; }
 
-    inline static void setSwapHalfJoyconStickToDpad(bool swap)
-    {
-        swapHalfJoyconStickToDpad = swap;
-    }
+    /**
+     * Sets whether the half Joy-Con analog stick should be mapped to D-pad inputs.
+     */
+    inline static void setSwapHalfJoyconStickToDpad(bool swap) { swapHalfJoyconStickToDpad = swap; }
 
-    inline static bool isSwapHalfJoyconStickToDpad()
-    {
-        return swapHalfJoyconStickToDpad;
-    }
+    /**
+     * Returns true if half Joy-Con stick is mapped to D-pad.
+     */
+    inline static bool isSwapHalfJoyconStickToDpad() { return swapHalfJoyconStickToDpad; }
 
+    /**
+     * Attempts to deinitialize the first responder if the given view is the current one.
+     */
     static void tryDeinitFirstResponder(View* view);
 
+    /** Current touch input states for all active touch points. */
     inline static std::vector<TouchState> currentTouchState;
 
   private:
@@ -451,7 +589,7 @@ class Application
     inline static bool deactivatedBehavior = false;
     inline static bool activeEvent         = false;
     inline static Time lastActiveTime      = 0;
-    inline static int deactivatedFPS       = 5; // FPS 5
+    inline static int deactivatedFPS       = 5;       // FPS 5
     inline static int deactivatedTime      = 5000000; // 5s
 
     inline static View* repetitionOldFocus = nullptr;

@@ -23,251 +23,306 @@
 namespace brls
 {
 
-#define SCROLLING_INDICATOR_WIDTH 4
+#define SCROLLING_INDICATOR_SIZE 4.0f
 
-ScrollingFrame::ScrollingFrame()
+BaseScrollingFrame::BaseScrollingFrame(ScrollingAxis axis) : scrollAxis(axis)
 {
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "scrollingBehavior", ScrollingBehavior, this->setScrollingBehavior,
+        "scrollingBehavior",
+        ScrollingBehavior,
+        setScrollingBehavior,
         {
             { "natural", ScrollingBehavior::NATURAL },
             { "centered", ScrollingBehavior::CENTERED },
-        });
+        }
+    );
 
-    this->registerBoolXMLAttribute("showIndicator", [this](bool value)
-        { this->setScrollingIndicatorVisible(value); });
+    registerBoolXMLAttribute("showIndicator", [this](bool value) { this->setScrollingIndicatorVisible(value); });
 
     setupScrollingIndicator();
 
     input = Application::getPlatform()->getInputManager();
-    this->setFocusable(true);
-    this->setMaximumAllowedXMLElements(1);
+    setFocusable(true);
+    setMaximumAllowedXMLElements(1);
 
-    addGestureRecognizer(new ScrollGestureRecognizer([this](PanGestureStatus state, Sound* soundToPlay)
+    PanAxis panAxis = (scrollAxis == ScrollingAxis::VERTICAL) ? PanAxis::VERTICAL : PanAxis::HORIZONTAL;
+
+    addGestureRecognizer(new ScrollGestureRecognizer(
+        [this](PanGestureStatus state, Sound* soundToPlay)
         {
-        if (state.state == GestureState::FAILED || state.state == GestureState::UNSURE || state.state == GestureState::INTERRUPTED)
-        {
-            // When a second finger is placed during a rubber-band drag the pan recognizer
-            // fires UNSURE (new touch-down) then FAILs silently — the FAILED event is never
-            // dispatched because pan_gesture sets lastState=FAILED immediately.  Clear the
-            // rubber-band flag here so draw()'s per-frame auto-correct can snap the content
-            // back to valid bounds without any extra gesture handling.
-            if (isRubberBanding)
+            bool isVertical  = this->scrollAxis == ScrollingAxis::VERTICAL;
+            float stateDelta = isVertical ? state.delta.y : state.delta.x;
+            float statePos   = isVertical ? state.position.y : state.position.x;
+            float stateStart = isVertical ? state.startPosition.y : state.startPosition.x;
+            float accelTime  = isVertical ? state.acceleration.time.y : state.acceleration.time.x;
+            float accelDist  = isVertical ? state.acceleration.distance.y : state.acceleration.distance.x;
+
+            if (state.state == GestureState::FAILED || state.state == GestureState::UNSURE || state.state == GestureState::INTERRUPTED)
             {
-                this->contentOffsetY.setEndCallback([](bool) {});
-                isRubberBanding = false;
+                if (this->isRubberBanding)
+                {
+                    this->contentOffset.setEndCallback([](bool) {});
+                    this->isRubberBanding = false;
+                }
+                return;
             }
-            return;
-        }
 
-        if (state.deltaOnly)
-        {
-            // Scroll-wheel / trackpad delta — no rubber-band, plain offset
-            float newScroll = this->contentOffsetY - state.delta.y;
-            startScrolling(false, newScroll);
-            return;
-        }
-
-        static float startY;
-        if (state.state == GestureState::START)
-        {
-            // Only steal gamepad focus to enable natural scrolling.
-            // On touch, grabbing focus plays a sound and interrupts child views.
-            if (Application::getInputType() != InputType::TOUCH)
-                Application::giveFocus(this);
-            startY          = this->contentOffsetY;
-            isRubberBanding = false;
-        }
-
-        // Raw scroll position computed from total finger displacement
-        float rawScroll   = startY - (state.position.y - state.startPosition.y);
-        float contentH    = getContentHeight();
-        float bottomLimit = contentH - getScrollingAreaHeight();
-
-        // Apply rubber-band resistance when dragging past the scroll boundaries
-        float newScroll = rawScroll;
-        if (bottomLimit > 0.0f)
-        {
-            if (rawScroll < 0.0f)
+            if (state.deltaOnly)
             {
-                newScroll       = rawScroll * 0.35f;
-                isRubberBanding = true;
+                float newScroll = this->contentOffset - stateDelta;
+                this->startScrolling(false, newScroll);
+                return;
             }
-            else if (rawScroll > bottomLimit)
+
+            static float startOffset;
+            if (state.state == GestureState::START)
             {
-                newScroll       = bottomLimit + (rawScroll - bottomLimit) * 0.35f;
-                isRubberBanding = true;
+                if (Application::getInputType() != InputType::TOUCH)
+                    Application::giveFocus(this);
+
+                startOffset           = this->contentOffset;
+                this->isRubberBanding = false;
+            }
+
+            float rawScroll  = startOffset - (statePos - stateStart);
+            float contentLen = this->getContentLength();
+            float endLimit   = contentLen - this->getScrollingAreaLength();
+
+            float newScroll = rawScroll;
+            if (endLimit > 0.0f)
+            {
+                if (rawScroll < 0.0f)
+                {
+                    newScroll             = rawScroll * 0.35f;
+                    this->isRubberBanding = true;
+                }
+                else if (rawScroll > endLimit)
+                {
+                    newScroll             = endLimit + (rawScroll - endLimit) * 0.35f;
+                    this->isRubberBanding = true;
+                }
+                else
+                {
+                    newScroll             = rawScroll;
+                    this->isRubberBanding = false;
+                }
             }
             else
             {
-                newScroll       = rawScroll;
-                isRubberBanding = false;
+                newScroll = rawScroll;
             }
-        }
-        else
-        {
-            newScroll = rawScroll;
-        }
 
-        if (state.state != GestureState::END)
-        {
-            startScrolling(false, newScroll);
-        }
-        else
-        {
-            float currentOffset = static_cast<float>(this->contentOffsetY);
-            float clampMax      = std::max(0.0f, bottomLimit);
-            bool  outOfBounds   = (currentOffset < 0.0f) || (bottomLimit > 0.0f && currentOffset > bottomLimit);
-
-            if (outOfBounds)
+            if (state.state != GestureState::END)
             {
-                // Snap back into valid bounds with a spring animation.
-                // Clear the old end callback BEFORE calling stop() because stop()
-                // fires the current end callback when the animation is still running —
-                // which would set isRubberBanding=false and break the new snap-back.
-                float snapTarget = std::max(0.0f, std::min(currentOffset, clampMax));
-                this->contentOffsetY.setEndCallback([](bool) {});
-                this->contentOffsetY.stop();
-                this->contentOffsetY.reset();
-                isRubberBanding = true;  // set AFTER stop() so the cleared callback can't undo it
-                this->contentOffsetY.addStep(snapTarget, 300, EasingFunction::quadraticOut);
-                this->contentOffsetY.setTickCallback([this] { this->scrollAnimationTick(); });
-                this->contentOffsetY.setEndCallback([this](bool) { isRubberBanding = false; this->invalidate(); });
-                this->contentOffsetY.start();
-                this->invalidate();
-                return;
+                this->startScrolling(false, newScroll);
             }
+            else
+            {
+                float currentOffset = static_cast<float>(this->contentOffset);
+                float clampMax      = std::max(0.0f, endLimit);
+                bool outOfBounds    = (currentOffset < 0.0f) || (endLimit > 0.0f && currentOffset > endLimit);
 
-            isRubberBanding = false;
+                if (outOfBounds)
+                {
+                    float snapTarget = std::max(0.0f, std::min(currentOffset, clampMax));
+                    this->contentOffset.setEndCallback([](bool) {});
+                    this->contentOffset.stop();
+                    this->contentOffset.reset();
+                    this->isRubberBanding = true;
+                    this->contentOffset.addStep(snapTarget, 300, EasingFunction::quadraticOut);
+                    this->contentOffset.setTickCallback([this] { this->scrollAnimationTick(); });
+                    this->contentOffset.setEndCallback(
+                        [this](bool)
+                        {
+                            this->isRubberBanding = false;
+                            this->invalidate();
+                        }
+                    );
+                    this->contentOffset.start();
+                    this->invalidate();
+                    return;
+                }
 
-            float time   = state.acceleration.time.y * 1000.0f;
-            float newPos = currentOffset + state.acceleration.distance.y;
-            newScroll    = newPos;
+                this->isRubberBanding = false;
 
-            // No meaningful fling — stop cleanly
-            if (newScroll == currentOffset || time < 50.0f)
-                return;
+                float time   = accelTime * 1000.0f;
+                float newPos = currentOffset + accelDist;
+                newScroll    = newPos;
 
-            // Clamp fling target to valid range so we never fling into dead space
-            newScroll = std::max(0.0f, std::min(newScroll, clampMax));
-            animateScrolling(newScroll, time);
-        } },
-        PanAxis::VERTICAL));
+                if (newScroll == currentOffset || time < 50.0f)
+                    return;
+
+                newScroll = std::max(0.0f, std::min(newScroll, clampMax));
+                this->animateScrolling(newScroll, time);
+            }
+        },
+        panAxis
+    ));
 
     // Stop scrolling on tap
-    addGestureRecognizer(new TapGestureRecognizer([this](brls::TapGestureStatus status, Sound* soundToPlay)
+    addGestureRecognizer(new TapGestureRecognizer(
+        [this](brls::TapGestureStatus status, Sound*)
         {
-        if (status.state == GestureState::UNSURE)
-            this->contentOffsetY.stop(); }));
+            if (status.state == GestureState::UNSURE)
+            {
+                this->contentOffset.setEndCallback([](bool) {});
+                this->contentOffset.stop();
+            }
+        }
+    ));
 
-    inputTypeSubscription = Application::getGlobalInputTypeChangeEvent()->subscribe([this](InputType type)
+    inputTypeSubscription = Application::getGlobalInputTypeChangeEvent()->subscribe(
+        [this](InputType type)
         {
-        if (!focused && !childFocused)
-            return;
+            if (!this->focused && !this->childFocused)
+                return;
 
-        if (behavior == ScrollingBehavior::NATURAL && type == InputType::GAMEPAD)
-        {
-            Application::giveFocus(getDefaultFocus());
-            naturalScrollingCanScroll = false;
-        } });
+            if (this->behavior == ScrollingBehavior::NATURAL && type == InputType::GAMEPAD)
+            {
+                Application::giveFocus(this->getDefaultFocus());
+                this->naturalScrollingCanScroll = false;
+            }
+        }
+    );
 
     setHideHighlightBackground(true);
     setHideHighlightBorder(true);
 }
 
-void ScrollingFrame::setupScrollingIndicator()
+void BaseScrollingFrame::setupScrollingIndicator()
 {
     Theme theme        = Application::getTheme();
     scrollingIndicator = new Rectangle(theme["brls/scrolling_frame/indicator"]);
-    scrollingIndicator->setSize(Size(SCROLLING_INDICATOR_WIDTH, 0));
-    scrollingIndicator->setCornerRadius(SCROLLING_INDICATOR_WIDTH / 2);
+
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+        scrollingIndicator->setSize(Size(SCROLLING_INDICATOR_SIZE, 0));
+    else
+        scrollingIndicator->setSize(Size(0, SCROLLING_INDICATOR_SIZE));
+
+    scrollingIndicator->setCornerRadius(SCROLLING_INDICATOR_SIZE / 2);
     scrollingIndicator->detach();
     Box::addView(scrollingIndicator);
 }
 
-void ScrollingFrame::updateScrollingIndicatior()
+void BaseScrollingFrame::updateScrollingIndicator()
 {
-    float contentHeight = getContentHeight();
-    float viewHeight    = getHeight();
+    float contentLen = getContentLength();
+    float viewLen    = (scrollAxis == ScrollingAxis::VERTICAL) ? getHeight() : getWidth();
 
-    if (contentHeight <= viewHeight || !showScrollingIndicator)
+    if (contentLen <= viewLen || !showScrollingIndicator)
     {
         scrollingIndicator->setAlpha(0);
         return;
     }
 
-    scrollingIndicator->setAlpha(contentHeight <= viewHeight ? 0 : 0.3f);
-    scrollingIndicator->setHeight(viewHeight / contentHeight * viewHeight);
+    scrollingIndicator->setAlpha(0.3f);
+    float indicatorLen = viewLen / contentLen * viewLen;
 
-    float scrollViewOffset = getContentOffsetY() / contentHeight * getHeight();
-    scrollingIndicator->setDetachedPosition(getWidth() - 14 - SCROLLING_INDICATOR_WIDTH, scrollViewOffset);
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        scrollingIndicator->setHeight(indicatorLen);
+        float scrollViewOffset = getContentOffset() / contentLen * getHeight();
+        scrollingIndicator->setDetachedPosition(getWidth() - 14 - SCROLLING_INDICATOR_SIZE, scrollViewOffset);
+    }
+    else
+    {
+        scrollingIndicator->setWidth(indicatorLen);
+        float scrollViewOffset = getContentOffset() / contentLen * getWidth();
+        scrollingIndicator->setDetachedPosition(scrollViewOffset, getHeight() - 14 - SCROLLING_INDICATOR_SIZE);
+    }
 }
 
-void ScrollingFrame::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
+void BaseScrollingFrame::rightStickScrolling()
 {
-    updateScrollingIndicatior();
+    if (!contentView || !(focused || childFocused))
+        return;
+
+    ControllerState state {};
+    input->updateUnifiedControllerState(&state);
+
+    float stickVal = (scrollAxis == ScrollingAxis::VERTICAL) ? state.axes[RIGHT_Y] : state.axes[RIGHT_X];
+
+    constexpr float deadzone = 0.15f;
+    if (std::abs(stickVal) < deadzone)
+        return;
+
+    float normalized = (std::abs(stickVal) - deadzone) / (1.0f - deadzone);
+    float speed      = normalized * normalized * 1200.0f / Application::getFPS();
+    float newScroll  = getContentOffset() + (stickVal > 0 ? speed : -speed);
+
+    float endLimit = getContentLength() - getScrollingAreaLength();
+    newScroll      = std::max(0.0f, std::min(newScroll, std::max(0.0f, endLimit)));
+
+    startScrolling(false, newScroll);
+}
+
+void BaseScrollingFrame::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
+{
+    updateScrollingIndicator();
     naturalScrollingBehaviour();
+    rightStickScrolling();
 
-    // Update scrolling - try until it works
-    if (this->updateScrollingOnNextFrame && this->updateScrolling(false))
-        this->updateScrollingOnNextFrame = false;
+    if (updateScrollingOnNextFrame && updateScrolling(false))
+        updateScrollingOnNextFrame = false;
 
-    // Auto-correct: if content is out of bounds, not animating, and not in an
-    // active rubber-band drag, snap it back instantly.  This recovers from cases
-    // where a running snap-back animation was killed by a tap gesture UNSURE event
-    // that was then followed by a FAILED gesture (e.g., the user just tapped).
-    if (this->contentView && !isRubberBanding && !this->contentOffsetY.isRunning())
+    // Auto-correct: if content is out of bounds, not animating, and not rubber-banding, snap back instantly.
+    if (contentView && !isRubberBanding && !contentOffset.isRunning())
     {
-        float contentH  = getContentHeight();
-        float btmLimit  = contentH - getScrollingAreaHeight();
-        float offset    = static_cast<float>(this->contentOffsetY);
-        float corrected = contentH <= getHeight()
-                              ? 0.0f
-                              : std::max(0.0f, std::min(offset, std::max(0.0f, btmLimit)));
+        float contentLen = getContentLength();
+        float areaLen    = getScrollingAreaLength();
+        float endLimit   = contentLen - areaLen;
+        float offset     = static_cast<float>(contentOffset);
+        float corrected  = contentLen <= areaLen ? 0.0f : std::max(0.0f, std::min(offset, std::max(0.0f, endLimit)));
         if (offset != corrected)
         {
-            this->contentOffsetY = corrected;
-            this->contentView->setTranslationY(-corrected);
+            contentOffset = corrected;
+            if (scrollAxis == ScrollingAxis::VERTICAL)
+                contentView->setTranslationY(-corrected);
+            else
+                contentView->setTranslationX(-corrected);
         }
     }
 
     // Enable scissoring
     nvgSave(vg);
-    float scrollingTop    = this->getScrollingAreaTopBoundary();
-    float scrollingHeight = this->getScrollingAreaHeight();
-    nvgIntersectScissor(vg, x, scrollingTop, this->getWidth(), scrollingHeight);
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        float scrollingTop    = getScrollingAreaStart();
+        float scrollingHeight = getScrollingAreaLength();
+        nvgIntersectScissor(vg, x, scrollingTop, getWidth(), scrollingHeight);
+    }
+    else
+    {
+        float scrollingLeft  = getScrollingAreaStart();
+        float scrollingWidth = getScrollingAreaLength();
+        nvgIntersectScissor(vg, scrollingLeft, y, scrollingWidth, getHeight());
+    }
 
-    // Draw children
     Box::draw(vg, x, y, width, height, style, ctx);
 
-    // Disable scissoring
     nvgRestore(vg);
 }
 
-void ScrollingFrame::naturalScrollingBehaviour()
+void BaseScrollingFrame::naturalScrollingBehaviour()
 {
     if (behavior != ScrollingBehavior::NATURAL || Application::getInputType() == InputType::TOUCH)
         return;
 
     if (focused || childFocused)
     {
-        // If current focus view is outside scrolling bounds,
-        // change focus to this.
         View* currentFocus = Application::getCurrentFocus();
         if (!currentFocus->getFrame().inscribed(getFrame()))
         {
             Application::giveFocus(this);
         }
 
-        // If current focus equals this (a.k. no focus inside scroll),
-        // try to find the closest to the top focusable view and set it as current focus.
         if (Application::getCurrentFocus() == this && Application::getInputType() == InputType::GAMEPAD)
         {
-            View* topMostView = findTopMostFocusableView();
+            View* edgeView = findEdgeFocusableView();
 
-            if (topMostView && topMostView != currentFocus)
+            if (edgeView && edgeView != currentFocus)
             {
-                Application::giveFocus(topMostView);
+                Application::giveFocus(edgeView);
                 Application::getAudioPlayer()->play(Sound::SOUND_FOCUS_CHANGE);
             }
         }
@@ -280,46 +335,68 @@ void ScrollingFrame::naturalScrollingBehaviour()
     {
         ControllerState state {};
         input->updateUnifiedControllerState(&state);
-        float bottomLimit = this->getContentHeight() - this->getScrollingAreaHeight();
+        float endLimit = getContentLength() - getScrollingAreaLength();
 
-        // Sets true on border hit to play sound only once
         static bool repeat = false;
 
-        // Do nothing if both up and down buttons pressed simultaneously
-        if (state.buttons[BUTTON_NAV_DOWN] && state.buttons[BUTTON_NAV_UP])
+        ControllerButton btnPositive, btnNegative;
+        if (scrollAxis == ScrollingAxis::VERTICAL)
+        {
+            btnPositive = BUTTON_NAV_DOWN;
+            btnNegative = BUTTON_NAV_UP;
+        }
+        else
+        {
+            btnPositive = BUTTON_NAV_RIGHT;
+            btnNegative = BUTTON_NAV_LEFT;
+        }
+
+        if (state.buttons[btnPositive] && state.buttons[btnNegative])
             return;
 
-        if (state.buttons[BUTTON_NAV_DOWN])
+        FocusDirection dirPositive = (scrollAxis == ScrollingAxis::VERTICAL) ? FocusDirection::DOWN : FocusDirection::RIGHT;
+        FocusDirection dirNegative = (scrollAxis == ScrollingAxis::VERTICAL) ? FocusDirection::UP : FocusDirection::LEFT;
+
+        if (state.buttons[btnPositive])
         {
-            naturalScrollingButtonProcessing(FocusDirection::DOWN, &repeat);
+            naturalScrollingButtonProcessing(dirPositive, &repeat);
         }
 
-        if (state.buttons[BUTTON_NAV_UP])
+        if (state.buttons[btnNegative])
         {
-            naturalScrollingButtonProcessing(FocusDirection::UP, &repeat);
+            naturalScrollingButtonProcessing(dirNegative, &repeat);
         }
 
-        // If there is focus inside scroll, and navigation buttons are not pressed
-        // disable natural scrolling
         View* currentFocus = Application::getCurrentFocus();
-        if (!state.buttons[BUTTON_NAV_DOWN] && !state.buttons[BUTTON_NAV_UP] && (currentFocus != this))
+        if (!state.buttons[btnPositive] && !state.buttons[btnNegative] && (currentFocus != this))
         {
             naturalScrollingCanScroll = false;
         }
 
-        // If navigation buttons are not pressed and content offset not above border
-        // unflag repeat value to play border hit sound if needed
-        if ((!state.buttons[BUTTON_NAV_DOWN] && !state.buttons[BUTTON_NAV_UP]) || (getContentOffsetY() > 0.01f && getContentOffsetY() < bottomLimit))
+        if ((!state.buttons[btnPositive] && !state.buttons[btnNegative]) || (getContentOffset() > 0.01f && getContentOffset() < endLimit))
         {
             repeat = false;
         }
     }
 }
 
-View* ScrollingFrame::findTopMostFocusableView()
+View* BaseScrollingFrame::findEdgeFocusableView()
 {
-    Rect frame       = getFrame();
-    Point check      = Point(frame.getMidX(), frame.getMinY());
+    Rect frame = getFrame();
+    Point check;
+    FocusDirection searchDir;
+
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        check     = Point(frame.getMidX(), frame.getMinY());
+        searchDir = FocusDirection::DOWN;
+    }
+    else
+    {
+        check     = Point(frame.getMinX(), frame.getMidY());
+        searchDir = FocusDirection::RIGHT;
+    }
+
     View* focusCheck = contentView->hitTest(check);
     if (focusCheck)
     {
@@ -329,7 +406,7 @@ View* ScrollingFrame::findTopMostFocusableView()
 
         while (focusCheck && !focusCheck->getFrame().inscribed(frame))
         {
-            focusCheck = focusCheck->getParent()->getNextFocus(FocusDirection::DOWN, focusCheck);
+            focusCheck = focusCheck->getParent()->getNextFocus(searchDir, focusCheck);
         }
 
         return focusCheck;
@@ -338,26 +415,25 @@ View* ScrollingFrame::findTopMostFocusableView()
     return nullptr;
 }
 
-void ScrollingFrame::naturalScrollingButtonProcessing(FocusDirection focusDirection, bool* repeat)
+void BaseScrollingFrame::naturalScrollingButtonProcessing(FocusDirection focusDirection, bool* repeat)
 {
-    float bottomLimit = this->getContentHeight() - this->getScrollingAreaHeight();
-    float newOffset   = getContentOffsetY();
-    bool isBorder     = false;
-    switch (focusDirection)
+    float endLimit  = getContentLength() - getScrollingAreaLength();
+    float newOffset = getContentOffset();
+    bool isBorder   = false;
+
+    bool isNegative = (focusDirection == FocusDirection::UP || focusDirection == FocusDirection::LEFT);
+    if (isNegative)
     {
-        case FocusDirection::UP:
-            isBorder = getContentOffsetY() <= 0;
-            newOffset -= (1000.0f / Application::getFPS());
-            break;
-        case FocusDirection::DOWN:
-            isBorder = getContentOffsetY() >= bottomLimit;
-            newOffset += (1000.0f / Application::getFPS());
-            break;
-        default:
-            break;
+        isBorder = getContentOffset() <= 0;
+        newOffset -= (1000.0f / Application::getFPS());
+    }
+    else
+    {
+        isBorder = getContentOffset() >= endLimit;
+        newOffset += (1000.0f / Application::getFPS());
     }
 
-    setContentOffsetY(newOffset, false);
+    setContentOffset(newOffset, false);
     View* current = Application::getCurrentFocus();
     View* next    = current->getParent()->getNextFocus(focusDirection, current);
     if (next)
@@ -382,84 +458,74 @@ void ScrollingFrame::naturalScrollingButtonProcessing(FocusDirection focusDirect
     }
 }
 
-void ScrollingFrame::addView(View* view)
-{
-    this->setContentView(view);
-}
+void BaseScrollingFrame::addView(View* view) { setContentView(view); }
 
-void ScrollingFrame::removeView(View* view, bool free)
-{
-    this->setContentView(nullptr);
-}
+void BaseScrollingFrame::removeView(View* view, bool free) { setContentView(nullptr); }
 
-void ScrollingFrame::setContentView(View* view)
+void BaseScrollingFrame::setContentView(View* view)
 {
-    if (this->contentView)
+    if (contentView)
     {
-        Box::removeView(this->contentView); // will delete and call willDisappear
-        this->contentView = nullptr;
+        Box::removeView(contentView);
+        contentView = nullptr;
     }
 
     if (!view)
         return;
 
-    // Setup the view and add it
-    this->contentView = view;
+    contentView = view;
 
     view->detach();
     view->setCulled(false);
-    view->setWidth(this->getWidth());
 
-    Box::addView(view); // will invalidate the scrolling box, hence calling onLayout and invalidating the contentView
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+        view->setWidth(getWidth());
+    else
+        view->setHeight(getHeight());
+
+    Box::addView(view);
 }
 
-void ScrollingFrame::onLayout()
+void BaseScrollingFrame::onLayout()
 {
-    if (this->contentView)
+    if (contentView)
     {
-        this->contentView->setWidth(this->getWidth());
-        this->contentView->invalidate();
+        if (scrollAxis == ScrollingAxis::VERTICAL)
+            contentView->setWidth(getWidth());
+        else
+            contentView->setHeight(getHeight());
+        contentView->invalidate();
     }
 }
 
-float ScrollingFrame::getScrollingAreaTopBoundary()
-{
-    return this->getY();
-}
+float BaseScrollingFrame::getScrollingAreaStart() { return (scrollAxis == ScrollingAxis::VERTICAL) ? getY() : getX(); }
 
-float ScrollingFrame::getScrollingAreaHeight()
-{
-    return this->getHeight();
-}
+float BaseScrollingFrame::getScrollingAreaLength() { return (scrollAxis == ScrollingAxis::VERTICAL) ? getHeight() : getWidth(); }
 
-void ScrollingFrame::willAppear(bool resetState)
+void BaseScrollingFrame::willAppear(bool resetState)
 {
-    this->prebakeScrolling();
+    prebakeScrolling();
 
-    // First scroll all the way to the top
-    // then wait for the first frame to scroll
-    // to the selected view if needed (only known then)
     if (resetState && behavior == ScrollingBehavior::CENTERED)
     {
-        this->updateScrollingOnNextFrame = true; // focus may have changed since
+        updateScrollingOnNextFrame = true;
     }
 
     Box::willAppear(resetState);
 }
 
-void ScrollingFrame::prebakeScrolling()
+void BaseScrollingFrame::prebakeScrolling()
 {
-    // Prebaked values for scrolling
-    float y      = this->getScrollingAreaTopBoundary();
-    float height = this->getScrollingAreaHeight();
+    float start  = getScrollingAreaStart();
+    float length = getScrollingAreaLength();
 
-    this->middleY = y + height / 2;
-    this->bottomY = y + height;
+    middlePos = start + length / 2;
+    endPos    = start + length;
 }
 
-void ScrollingFrame::startScrolling(bool animated, float newScroll)
+void BaseScrollingFrame::startScrolling(bool animated, float newScroll)
 {
-    if (newScroll == this->contentOffsetY)
+    if (newScroll == contentOffset)
         return;
 
     if (animated)
@@ -469,93 +535,83 @@ void ScrollingFrame::startScrolling(bool animated, float newScroll)
     }
     else
     {
-        // Clear end callback before stop() to prevent a stale snap-back callback
-        // from firing and incorrectly resetting isRubberBanding.
-        this->contentOffsetY.setEndCallback([](bool) {});
-        this->contentOffsetY.stop();
-        this->contentOffsetY = newScroll;
-        this->scrollAnimationTick();
-        this->invalidate();
+        contentOffset.setEndCallback([](bool) {});
+        contentOffset.stop();
+        contentOffset = newScroll;
+        scrollAnimationTick();
+        invalidate();
     }
 
-    this->contentOffsetChanged.fire(newScroll);
+    contentOffsetChanged.fire(newScroll);
 }
 
-void ScrollingFrame::animateScrolling(float newScroll, float time)
+void BaseScrollingFrame::animateScrolling(float newScroll, float time)
 {
-    // Clear end callback before stop() to prevent stale snap-back callback from firing.
-    this->contentOffsetY.setEndCallback([](bool) {});
-    this->contentOffsetY.stop();
+    contentOffset.setEndCallback([](bool) {});
+    contentOffset.stop();
+    contentOffset.reset();
+    contentOffset.addStep(newScroll, time, EasingFunction::quadraticOut);
+    contentOffset.setTickCallback([this] { this->scrollAnimationTick(); });
+    contentOffset.start();
 
-    this->contentOffsetY.reset();
-
-    this->contentOffsetY.addStep(newScroll, time, EasingFunction::quadraticOut);
-
-    this->contentOffsetY.setTickCallback([this]
-        { this->scrollAnimationTick(); });
-
-    this->contentOffsetY.start();
-
-    this->invalidate();
+    invalidate();
 }
 
-void ScrollingFrame::setScrollingBehavior(ScrollingBehavior behavior)
-{
-    this->behavior = behavior;
-}
+void BaseScrollingFrame::setScrollingBehavior(ScrollingBehavior newBehavior) { behavior = newBehavior; }
 
-float ScrollingFrame::getContentHeight()
+float BaseScrollingFrame::getContentLength()
 {
-    if (!this->contentView)
+    if (!contentView)
         return 0;
 
-    return this->contentView->getHeight();
+    return (scrollAxis == ScrollingAxis::VERTICAL) ? contentView->getHeight() : contentView->getWidth();
 }
 
-void ScrollingFrame::setContentOffsetY(float value, bool animated)
-{
-    startScrolling(animated, value);
-}
+void BaseScrollingFrame::setContentOffset(float value, bool animated) { startScrolling(animated, value); }
 
-void ScrollingFrame::scrollAnimationTick()
+void BaseScrollingFrame::scrollAnimationTick()
 {
-    if (this->contentView)
+    if (contentView)
     {
-        float contentHeight = this->getContentHeight();
-        float bottomLimit   = contentHeight - this->getScrollingAreaHeight();
-        float offset        = static_cast<float>(this->contentOffsetY);
+        float contentLen    = getContentLength();
+        float endLimit      = contentLen - getScrollingAreaLength();
+        float offset        = static_cast<float>(contentOffset);
         float displayOffset = offset;
 
-        // Visual-only clamp: never use operator= here because that calls reset()
-        // which stops any running animation (including snap-back).
-        if (contentHeight <= getHeight())
+        if (contentLen <= getScrollingAreaLength())
         {
             displayOffset = 0.0f;
         }
         else if (!isRubberBanding)
         {
-            displayOffset = std::max(0.0f, std::min(offset, std::max(0.0f, bottomLimit)));
+            displayOffset = std::max(0.0f, std::min(offset, std::max(0.0f, endLimit)));
         }
 
-        this->contentView->setTranslationY(-displayOffset);
+        if (scrollAxis == ScrollingAxis::VERTICAL)
+            contentView->setTranslationY(-displayOffset);
+        else
+            contentView->setTranslationX(-displayOffset);
     }
 }
 
-View* ScrollingFrame::getNextFocus(FocusDirection direction, View* currentView)
+View* BaseScrollingFrame::getNextFocus(FocusDirection direction, View* currentView)
 {
-    // To prevent sound click on empty scroll view
-    float bottomLimit    = this->getContentHeight() - this->getScrollingAreaHeight();
-    float contentOffsetY = this->getContentOffsetY();
-    if (direction == FocusDirection::DOWN && contentOffsetY < (bottomLimit - 0.01f))
+    float endLimit      = getContentLength() - getScrollingAreaLength();
+    float currentOffset = getContentOffset();
+
+    FocusDirection dirPositive = (scrollAxis == ScrollingAxis::VERTICAL) ? FocusDirection::DOWN : FocusDirection::RIGHT;
+    FocusDirection dirNegative = (scrollAxis == ScrollingAxis::VERTICAL) ? FocusDirection::UP : FocusDirection::LEFT;
+
+    if (direction == dirPositive && currentOffset < (endLimit - 0.01f))
         return this;
 
-    if (direction == FocusDirection::UP && this->getContentOffsetY() > 0.01f)
+    if (direction == dirNegative && currentOffset > 0.01f)
         return this;
 
     return Box::getNextFocus(direction, currentView);
 }
 
-View* ScrollingFrame::getDefaultFocus()
+View* BaseScrollingFrame::getDefaultFocus()
 {
     if (behavior == ScrollingBehavior::CENTERED)
     {
@@ -570,49 +626,59 @@ View* ScrollingFrame::getDefaultFocus()
     if (focus && focus->getFrame().inscribed(getFrame()))
         return focus;
 
-    if (focus = findTopMostFocusableView(); focus && focus != this)
+    if (focus = findEdgeFocusableView(); focus && focus != this)
         return focus;
 
     return Box::getDefaultFocus();
 }
 
-void ScrollingFrame::onFocusGained()
+void BaseScrollingFrame::onFocusGained()
 {
     Box::onFocusGained();
     naturalScrollingCanScroll = true;
 }
 
-void ScrollingFrame::onChildFocusGained(View* directChild, View* focusedView)
+void BaseScrollingFrame::onChildFocusGained(View* directChild, View* focusedView)
 {
     Box::onChildFocusGained(directChild, focusedView);
 
-    this->childFocused = true;
+    childFocused = true;
 
-    // Start scrolling
     if (Application::getInputType() == InputType::GAMEPAD && behavior == ScrollingBehavior::CENTERED)
-        this->updateScrolling(true);
+        updateScrolling(true);
 }
 
-void ScrollingFrame::onChildFocusLost(View* directChild, View* focusedView)
-{
-    this->childFocused = false;
-}
+void BaseScrollingFrame::onChildFocusLost(View* directChild, View* focusedView) { childFocused = false; }
 
-View* ScrollingFrame::getParentNavigationDecision(View* from, View* newFocus, FocusDirection direction)
+View* BaseScrollingFrame::getParentNavigationDecision(View* from, View* newFocus, FocusDirection direction)
 {
     if (behavior == ScrollingBehavior::CENTERED)
         return Box::getParentNavigationDecision(from, newFocus, direction);
 
     View* currentFocus = Application::getCurrentFocus();
+
+    // Directions orthogonal to the scroll axis pass through
+    FocusDirection orthDir1, orthDir2;
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        orthDir1 = FocusDirection::LEFT;
+        orthDir2 = FocusDirection::RIGHT;
+    }
+    else
+    {
+        orthDir1 = FocusDirection::UP;
+        orthDir2 = FocusDirection::DOWN;
+    }
+
     if (!newFocus)
     {
-        if (direction == FocusDirection::LEFT || direction == FocusDirection::RIGHT)
+        if (direction == orthDir1 || direction == orthDir2)
             return nullptr;
 
         if (from == contentView)
         {
             naturalScrollingCanScroll = true;
-            if (currentFocus->getFrame().inscribed(this->getFrame()))
+            if (currentFocus->getFrame().inscribed(getFrame()))
                 return currentFocus;
 
             return this;
@@ -621,63 +687,82 @@ View* ScrollingFrame::getParentNavigationDecision(View* from, View* newFocus, Fo
     }
     else
     {
-        if (newFocus->getFrame().inscribed(this->getFrame()))
+        if (newFocus->getFrame().inscribed(getFrame()))
             return newFocus;
         else
             naturalScrollingCanScroll = true;
     }
 
-    if (currentFocus->getFrame().inscribed(this->getFrame()))
+    if (currentFocus->getFrame().inscribed(getFrame()))
         return currentFocus;
 
     return this;
 }
 
-bool ScrollingFrame::updateScrolling(bool animated)
+bool BaseScrollingFrame::updateScrolling(bool animated)
 {
-    if (!this->contentView)
+    if (!contentView)
         return false;
 
     View* focusedView = getDefaultFocus();
-    float localY      = focusedView ? focusedView->getLocalY() : 0.0f;
-    float itemHeight  = focusedView ? focusedView->getHeight() : 0.0f;
-    View* parent      = focusedView ? focusedView->getParent() : nullptr;
 
-    while (parent && dynamic_cast<ScrollingFrame*>(parent->getParent()) == nullptr)
+    float localPos;
+    float itemLen;
+    View* parent;
+
+    if (scrollAxis == ScrollingAxis::VERTICAL)
     {
-        localY += parent->getLocalY();
+        localPos = focusedView ? focusedView->getLocalY() : 0.0f;
+        itemLen  = focusedView ? focusedView->getHeight() : 0.0f;
+    }
+    else
+    {
+        localPos = focusedView ? focusedView->getLocalX() : 0.0f;
+        itemLen  = focusedView ? focusedView->getWidth() : 0.0f;
+    }
+
+    parent = focusedView ? focusedView->getParent() : nullptr;
+
+    while (parent && dynamic_cast<BaseScrollingFrame*>(parent->getParent()) == nullptr)
+    {
+        if (scrollAxis == ScrollingAxis::VERTICAL)
+            localPos += parent->getLocalY();
+        else
+            localPos += parent->getLocalX();
         parent = parent->getParent();
     }
 
-    int currentSelectionMiddleOnScreen = localY + itemHeight / 2;
-    float newScroll                    = currentSelectionMiddleOnScreen - this->getHeight() / 2;
+    float areaLen   = getScrollingAreaLength();
+    float newScroll = (localPos + itemLen / 2) - areaLen / 2;
 
-    float contentHeight = this->getContentHeight();
-    float bottomLimit   = contentHeight - this->getScrollingAreaHeight();
+    float contentLen = getContentLength();
+    float endLimit   = contentLen - areaLen;
 
     if (newScroll < 0)
         newScroll = 0;
 
-    if (newScroll > bottomLimit)
-        newScroll = bottomLimit;
+    if (newScroll > endLimit)
+        newScroll = endLimit;
 
-    if (contentHeight <= getHeight())
+    if (contentLen <= areaLen)
         newScroll = 0;
 
-    // Start animation
-    this->startScrolling(animated, newScroll);
+    startScrolling(animated, newScroll);
 
     return true;
 }
 
-Rect ScrollingFrame::getVisibleFrame()
+Rect BaseScrollingFrame::getVisibleFrame()
 {
     Rect frame = getLocalFrame();
-    frame.origin.y += this->contentOffsetY;
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+        frame.origin.y += contentOffset;
+    else
+        frame.origin.x += contentOffset;
     return frame;
 }
 
-enum Sound ScrollingFrame::getFocusSound()
+enum Sound BaseScrollingFrame::getFocusSound()
 {
     if (!contentView->getDefaultFocus())
     {
@@ -686,40 +771,80 @@ enum Sound ScrollingFrame::getFocusSound()
     return Sound::SOUND_NONE;
 }
 
-#define NO_PADDING fatal("Padding is not supported by brls:ScrollingFrame, please set padding on the content view instead");
+#define NO_PADDING(axis) fatal("Padding is not supported by brls:" axis "ScrollingFrame, please set padding on the content view instead");
 
-void ScrollingFrame::setPadding(float top, float right, float bottom, float left)
+void BaseScrollingFrame::setPadding(float top, float right, float bottom, float left)
 {
-    NO_PADDING
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        NO_PADDING("")
+    }
+    else
+    {
+        NO_PADDING("H")
+    }
 }
 
-void ScrollingFrame::setPaddingTop(float top)
+void BaseScrollingFrame::setPaddingTop(float top)
 {
-    NO_PADDING
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        NO_PADDING("")
+    }
+    else
+    {
+        NO_PADDING("H")
+    }
 }
 
-void ScrollingFrame::setPaddingRight(float right)
+void BaseScrollingFrame::setPaddingRight(float right)
 {
-    NO_PADDING
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        NO_PADDING("")
+    }
+    else
+    {
+        NO_PADDING("H")
+    }
 }
 
-void ScrollingFrame::setPaddingBottom(float bottom)
+void BaseScrollingFrame::setPaddingBottom(float bottom)
 {
-    NO_PADDING
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        NO_PADDING("")
+    }
+    else
+    {
+        NO_PADDING("H")
+    }
 }
 
-void ScrollingFrame::setPaddingLeft(float left) {
-    NO_PADDING
-}
-
-View* ScrollingFrame::create()
+void BaseScrollingFrame::setPaddingLeft(float left)
 {
-    return new ScrollingFrame();
+    if (scrollAxis == ScrollingAxis::VERTICAL)
+    {
+        NO_PADDING("")
+    }
+    else
+    {
+        NO_PADDING("H")
+    }
 }
 
-ScrollingFrame::~ScrollingFrame()
-{
-    Application::getGlobalInputTypeChangeEvent()->unsubscribe(inputTypeSubscription);
-}
+BaseScrollingFrame::~BaseScrollingFrame() { Application::getGlobalInputTypeChangeEvent()->unsubscribe(inputTypeSubscription); }
+
+// ScrollingFrame (vertical)
+
+ScrollingFrame::ScrollingFrame() : BaseScrollingFrame(ScrollingAxis::VERTICAL) {}
+
+View* ScrollingFrame::create() { return new ScrollingFrame(); }
+
+// HScrollingFrame (horizontal)
+
+HScrollingFrame::HScrollingFrame() : BaseScrollingFrame(ScrollingAxis::HORIZONTAL) {}
+
+View* HScrollingFrame::create() { return new HScrollingFrame(); }
 
 } // namespace brls

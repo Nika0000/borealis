@@ -28,22 +28,33 @@ namespace brls
 enum class ScrollingBehavior
 {
     // Inputs scroll the view like the scroll wheel on a web page, focus changes only when the next view to focus is fully on screen
-    // To work properly, there must be at least one focusable view in the "top" area of the frame (there should not be the need to scroll to see it)
+    // To work properly, there must be at least one focusable view in the "top" area of the frame (there should not be the need to scroll to
+    // see it)
     NATURAL,
 
     // The focused view is always in the center, inputs always change focus and scroll immediately
     CENTERED,
 };
 
-// A vertical-only frame that can scroll if its content overflows.
-// This frame can only contain one child view.
-// The content view is detached from the rest of the tree
-// so that its height can grow as much as possible.
-class ScrollingFrame : public Box
+enum class ScrollingAxis
+{
+    VERTICAL,
+    HORIZONTAL,
+};
+
+/**
+ * Base class for scrolling frames. Implements all scrolling logic generically
+ * over an axis (vertical or horizontal). Use ScrollingFrame or HScrollingFrame
+ * for concrete vertical/horizontal instances.
+ */
+class BaseScrollingFrame : public Box
 {
   public:
-    ScrollingFrame();
-    ~ScrollingFrame();
+    /**
+     * Creates a scrolling frame with the given axis direction.
+     */
+    explicit BaseScrollingFrame(ScrollingAxis axis);
+    ~BaseScrollingFrame();
 
     void draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx) override;
     void onFocusGained() override;
@@ -62,6 +73,10 @@ class ScrollingFrame : public Box
     View* getNextFocus(FocusDirection direction, View* currentView) override;
     View* getDefaultFocus() override;
     enum Sound getFocusSound() override;
+
+    /**
+     * Returns the rectangle representing the currently visible portion of the content.
+     */
     Rect getVisibleFrame();
 
     /**
@@ -74,73 +89,151 @@ class ScrollingFrame : public Box
      * Sets the scrolling behavior of this scrolling frame.
      * Default is NATURAL.
      */
-    void setScrollingBehavior(ScrollingBehavior behavior);
+    void setScrollingBehavior(ScrollingBehavior newBehavior);
 
     /**
      * The point at which the origin of the content view is offset from the origin of the scroll view.
      */
-    float getContentOffsetY() const
-    {
-        return contentOffsetY;
-    }
+    float getContentOffset() const { return contentOffset; }
 
     /**
-     * Sets the offset from the content view’s origin that corresponds to the receiver’s origin.
+     * Sets the offset from the content view's origin that corresponds to the receiver's origin.
      */
-    void setContentOffsetY(float value, bool animated);
+    void setContentOffset(float value, bool animated);
 
-    void setScrollingIndicatorVisible(bool visible)
-    {
-        showScrollingIndicator = visible;
-    }
+    /**
+     * Sets whether the scrolling indicator bar is visible.
+     */
+    void setScrollingIndicatorVisible(bool visible) { showScrollingIndicator = visible; }
 
     /**
      * Returns the event that is triggered when the content offset changes.
      */
-    Event<float>* getContentOffsetChanged()
-    {
-        return &contentOffsetChanged;
-    }
-
-    static View* create();
+    Event<float>* getContentOffsetChanged() { return &contentOffsetChanged; }
 
   protected:
-    View* contentView             = nullptr;
+    /** The axis along which this frame scrolls. */
+    ScrollingAxis scrollAxis;
+
+    /** The single child view whose content is scrolled. */
+    View* contentView = nullptr;
+
+    /** The visual scrollbar indicator rectangle. */
     Rectangle* scrollingIndicator = nullptr;
 
+    /** When true, scrolling position will be recalculated on the next frame. */
     bool updateScrollingOnNextFrame = false;
-    bool childFocused               = false;
-    bool showScrollingIndicator     = true;
 
-    float middleY = 0; // y + height/2
-    float bottomY = 0; // y + height
+    /** Whether a child of this frame currently holds focus. */
+    bool childFocused = false;
 
-    Animatable contentOffsetY = 0.0f;
+    /** Whether the scrolling indicator bar is shown. */
+    bool showScrollingIndicator = true;
 
+    /** Scroll position at which the content is centered in the frame. */
+    float middlePos = 0;
+
+    /** Maximum scroll position (content fully scrolled to the end). */
+    float endPos = 0;
+
+    /** Current animated scroll offset value. */
+    Animatable contentOffset = 0.0f;
+
+    /** Pre-computes middlePos and endPos based on current layout. */
     void prebakeScrolling();
+
+    /** Updates the scroll position to follow focus. Returns true if scrolling changed. */
     bool updateScrolling(bool animated);
+
+    /** Initiates a scroll to the given offset, optionally animated. */
     void startScrolling(bool animated, float newScroll);
+
+    /** Animates the scroll offset to a new value over the given time. */
     void animateScrolling(float newScroll, float time);
+
+    /** Per-frame tick callback that drives the scroll animation. */
     void scrollAnimationTick();
 
-    float getScrollingAreaTopBoundary();
-    float getScrollingAreaHeight();
+    /** Returns the start position of the scrollable area (accounting for padding). */
+    float getScrollingAreaStart();
 
-    float getContentHeight();
+    /** Returns the length of the scrollable area (accounting for padding). */
+    float getScrollingAreaLength();
 
+    /** Returns the total length of the content view along the scroll axis. */
+    float getContentLength();
+
+    /** The current scrolling behavior (NATURAL or CENTERED). */
     ScrollingBehavior behavior = ScrollingBehavior::NATURAL;
+
+    /** Cached pointer to the application's input manager. */
     InputManager* input;
+
+    /** Whether natural scrolling mode currently allows scroll input. */
     bool naturalScrollingCanScroll = false;
-    bool isRubberBanding           = false; ///< true while finger is dragging past a scroll boundary
+
+    /** Whether the view is currently in a rubber-banding overscroll state. */
+    bool isRubberBanding = false;
+
+    /** Handles directional button scrolling in NATURAL behavior mode. */
     void naturalScrollingBehaviour();
+
+    /** Processes a single directional button press for natural scrolling. */
     void naturalScrollingButtonProcessing(FocusDirection focusDirection, bool* repeat);
-    View* findTopMostFocusableView();
 
+    /** Handles right analog stick continuous scrolling. */
+    void rightStickScrolling();
+
+    /** Finds the focusable view closest to the edge in the scroll direction. */
+    View* findEdgeFocusableView();
+
+    /** Creates and adds the scrolling indicator rectangle to the view hierarchy. */
     void setupScrollingIndicator();
-    void updateScrollingIndicatior();
 
+    /** Updates the position and size of the scrolling indicator to reflect current scroll state. */
+    void updateScrollingIndicator();
+
+    /** Subscription handle for input type change events. */
     Event<InputType>::Subscription inputTypeSubscription;
+
+    /** Event fired whenever the content offset changes. */
     Event<float> contentOffsetChanged;
+};
+
+/**
+ * A vertical-only frame that can scroll if its content overflows.
+ */
+class ScrollingFrame : public BaseScrollingFrame
+{
+  public:
+    ScrollingFrame();
+
+    /** Returns the current vertical content offset. */
+    float getContentOffsetY() const { return getContentOffset(); }
+
+    /** Sets the vertical content offset, optionally with animation. */
+    void setContentOffsetY(float value, bool animated) { setContentOffset(value, animated); }
+
+    /** XML element creator for registration with the view system. */
+    static View* create();
+};
+
+/**
+ * A horizontal-only frame that can scroll if its content overflows.
+ */
+class HScrollingFrame : public BaseScrollingFrame
+{
+  public:
+    HScrollingFrame();
+
+    /** Returns the current horizontal content offset. */
+    float getContentOffsetX() const { return getContentOffset(); }
+
+    /** Sets the horizontal content offset, optionally with animation. */
+    void setContentOffsetX(float value, bool animated) { setContentOffset(value, animated); }
+
+    /** XML element creator for registration with the view system. */
+    static View* create();
 };
 
 } // namespace brls

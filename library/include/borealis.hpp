@@ -49,7 +49,6 @@
 #include <borealis/views/button.hpp>
 #include <borealis/views/dialog.hpp>
 #include <borealis/views/dropdown.hpp>
-#include <borealis/views/h_scrolling_frame.hpp>
 #include <borealis/views/header.hpp>
 #include <borealis/views/image.hpp>
 #include <borealis/views/label.hpp>

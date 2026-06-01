@@ -91,10 +91,10 @@ static const uint64_t SWITCH_BUTTONS_HALF_MAPPING[_BUTTON_MAX] = {
     HidNpadButton_AnySR, // BUTTON_RB
     HidNpadButton_None, // BUTTON_RT
 
-    HidNpadButton_StickLRight | HidNpadButton_StickRLeft, // BUTTON_NAV_UP
-    HidNpadButton_StickLDown | HidNpadButton_StickRUp, // BUTTON_NAV_RIGHT
-    HidNpadButton_StickLLeft | HidNpadButton_StickRRight, // BUTTON_NAV_DOWN
-    HidNpadButton_StickLUp | HidNpadButton_StickRDown, // BUTTON_NAV_LEFT
+    HidNpadButton_StickLRight, // BUTTON_NAV_UP
+    HidNpadButton_StickLDown, // BUTTON_NAV_RIGHT
+    HidNpadButton_StickLLeft, // BUTTON_NAV_DOWN
+    HidNpadButton_StickLUp, // BUTTON_NAV_LEFT
 };
 
 static const size_t SWITCH_AXIS_MAPPING[_AXES_MAX] = {

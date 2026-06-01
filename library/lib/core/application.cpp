@@ -36,7 +36,6 @@
 #include <borealis/views/cells/cell_selector.hpp>
 #include <borealis/views/cells/cell_slider.hpp>
 #include <borealis/views/debug_layer.hpp>
-#include <borealis/views/h_scrolling_frame.hpp>
 #include <borealis/views/header.hpp>
 #include <borealis/views/hint.hpp>
 #include <borealis/views/image.hpp>
@@ -60,9 +59,10 @@
 #include <chrono>
 #include <set>
 #include <thread>
+#include <utility>
 
 #define BUTTOM_REPEAT_TRIGGER 250000 // 250ms
-#define BUTTON_REPEAT_DELAY 100000 // 100 ms
+#define BUTTON_REPEAT_DELAY 100000   // 100 ms
 
 namespace brls
 {
@@ -101,7 +101,7 @@ bool Application::init()
     return true;
 }
 
-void Application::createWindow(std::string windowTitle)
+void Application::createWindow(const std::string& windowTitle)
 {
     if (!Application::inited)
     {
@@ -117,8 +117,9 @@ void Application::createWindow(std::string windowTitle)
     else
     {
         // Creates a window based on the window position and size data from the last non-full-screen mode
-        Application::getPlatform()->createWindow(windowTitle, VideoContext::sizeW, VideoContext::sizeH,
-            VideoContext::posX, VideoContext::posY);
+        Application::getPlatform()->createWindow(
+            windowTitle, VideoContext::sizeW, VideoContext::sizeH, VideoContext::posX, VideoContext::posY
+        );
     }
 
     // Load most commonly used sounds
@@ -142,15 +143,18 @@ void Application::createWindow(std::string windowTitle)
     defaultConfig->setUseWebDefaults(true);
     using namespace facebook;
 
-    facebook::yoga::Event::subscribe([](const YGNode& node, facebook::yoga::Event::Type eventType, facebook::yoga::Event::Data eventData)
+    facebook::yoga::Event::subscribe(
+        [](const YGNode& node, facebook::yoga::Event::Type eventType, facebook::yoga::Event::Data eventData)
         {
-        View* view = (View*)node.getContext();
+            View* view = (View*) node.getContext();
 
-        if (!view)
-            return;
+            if (!view)
+                return;
 
-        if (eventType == facebook::yoga::Event::NodeLayout)
-            view->onLayout(); });
+            if (eventType == facebook::yoga::Event::NodeLayout)
+                view->onLayout();
+        }
+    );
 
     // Load fonts and setup fallbacks
     Application::platform->getFontLoader()->loadFonts();
@@ -163,10 +167,7 @@ void Application::createWindow(std::string windowTitle)
     Application::backgroundColor = Application::getTheme().getColor("brls/clear");
 }
 
-bool Application::mainLoop()
-{
-    return Application::platform->runLoop(internalMainLoop);
-}
+bool Application::mainLoop() { return Application::platform->runLoop(internalMainLoop); }
 
 bool Application::internalMainLoop()
 {
@@ -267,7 +268,7 @@ void Application::processInput()
     {
         bool swapKeys[ControllerButton::_BUTTON_MAX];
         for (int i = 0; i < ControllerButton::_BUTTON_MAX; i++)
-            swapKeys[i] = controllerState.buttons[InputManager::mapControllerState((ControllerButton)i)];
+            swapKeys[i] = controllerState.buttons[InputManager::mapControllerState((ControllerButton) i)];
 
         for (int i = 0; i < ControllerButton::_BUTTON_MAX; i++)
             controllerState.buttons[i] = swapKeys[i];
@@ -276,8 +277,11 @@ void Application::processInput()
     std::vector<TouchState> touchState;
     for (auto& i : rawTouch)
     {
-        auto old = std::find_if(std::begin(currentTouchState), std::end(currentTouchState), [rawTouch, &i](TouchState touch)
-            { return touch.fingerId == i.fingerId; });
+        auto old = std::find_if(
+            std::begin(currentTouchState),
+            std::end(currentTouchState),
+            [rawTouch, &i](TouchState touch) { return touch.fingerId == i.fingerId; }
+        );
 
         if (old != std::end(currentTouchState))
         {
@@ -296,8 +300,8 @@ void Application::processInput()
         if (i.phase == TouchPhase::NONE)
             continue;
 
-        auto old = std::find_if(std::begin(rawTouch), std::end(rawTouch), [&i](RawTouchState touch)
-            { return touch.fingerId == i.fingerId; });
+        auto old
+            = std::find_if(std::begin(rawTouch), std::end(rawTouch), [&i](RawTouchState touch) { return touch.fingerId == i.fingerId; });
 
         if (old == std::end(rawTouch))
         {
@@ -321,9 +325,7 @@ void Application::processInput()
 
             // Search for first responder, which will be the root of recognition tree
             if (!Application::activitiesStack.empty())
-                i.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
-                             ->getContentView()
-                             ->hitTest(position);
+                i.view = Application::activitiesStack[Application::activitiesStack.size() - 1]->getContentView()->hitTest(position);
         }
 
         if (i.view && i.phase != TouchPhase::NONE)
@@ -352,7 +354,10 @@ void Application::processInput()
     }
     else
     {
-        bool hasActivity = (mouseState.offset.x != 0 || mouseState.offset.y != 0 || mouseState.scroll.x != 0 || mouseState.scroll.y != 0 || mouseState.leftButton != TouchPhase::NONE || mouseState.middleButton != TouchPhase::NONE || mouseState.rightButton != TouchPhase::NONE);
+        bool hasActivity
+            = (mouseState.offset.x != 0 || mouseState.offset.y != 0 || mouseState.scroll.x != 0 || mouseState.scroll.y != 0
+               || mouseState.leftButton != TouchPhase::NONE || mouseState.middleButton != TouchPhase::NONE
+               || mouseState.rightButton != TouchPhase::NONE);
 
         if (hasActivity)
         {
@@ -363,15 +368,16 @@ void Application::processInput()
         // Determine hovered view each frame to support hover enter/leave and idle hover
         Point position = mouseState.position;
 
-        bool hasActiveButtonGesture = (mouseState.leftButton == TouchPhase::STAY || mouseState.middleButton == TouchPhase::STAY || mouseState.rightButton == TouchPhase::STAY);
+        bool hasActiveButtonGesture
+            = (mouseState.leftButton == TouchPhase::STAY || mouseState.middleButton == TouchPhase::STAY
+               || mouseState.rightButton == TouchPhase::STAY);
         if (!hasActiveButtonGesture || mouseState.view == nullptr)
         {
             // Search for first responder, which will be the root of recognition tree
             if (!Application::activitiesStack.empty())
             {
-                mouseState.view = Application::activitiesStack[Application::activitiesStack.size() - 1]
-                                      ->getContentView()
-                                      ->hitTest(position);
+                mouseState.view
+                    = Application::activitiesStack[Application::activitiesStack.size() - 1]->getContentView()->hitTest(position);
             }
         }
     }
@@ -425,7 +431,7 @@ void Application::processInput()
                 controllerState.repeatingButtonStop[i] = cpuTime + BUTTOM_REPEAT_TRIGGER;
 
             if (!oldControllerState.buttons[i] || repeating)
-                Application::onControllerButtonPressed((enum ControllerButton)i, repeating);
+                Application::onControllerButtonPressed((enum ControllerButton) i, repeating);
         }
         else
         {
@@ -436,25 +442,13 @@ void Application::processInput()
     oldControllerState = controllerState;
 }
 
-Platform* Application::getPlatform()
-{
-    return Application::platform;
-}
+Platform* Application::getPlatform() { return Application::platform; }
 
-AudioPlayer* Application::getAudioPlayer()
-{
-    return Application::platform->getAudioPlayer();
-}
+AudioPlayer* Application::getAudioPlayer() { return Application::platform->getAudioPlayer(); }
 
-NotificationManager* Application::getNotificationManager()
-{
-    return Application::notificationManager;
-}
+NotificationManager* Application::getNotificationManager() { return Application::notificationManager; }
 
-void Application::quit()
-{
-    Application::quitRequested = true;
-}
+void Application::quit() { Application::quitRequested = true; }
 
 void Application::navigate(FocusDirection direction, bool repeating)
 {
@@ -483,7 +477,13 @@ void Application::navigate(FocusDirection direction, bool repeating)
         nextFocus = currentFocus->getCustomNavigationRoutePtr(direction);
 
         if (!nextFocus)
-            Logger::warning("Tried to follow a navigation route that leads to a nullptr view! (from=\"{}\", direction={})", currentFocus->describe(), std::to_string((int)direction));
+        {
+            Logger::warning(
+                "Tried to follow a navigation route that leads to a nullptr view! (from=\"{}\", direction={})",
+                currentFocus->describe(),
+                std::to_string((int) direction)
+            );
+        }
     }
     // By ID
     else if (currentFocus->hasCustomNavigationRouteById(direction))
@@ -492,7 +492,14 @@ void Application::navigate(FocusDirection direction, bool repeating)
         nextFocus      = currentFocus->getNearestView(id);
 
         if (!nextFocus)
-            Logger::warning("Tried to follow a navigation route that leads to an unknown view ID! (from=\"{}\", direction={}, targetId=\"{}\")", currentFocus->describe(), std::to_string((int)direction), id);
+        {
+            Logger::warning(
+                "Tried to follow a navigation route that leads to an unknown view ID! (from=\"{}\", direction={}, targetId=\"{}\")",
+                currentFocus->describe(),
+                std::to_string((int) direction),
+                id
+            );
+        }
     }
     // Do nothing if current focus doesn't have a parent
     // (in which case there is nothing to traverse)
@@ -511,7 +518,8 @@ void Application::navigate(FocusDirection direction, bool repeating)
     }
 
     // If new focus not the same as now, play sound and give it focus
-    if (nextFocus->getDefaultFocus() && Application::getCurrentFocus() != nextFocus->getDefaultFocus() && nextFocus->getVisibility() == Visibility::VISIBLE)
+    if (nextFocus->getDefaultFocus() && Application::getCurrentFocus() != nextFocus->getDefaultFocus()
+        && nextFocus->getVisibility() == Visibility::VISIBLE)
     {
         enum Sound focusSound = nextFocus->getFocusSound();
         Application::getAudioPlayer()->play(focusSound);
@@ -527,6 +535,7 @@ void Application::onControllerButtonPressed(enum ControllerButton button, bool r
 {
     if (Application::isInputBlocked(InputType::GAMEPAD))
     {
+        Logger::verbose("onControllerButtonPressed: BLOCKED button={} repeating={} muteSounds={}", (int) button, repeating, muteSounds);
         if (!muteSounds)
             Application::getAudioPlayer()->play(Sound::SOUND_CLICK_ERROR);
         return;
@@ -557,6 +566,7 @@ void Application::onControllerButtonPressed(enum ControllerButton button, bool r
             break;
     }
 
+    Logger::verbose("onControllerButtonPressed: NO ACTION button={} repeating={}", (int) button, repeating);
     // Only play the error sound if no action applied
     Application::getAudioPlayer()->play(SOUND_CLICK_ERROR);
 }
@@ -578,20 +588,11 @@ bool Application::setInputType(InputType type)
     return true;
 }
 
-View* Application::getCurrentFocus()
-{
-    return Application::currentFocus;
-}
+View* Application::getCurrentFocus() { return Application::currentFocus; }
 
-void Application::setAutomaticDeactivation(bool value)
-{
-    Application::deactivatedBehavior = value;
-}
+void Application::setAutomaticDeactivation(bool value) { Application::deactivatedBehavior = value; }
 
-bool Application::getAutomaticDeactivation()
-{
-    return Application::deactivatedBehavior;
-}
+bool Application::getAutomaticDeactivation() { return Application::deactivatedBehavior; }
 
 bool Application::hasActiveEvent()
 {
@@ -599,9 +600,7 @@ bool Application::hasActiveEvent()
     // Switch does not support waiting for events
     return true;
 #else
-    if (!Application::deactivatedBehavior || activeEvent || Application::frameStartTime - lastActiveTime < Application::deactivatedTime)
-        return true;
-    return false;
+    return !Application::deactivatedBehavior || activeEvent || Application::frameStartTime - lastActiveTime < Application::deactivatedTime;
 #endif
 }
 
@@ -616,25 +615,13 @@ void Application::setActiveEvent(bool value)
 #endif
 }
 
-void Application::setDeactivatedTime(int millisecond)
-{
-    Application::deactivatedTime = millisecond * 1000;
-}
+void Application::setDeactivatedTime(int millisecond) { Application::deactivatedTime = millisecond * 1000; }
 
-void Application::setDeactivatedFPS(int value)
-{
-    Application::deactivatedFPS = value;
-}
+void Application::setDeactivatedFPS(int value) { Application::deactivatedFPS = value; }
 
-int Application::getDeactivatedFPS()
-{
-    return Application::deactivatedFPS;
-}
+int Application::getDeactivatedFPS() { return Application::deactivatedFPS; }
 
-double Application::getDeactivatedFrameTime()
-{
-    return 1.0 / Application::deactivatedFPS;
-}
+double Application::getDeactivatedFrameTime() { return 1.0 / Application::deactivatedFPS; }
 
 bool Application::handleAction(char button, bool repeating)
 {
@@ -695,7 +682,7 @@ void Application::frame()
     // Frame context
     FrameContext frameContext = FrameContext();
 
-    frameContext.pixelRatio = (float)Application::windowWidth / (float)Application::windowHeight;
+    frameContext.pixelRatio = (float) Application::windowWidth / (float) Application::windowHeight;
     frameContext.vg         = Application::getNVGContext();
     frameContext.fontStash  = &Application::fontStash;
     frameContext.theme      = Application::getTheme();
@@ -800,30 +787,15 @@ void Application::setFPSStatus(bool enabled)
         Application::globalFPS = 60;
 }
 
-bool Application::getFPSStatus()
-{
-    return Application::globalFPSToggleEnabled;
-}
+bool Application::getFPSStatus() { return Application::globalFPSToggleEnabled; }
 
-size_t Application::getFPS()
-{
-    return Application::globalFPS;
-}
+size_t Application::getFPS() { return Application::globalFPS; }
 
-void Application::setLimitedFPS(size_t fps)
-{
-    Application::limitedFrameTime = fps == 0 ? 0 : 1000000.0f / fps;
-}
+void Application::setLimitedFPS(size_t fps) { Application::limitedFrameTime = fps == 0 ? 0 : 1000000.0f / fps; }
 
-void Application::setSwapInterval(int interval)
-{
-    Application::platform->getVideoContext()->setSwapInterval(interval);
-}
+void Application::setSwapInterval(int interval) { Application::platform->getVideoContext()->setSwapInterval(interval); }
 
-void Application::notify(const std::string& text, size_t duration)
-{
-    Application::notificationManager->notify(text, duration);
-}
+void Application::notify(const std::string& text, size_t duration) { Application::notificationManager->notify(text, duration); }
 
 void Application::giveFocus(View* view)
 {
@@ -853,7 +825,7 @@ void Application::giveFocus(View* view)
     }
 }
 
-bool Application::popActivity(TransitionAnimation animation, std::function<void(void)> cb, bool free)
+bool Application::popActivity(TransitionAnimation animation, const std::function<void(void)>& cb, bool free)
 {
     if (Application::activitiesStack.size() <= 1) // never pop the first activity
         return false;
@@ -871,13 +843,14 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
     if (Application::activitiesStack.size() > 1)
     {
         toShow = Application::activitiesStack[Application::activitiesStack.size() - 2];
-        toShow->hide([]() { }, false, 0);
+        toShow->hide([]() {}, false, 0);
         toShow->onResume();
-        toShow->show([]() { }, false, 0);
+        toShow->show([]() {}, false, 0);
     }
 
     // Hide animation (and show previous activity, if any)
-    last->hide([last, cb, free]()
+    last->hide(
+        [last, cb, free]()
         {
             // last is not always the top of the stack, for example, during the animation, another activity is pushed
             for (auto i = activitiesStack.begin(); i != activitiesStack.end(); ++i)
@@ -892,24 +865,26 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
             brls::Logger::debug("Start delete top activity");
             if (free)
             {
-                // Defer deletion to avoid crashing updateTickings loop if this callback 
+                // Defer deletion to avoid crashing updateTickings loop if this callback
                 // is triggered from an animation/Ticking.
-                Threading::sync([last]() { 
-                    delete last; 
-                    brls::Logger::debug("Top activity deleted");
-                });
+                Threading::sync(
+                    [last]()
+                    {
+                        delete last;
+                        brls::Logger::debug("Top activity deleted");
+                    }
+                );
             }
 
-
             Application::unblockInputs();
-            
+
             cb();
-        
+
             // Then, give focus after pop is fully completed
             if (!Application::focusStack.empty())
             {
                 View* newFocus = Application::focusStack.back();
-                Activity* top = Application::activitiesStack.empty() ? nullptr : Application::activitiesStack.back();
+                Activity* top  = Application::activitiesStack.empty() ? nullptr : Application::activitiesStack.back();
 
                 if (!top || newFocus->getParentActivity() == top)
                 {
@@ -921,8 +896,11 @@ bool Application::popActivity(TransitionAnimation animation, std::function<void(
                 }
 
                 Application::focusStack.pop_back();
-            } },
-        fade, last->getShowAnimationDuration(animation));
+            }
+        },
+        fade,
+        last->getShowAnimationDuration(animation)
+    );
 
     return true;
 }
@@ -947,10 +925,7 @@ bool Application::deleteActivity(Activity* activity)
     return false;
 }
 
-std::vector<Activity*> Application::getActivitiesStack()
-{
-    return activitiesStack;
-}
+std::vector<Activity*> Application::getActivitiesStack() { return activitiesStack; }
 
 void Application::pushActivity(Activity* activity, bool replace, TransitionAnimation animation)
 {
@@ -969,8 +944,7 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
                 Application::activitiesStack.erase(it);
                 existing->willDisappear(true);
                 // Defer deletion so we don't invalidate any in-flight ticking.
-                Threading::sync([existing]()
-                    { delete existing; });
+                Threading::sync([existing]() { delete existing; });
                 break;
             }
         }
@@ -1000,7 +974,8 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
         last->onPause();
     }
 
-    bool fadeIn = animation == TransitionAnimation::FADE || animation == TransitionAnimation::SLIDE_LEFT || animation == TransitionAnimation::SLIDE_RIGHT;
+    bool fadeIn = animation == TransitionAnimation::FADE || animation == TransitionAnimation::SLIDE_LEFT
+                  || animation == TransitionAnimation::SLIDE_RIGHT;
 
     if (Application::globalQuitEnabled)
         Application::gloablQuitIdentifier = activity->registerExitAction();
@@ -1032,17 +1007,20 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
     }
     else
     {
-        activity->hide([]() { }, false, 0);
+        activity->hide([]() {}, false, 0);
 
         brls::Logger::debug("push activity to the stack");
         Application::activitiesStack.push_back(activity);
         float duration = activity->getShowAnimationDuration(animation);
-        activity->show([replaceActivity]()
+        activity->show(
+            [replaceActivity]()
             {
                 replaceActivity();
                 Application::unblockInputs(); //
             },
-            duration > 0, duration);
+            duration > 0,
+            duration
+        );
     }
 
     Application::giveFocus(activity->getDefaultFocus());
@@ -1067,20 +1045,11 @@ Theme Application::getTheme()
         return Theme::getDarkTheme();
 }
 
-ThemeVariant Application::getThemeVariant()
-{
-    return Application::platform->getThemeVariant();
-}
+ThemeVariant Application::getThemeVariant() { return Application::platform->getThemeVariant(); }
 
-ImeManager* Application::getImeManager()
-{
-    return Application::platform->getImeManager();
-}
+ImeManager* Application::getImeManager() { return Application::platform->getImeManager(); }
 
-std::string Application::getLocale()
-{
-    return Application::getPlatform()->getLocale();
-}
+std::string Application::getLocale() { return Application::getPlatform()->getLocale(); }
 
 void Application::addToFreeQueue(View* view)
 {
@@ -1114,7 +1083,7 @@ void Application::tryDeinitFirstResponder(View* view)
     }
 }
 
-bool Application::loadFontFromFile(std::string fontName, std::string filePath)
+bool Application::loadFontFromFile(const std::string& fontName, const std::string& filePath)
 {
     int handle = nvgCreateFont(Application::getNVGContext(), fontName.c_str(), filePath.c_str());
 
@@ -1128,9 +1097,9 @@ bool Application::loadFontFromFile(std::string fontName, std::string filePath)
     return true;
 }
 
-bool Application::loadFontFromMemory(std::string fontName, void* address, size_t size, bool freeData)
+bool Application::loadFontFromMemory(const std::string& fontName, void* data, size_t size, bool freeData)
 {
-    int handle = nvgCreateFontMem(Application::getNVGContext(), fontName.c_str(), (unsigned char*)address, size, freeData);
+    int handle = nvgCreateFontMem(Application::getNVGContext(), fontName.c_str(), (unsigned char*) data, size, freeData);
 
     if (handle == FONT_INVALID)
     {
@@ -1142,7 +1111,7 @@ bool Application::loadFontFromMemory(std::string fontName, void* address, size_t
     return true;
 }
 
-void Application::crash(std::string text)
+void Application::crash(const std::string& text)
 {
     // To be implemented
 }
@@ -1177,15 +1146,9 @@ bool Application::isInputBlocked(InputType type)
     return ((Application::blockInputsMask.back() & static_cast<uint8_t>(type)) != 0);
 }
 
-bool Application::isInteractive()
-{
-    return Application::interactive;
-}
+bool Application::isInteractive() { return Application::interactive; }
 
-void Application::setForegroundMode(bool mode)
-{
-    Application::interactive = mode;
-}
+void Application::setForegroundMode(bool mode) { Application::interactive = mode; }
 
 void Application::setSwapInputKeys(bool swap)
 {
@@ -1193,20 +1156,11 @@ void Application::setSwapInputKeys(bool swap)
     getGlobalHintsUpdateEvent()->fire();
 }
 
-NVGcontext* Application::getNVGContext()
-{
-    return Application::platform->getVideoContext()->getNVGContext();
-}
+NVGcontext* Application::getNVGContext() { return Application::platform->getVideoContext()->getNVGContext(); }
 
-void Application::setCommonFooter(std::string footer)
-{
-    Application::commonFooter = footer;
-}
+void Application::setCommonFooter(const std::string& footer) { Application::commonFooter = footer; }
 
-std::string* Application::getCommonFooter()
-{
-    return &Application::commonFooter;
-}
+std::string* Application::getCommonFooter() { return &Application::commonFooter; }
 
 void Application::setWindowSize(int width, int height)
 {
@@ -1214,9 +1168,9 @@ void Application::setWindowSize(int width, int height)
     Application::windowHeight = height;
 
     // Rescale UI
-    Application::windowScale   = (float)width / (float)ORIGINAL_WINDOW_WIDTH;
+    Application::windowScale   = (float) width / (float) ORIGINAL_WINDOW_WIDTH;
     Application::contentWidth  = ORIGINAL_WINDOW_WIDTH;
-    Application::contentHeight = (unsigned)roundf((float)height / Application::windowScale);
+    Application::contentHeight = (unsigned) roundf((float) height / Application::windowScale);
 
     for (Activity* activity : Application::activitiesStack)
         activity->onWindowSizeChanged();
@@ -1229,15 +1183,25 @@ void Application::onWindowResized(int width, int height)
     // Trigger event when Window size is stable
     static size_t iter = 0;
     brls::cancelDelay(iter);
-    iter = brls::delay(100, [width, height]()
+    iter = brls::delay(
+        100,
+        [width, height]()
         {
             Application::setWindowSize(width, height);
             Application::getWindowSizeChangedEvent()->fire();
 
-            Logger::info("Window size changed to {}x{}, content size: {}x{} windowScale: {}",
-                width, height, contentWidth, contentHeight, Application::windowScale);
-            brls::Logger::info("scale factor: {}",
-                Application::getPlatform()->getVideoContext()->getScaleFactor()); });
+            Logger::info(
+                "Window size changed to {}x{}, content size: {}x{} windowScale: {}",
+                width,
+                height,
+                contentWidth,
+                contentHeight,
+                Application::windowScale
+            );
+
+            brls::Logger::info("scale factor: {}", Application::getPlatform()->getVideoContext()->getScaleFactor());
+        }
+    );
 }
 
 void Application::setWindowPosition(int x, int y)
@@ -1246,96 +1210,63 @@ void Application::setWindowPosition(int x, int y)
     Application::windowYPos = y;
 }
 
-void Application::setWindowSafeArea(SafeAreaInsets safearea)
-{
-    Application::windowSafeArea = safearea;
-}
+void Application::setWindowSafeArea(SafeAreaInsets safearea) { Application::windowSafeArea = safearea; }
 
 void Application::onWindowSafeAreaChanged(SafeAreaInsets safearea)
 {
     static size_t iter = 0;
     brls::cancelDelay(iter);
-    iter = brls::delay(100, [safearea]()
-        { Application::setWindowSafeArea(safearea);
-        Application::getWindowSafeAreaChangedEvent()->fire(safearea); });
+    iter = brls::delay(
+        100,
+        [safearea]()
+        {
+            Application::setWindowSafeArea(safearea);
+            Application::getWindowSafeAreaChangedEvent()->fire(safearea);
+        }
+    );
 }
 
 void Application::onWindowReposition(int x, int y)
 {
     static size_t iter = 0;
     brls::cancelDelay(iter);
-    iter = brls::delay(500, [x, y]()
+    iter = brls::delay(
+        500,
+        [x, y]()
         {
-            Logger::info("Window position changed to {}x{}", x, y);
-            Application::setWindowPosition(x, y); });
+            Logger::debug("Window position changed to {}x{}", x, y);
+            Application::setWindowPosition(x, y);
+        }
+    );
 }
 
-std::string Application::getTitle()
-{
-    return Application::title;
-}
+std::string Application::getTitle() { return Application::title; }
 
-GenericEvent* Application::getGlobalFocusChangeEvent()
-{
-    return &Application::globalFocusChangeEvent;
-}
+GenericEvent* Application::getGlobalFocusChangeEvent() { return &Application::globalFocusChangeEvent; }
 
-VoidEvent* Application::getGlobalHintsUpdateEvent()
-{
-    return &Application::globalHintsUpdateEvent;
-}
+VoidEvent* Application::getGlobalHintsUpdateEvent() { return &Application::globalHintsUpdateEvent; }
 
-Event<InputType>* Application::getGlobalInputTypeChangeEvent()
-{
-    return &Application::globalInputTypeChangeEvent;
-}
+Event<InputType>* Application::getGlobalInputTypeChangeEvent() { return &Application::globalInputTypeChangeEvent; }
 
-VoidEvent* Application::getRunLoopEvent()
-{
-    return &Application::runLoopEvent;
-}
+VoidEvent* Application::getRunLoopEvent() { return &Application::runLoopEvent; }
 
-VoidEvent* Application::getPostFrameEvent()
-{
-    return &Application::postFrameEvent;
-}
+VoidEvent* Application::getPostFrameEvent() { return &Application::postFrameEvent; }
 
-VoidEvent* Application::getExitEvent()
-{
-    return &Application::exitEvent;
-}
+VoidEvent* Application::getExitEvent() { return &Application::exitEvent; }
 
-VoidEvent* Application::getExitDoneEvent()
-{
-    return &Application::exitDoneEvent;
-}
+VoidEvent* Application::getExitDoneEvent() { return &Application::exitDoneEvent; }
 
-VoidEvent* Application::getWindowSizeChangedEvent()
-{
-    return &Application::windowSizeChangedEvent;
-}
+VoidEvent* Application::getWindowSizeChangedEvent() { return &Application::windowSizeChangedEvent; }
 
-Event<SafeAreaInsets>* Application::getWindowSafeAreaChangedEvent()
-{
-    return &Application::windowSafeAreaChangeEvent;
-}
+Event<SafeAreaInsets>* Application::getWindowSafeAreaChangedEvent() { return &Application::windowSafeAreaChangeEvent; }
 
-VoidEvent* Application::getWindowCreationDoneEvent()
-{
-    return &Application::windowCreationDoneEvent;
-}
+VoidEvent* Application::getWindowCreationDoneEvent() { return &Application::windowCreationDoneEvent; }
 
-VoidEvent* Application::getWindowShouldCloseEvent()
-{
-    return &Application::windowShouldCloseEvent;
-}
+VoidEvent* Application::getWindowShouldCloseEvent() { return &Application::windowShouldCloseEvent; }
 
-Event<bool>* Application::getWindowFocusChangedEvent()
-{
-    return &Application::windowFocusChangedEvent;
-}
+Event<bool>* Application::getWindowFocusChangedEvent() { return &Application::windowFocusChangedEvent; }
 
-int Application::getFont(std::string fontName)
+int Application::getFont(const std::string& fontName)
 {
     if (Application::fontStash.count(fontName) == 0)
         return FONT_INVALID;
@@ -1353,15 +1284,9 @@ int Application::getDefaultFont()
     return regular;
 }
 
-bool Application::XMLViewsRegisterContains(std::string name)
-{
-    return Application::xmlViewsRegister.count(name) > 0;
-}
+bool Application::XMLViewsRegisterContains(const std::string& name) { return Application::xmlViewsRegister.count(name) > 0; }
 
-XMLViewCreator Application::getXMLViewCreator(std::string name)
-{
-    return Application::xmlViewsRegister[name];
-}
+XMLViewCreator Application::getXMLViewCreator(const std::string& name) { return Application::xmlViewsRegister[name]; }
 
 void Application::registerBuiltInXMLViews()
 {
@@ -1400,9 +1325,9 @@ void Application::registerBuiltInXMLViews()
     Application::registerXMLView("brls:Gamepad", GamepadWidget::create);
 }
 
-void Application::registerXMLView(std::string name, XMLViewCreator creator)
+void Application::registerXMLView(const std::string& name, XMLViewCreator creator)
 {
-    Application::xmlViewsRegister[name] = creator;
+    Application::xmlViewsRegister[name] = std::move(creator);
 }
 
 } // namespace brls
