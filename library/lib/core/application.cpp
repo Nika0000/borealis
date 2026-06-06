@@ -49,11 +49,8 @@
 #include <borealis/views/widgets/battery.hpp>
 #include <borealis/views/widgets/gamepad.hpp>
 #include <borealis/views/widgets/wireless.hpp>
-#include <stdexcept>
-#include <string>
-
-#include <chrono>
 #include <set>
+#include <string>
 #include <thread>
 #include <utility>
 
@@ -166,8 +163,16 @@ bool Application::mainLoop() { return Application::platform->runLoop(internalMai
 
 bool Application::internalMainLoop()
 {
-    Application::updateFPS();
+    // Frame pacing: spin-wait until the target frame interval has elapsed.
+    if (Application::limitedFrameTime > 0 && Application::frameStartTime > 0)
+    {
+        Time deadline = Application::frameStartTime + Application::limitedFrameTime;
+        while (getCPUTimeUsec() < deadline)
+            std::this_thread::yield();
+    }
+
     Application::frameStartTime = getCPUTimeUsec();
+    Application::updateFPS();
     Application::setActiveEvent(false);
 
     // Main loop callback
@@ -215,16 +220,6 @@ bool Application::internalMainLoop()
         }
     }
     Application::deletionPool = undeletedViews;
-
-    if (Application::limitedFrameTime > 0)
-    {
-        Time deltaTime = getCPUTimeUsec() - frameStartTime;
-        Time interval  = Application::limitedFrameTime - deltaTime;
-        if (interval > 0)
-        {
-            std::this_thread::sleep_for(std::chrono::microseconds(interval));
-        }
-    }
 
     return true;
 }
@@ -1011,7 +1006,7 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
             [replaceActivity]()
             {
                 replaceActivity();
-                Application::unblockInputs(); //
+                Application::unblockInputs();
             },
             duration > 0,
             duration

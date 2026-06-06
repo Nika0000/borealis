@@ -30,9 +30,16 @@
 namespace brls
 {
 
+/** Direct3D 11 rendering context with swap chain, HDR, and tearing support. */
 class D3D11Context
 {
   public:
+    /**
+     * Creates a D3D11 device and swap chain for the given window.
+     * @param window platform window handle
+     * @param width initial framebuffer width in pixels
+     * @param height initial framebuffer height in pixels
+     */
 #ifdef __GLFW__
     D3D11Context(GLFWwindow* window, int width, int height);
 #elif defined(__SDL3__)
@@ -40,41 +47,77 @@ class D3D11Context
 #endif
     ~D3D11Context();
 
+    /** Returns the DPI scale factor for the window. */
     double getScaleFactor();
-    void clear(NVGcolor color);
-    void beginFrame();
-    void endFrame();
-    void setSwapInterval(int interval);
-    void setAllowTearing(bool tearing);
-    bool setHDREnabled(bool enabled);
-    bool isHDREnabled() const { return this->hdrEnabled; }
 
+    /** Clears the render target with the specified color. */
+    void clear(NVGcolor color);
+
+    /** Begins a new render frame (binds render target and sets viewport). */
+    void beginFrame();
+
+    /** Ends the current frame and presents the swap chain. */
+    void endFrame();
+
+    /**
+     * Sets the swap chain present interval.
+     * @param interval 0 for immediate (no vsync), 1+ for vsync
+     */
+    void setSwapInterval(int interval);
+
+    /**
+     * Enables or disables DXGI tearing (variable refresh rate).
+     * @param tearing true to allow tearing when supported
+     */
+    void setAllowTearing(bool tearing);
+
+    /**
+     * Enables or disables HDR output on the swap chain.
+     * @param enabled true to switch to an HDR color space
+     * @return true if the HDR state was changed successfully
+     */
+    bool setHDREnabled(bool enabled);
+
+    /** Returns whether HDR output is currently enabled. */
+    bool isHDREnabled() const { return m_hdrEnabled; }
+
+    /**
+     * Handles framebuffer resize by recreating the swap chain buffers.
+     * @param width new framebuffer width in pixels
+     * @param height new framebuffer height in pixels
+     * @param init true when called during initial setup
+     * @return true if the resize succeeded
+     */
     bool onFramebufferSize(int width, int height, bool init = false);
 
-    ID3D11Device* getDevice() { return this->device; }
+    /** Returns the underlying D3D11 device. */
+    ID3D11Device* getDevice() { return m_device; }
 
-    IDXGISwapChain* getSwapChain() { return this->swapChain; }
+    /** Returns the underlying DXGI swap chain. */
+    IDXGISwapChain* getSwapChain() { return m_swapChain; }
 
   private:
-    ID3D11Device* device                     = nullptr;
-    ID3D11DeviceContext* deviceContext       = nullptr;
-    IDXGISwapChain1* swapChain               = nullptr;
-    ID3D11RenderTargetView* renderTargetView = nullptr;
-    ID3D11DepthStencilView* depthStencilView = nullptr;
+    ID3D11Device* m_device                     = nullptr;
+    ID3D11DeviceContext* m_deviceContext       = nullptr;
+    IDXGISwapChain1* m_swapChain               = nullptr;
+    ID3D11RenderTargetView* m_renderTargetView = nullptr;
+    ID3D11DepthStencilView* m_depthStencilView = nullptr;
 
-    int swapInterval  = 1;
-    bool allowTearing = FALSE;
-    bool hdrEnabled   = false;
+    int m_swapInterval  = 1;
+    bool m_allowTearing = false;
+    bool m_hdrEnabled   = false;
 
-    int framebufferWidth               = 0;
-    int framebufferHeight              = 0;
-    UINT swapChainFlags                = 0;
-    DXGI_FORMAT swapChainFormat        = DXGI_FORMAT_R8G8B8A8_UNORM;
-    DXGI_COLOR_SPACE_TYPE colorSpace   = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+    int m_framebufferWidth  = 0;
+    int m_framebufferHeight = 0;
 
-    UINT(WINAPI* GetDpiForWindow)(HWND);
+    UINT m_swapChainFlags = 0;
 
-    HWND hWnd = nullptr;
+    DXGI_FORMAT m_swapChainFormat      = DXGI_FORMAT_R8G8B8A8_UNORM;
+    DXGI_COLOR_SPACE_TYPE m_colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+
+    UINT(WINAPI* m_getDpiForWindow)(HWND);
+
+    HWND m_hWnd = nullptr;
 
     bool initDX(HWND window, IUnknown* coreWindow, int width, int height);
     bool applySwapChainColorSpace();

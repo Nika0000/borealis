@@ -24,10 +24,7 @@ namespace brls
 static const int SwapChainBufferCount    = 2;
 static const DXGI_SAMPLE_DESC sampleDesc = { 1, 0 };
 
-static DXGI_FORMAT getSwapChainFormatForHDR(bool enabled)
-{
-    return enabled ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
-}
+static DXGI_FORMAT getSwapChainFormatForHDR(bool enabled) { return enabled ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM; }
 
 static DXGI_COLOR_SPACE_TYPE getColorSpaceForHDR(bool enabled)
 {
@@ -37,12 +34,16 @@ static DXGI_COLOR_SPACE_TYPE getColorSpaceForHDR(bool enabled)
 #ifdef __GLFW__
 D3D11Context::D3D11Context(GLFWwindow* window, int width, int height)
 {
-    this->hWnd = glfwGetWin32Window(window);
-    this->initDX(this->hWnd, nullptr, width, height);
+    m_hWnd = glfwGetWin32Window(window);
+    initDX(m_hWnd, nullptr, width, height);
 }
 #elif defined(__SDL3__)
 D3D11Context::D3D11Context(SDL_Window* window, int width, int height)
 {
+#ifdef __ALLOW_TEARING__
+    m_allowTearing = true;
+#endif
+
 #ifdef __WINRT__
     // winrt 代码需要特别编译
     ABI::Windows::UI::Core::ICoreWindow* coreWindow = nullptr;
@@ -50,20 +51,17 @@ D3D11Context::D3D11Context(SDL_Window* window, int width, int height)
     {
         return;
     }
-    this->initDX(nullptr, coreWindow, width, height);
+    initDX(nullptr, coreWindow, width, height);
 #else
-    this->hWnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-    this->initDX(this->hWnd, nullptr, width, height);
+    m_hWnd = (HWND) SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    initDX(m_hWnd, nullptr, width, height);
 #endif
 }
 #endif
 
-D3D11Context::~D3D11Context()
-{
-    this->unInitDX();
-}
+D3D11Context::~D3D11Context() { unInitDX(); }
 
-bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height)
+bool D3D11Context::initDX(HWND window, IUnknown* coreWindow, int width, int height)
 {
     HRESULT hr = S_OK;
 
@@ -83,9 +81,9 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
         D3D_FEATURE_LEVEL_11_0, // Direct3D 11.0 SM 5
         D3D_FEATURE_LEVEL_10_1, // Direct3D 10.1 SM 4
         D3D_FEATURE_LEVEL_10_0, // Direct3D 10.0 SM 4
-        D3D_FEATURE_LEVEL_9_3, // Direct3D 9.3  SM 3
-        D3D_FEATURE_LEVEL_9_2, // Direct3D 9.2  SM 2
-        D3D_FEATURE_LEVEL_9_1, // Direct3D 9.1  SM 2
+        D3D_FEATURE_LEVEL_9_3,  // Direct3D 9.3  SM 3
+        D3D_FEATURE_LEVEL_9_2,  // Direct3D 9.2  SM 2
+        D3D_FEATURE_LEVEL_9_1,  // Direct3D 9.1  SM 2
     };
 
     for (size_t driver = 0; driver < ARRAYSIZE(driverAttempts); driver++)
@@ -103,9 +101,10 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
             levelAttempts,
             ARRAYSIZE(levelAttempts),
             D3D11_SDK_VERSION,
-            &this->device,
+            &m_device,
             nullptr,
-            &this->deviceContext);
+            &m_deviceContext
+        );
 
         if (SUCCEEDED(hr))
         {
@@ -116,7 +115,7 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
     if (SUCCEEDED(hr))
     {
         ID3D11Multithread* mt = nullptr;
-        if (SUCCEEDED(this->deviceContext->QueryInterface(IID_PPV_ARGS(&mt))))
+        if (SUCCEEDED(m_deviceContext->QueryInterface(IID_PPV_ARGS(&mt))))
         {
             mt->SetMultithreadProtected(TRUE);
             mt->Release();
@@ -124,7 +123,7 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
     }
     if (SUCCEEDED(hr))
     {
-        hr = this->device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
+        hr = m_device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
     }
     if (SUCCEEDED(hr))
     {
@@ -141,11 +140,11 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
         ZeroMemory(&swapDesc, sizeof(swapDesc));
         swapDesc.SampleDesc.Count   = sampleDesc.Count;
         swapDesc.SampleDesc.Quality = sampleDesc.Quality;
-        swapDesc.Format             = this->swapChainFormat;
+        swapDesc.Format             = m_swapChainFormat;
         swapDesc.Stereo             = FALSE;
         swapDesc.BufferUsage        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapDesc.BufferCount        = SwapChainBufferCount;
-        swapDesc.Flags              = this->swapChainFlags;
+        swapDesc.Flags              = m_swapChainFlags;
         swapDesc.Scaling            = DXGI_SCALING_STRETCH;
         if (IsWindows10OrGreater())
         {
@@ -161,13 +160,13 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
             IDXGIFactory5* factory5 = nullptr;
             if (SUCCEEDED(dxgiFactory->QueryInterface(IID_PPV_ARGS(&factory5))))
             {
-                factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing));
+                factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &m_allowTearing, sizeof(m_allowTearing));
                 factory5->Release();
             }
-            if (allowTearing && swapDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD)
+            if (m_allowTearing && swapDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD)
             {
-                this->swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-                swapDesc.Flags = this->swapChainFlags;
+                m_swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+                swapDesc.Flags = m_swapChainFlags;
             }
         }
 #endif
@@ -189,22 +188,11 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
         // this->sd.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
         if (coreWindow)
         {
-            hr = dxgiFactory->CreateSwapChainForCoreWindow(
-                this->device,
-                coreWindow,
-                &swapDesc,
-                nullptr,
-                &this->swapChain);
+            hr = dxgiFactory->CreateSwapChainForCoreWindow(m_device, coreWindow, &swapDesc, nullptr, &m_swapChain);
         }
         else
         {
-            hr = dxgiFactory->CreateSwapChainForHwnd(
-                this->device,
-                hWnd,
-                &swapDesc,
-                nullptr,
-                nullptr,
-                &this->swapChain);
+            hr = dxgiFactory->CreateSwapChainForHwnd(m_device, window, &swapDesc, nullptr, nullptr, &m_swapChain);
         }
     }
     if (SUCCEEDED(hr))
@@ -213,9 +201,9 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
     }
 
     // Disable Alt+Enter fullscreen toggle, PrintScreen and window message snooping.
-    if (dxgiFactory && hWnd)
+    if (dxgiFactory && window)
     {
-        dxgiFactory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_PRINT_SCREEN);
+        dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_PRINT_SCREEN);
     }
 
     D3D_API_RELEASE(dxgiDevice);
@@ -225,28 +213,24 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
     if (FAILED(hr))
     {
         Logger::error("Failed init D3D11 {:#010x}", hr);
-        this->unInitDX();
+        unInitDX();
 
         char errorText[256] = { 0 };
-        FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            nullptr,
-            hr,
-            0,
-            errorText,
-            sizeof(errorText),
-            nullptr);
-        MessageBox(hWnd, errorText, "Init D3D11 Failed", MB_ICONERROR);
+        FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, hr, 0, errorText, sizeof(errorText), nullptr);
+        MessageBox(window, errorText, "Init D3D11 Failed", MB_ICONERROR);
         ExitProcess(hr);
         return false;
     }
 
-    this->GetDpiForWindow = (UINT(WINAPI*)(HWND))GetProcAddress(GetModuleHandleW(L"USER32.DLL"), "GetDpiForWindow");
+    m_getDpiForWindow = (UINT(WINAPI*)(HWND)) GetProcAddress(GetModuleHandleW(L"USER32.DLL"), "GetDpiForWindow");
 
     // Cache tearing support state for Present
 #ifdef __ALLOW_TEARING__
-    this->allowTearing = !!allowTearing;
+    m_allowTearing = !!m_allowTearing;
+    Logger::info("D3D11: __ALLOW_TEARING__ defined, allowTearing={}", m_allowTearing);
 #else
-    this->allowTearing = false;
+    m_allowTearing = false;
+    Logger::info("D3D11: __ALLOW_TEARING__ NOT defined");
 #endif
 
     return true;
@@ -254,13 +238,13 @@ bool D3D11Context::initDX(HWND hWnd, IUnknown* coreWindow, int width, int height
 
 bool D3D11Context::applySwapChainColorSpace()
 {
-    this->colorSpace = getColorSpaceForHDR(this->hdrEnabled);
+    m_colorSpace = getColorSpaceForHDR(m_hdrEnabled);
 
     IDXGISwapChain3* swapChain3 = nullptr;
-    HRESULT hr                  = this->swapChain->QueryInterface(IID_PPV_ARGS(&swapChain3));
+    HRESULT hr                  = m_swapChain->QueryInterface(IID_PPV_ARGS(&swapChain3));
     if (FAILED(hr))
     {
-        if (this->hdrEnabled)
+        if (m_hdrEnabled)
         {
             Logger::error("D3D11: HDR requires IDXGISwapChain3 support: {:#010x}", hr);
             return false;
@@ -269,19 +253,20 @@ bool D3D11Context::applySwapChainColorSpace()
     }
 
     UINT colorSpaceSupport = 0;
-    hr                     = swapChain3->CheckColorSpaceSupport(this->colorSpace, &colorSpaceSupport);
+
+    hr = swapChain3->CheckColorSpaceSupport(m_colorSpace, &colorSpaceSupport);
     if (FAILED(hr) || !(colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
     {
-        Logger::error("D3D11: Swapchain color space {} is not supported: {:#010x}", static_cast<int>(this->colorSpace), hr);
+        Logger::error("D3D11: Swapchain color space {} is not supported: {:#010x}", static_cast<int>(m_colorSpace), hr);
         D3D_API_RELEASE(swapChain3);
         return false;
     }
 
-    hr = swapChain3->SetColorSpace1(this->colorSpace);
+    hr = swapChain3->SetColorSpace1(m_colorSpace);
     D3D_API_RELEASE(swapChain3);
     if (FAILED(hr))
     {
-        Logger::error("D3D11: Failed to set swapchain color space {}: {:#010x}", static_cast<int>(this->colorSpace), hr);
+        Logger::error("D3D11: Failed to set swapchain color space {}: {:#010x}", static_cast<int>(m_colorSpace), hr);
         return false;
     }
 
@@ -290,42 +275,42 @@ bool D3D11Context::applySwapChainColorSpace()
 
 bool D3D11Context::setHDREnabled(bool enabled)
 {
-    if (this->hdrEnabled == enabled)
+    if (m_hdrEnabled == enabled)
     {
         return true;
     }
 
-    const bool previousHdrEnabled    = this->hdrEnabled;
-    const DXGI_FORMAT previousFormat = this->swapChainFormat;
-    const auto previousColorSpace    = this->colorSpace;
+    const bool previousHdrEnabled    = m_hdrEnabled;
+    const DXGI_FORMAT previousFormat = m_swapChainFormat;
+    const auto previousColorSpace    = m_colorSpace;
 
-    this->hdrEnabled      = enabled;
-    this->swapChainFormat = getSwapChainFormatForHDR(enabled);
+    m_hdrEnabled      = enabled;
+    m_swapChainFormat = getSwapChainFormatForHDR(enabled);
 
-    if (this->framebufferWidth <= 0 || this->framebufferHeight <= 0)
+    if (m_framebufferWidth <= 0 || m_framebufferHeight <= 0)
     {
-        if (this->applySwapChainColorSpace())
+        if (applySwapChainColorSpace())
         {
             Logger::info("D3D11: HDR output {}", enabled ? "enabled" : "disabled");
             return true;
         }
     }
-    else if (this->onFramebufferSize(this->framebufferWidth, this->framebufferHeight))
+    else if (onFramebufferSize(m_framebufferWidth, m_framebufferHeight))
     {
         Logger::info("D3D11: HDR output {}", enabled ? "enabled" : "disabled");
         return true;
     }
 
-    this->hdrEnabled      = previousHdrEnabled;
-    this->swapChainFormat = previousFormat;
-    this->colorSpace      = previousColorSpace;
-    if (this->framebufferWidth > 0 && this->framebufferHeight > 0)
+    m_hdrEnabled      = previousHdrEnabled;
+    m_swapChainFormat = previousFormat;
+    m_colorSpace      = previousColorSpace;
+    if (m_framebufferWidth > 0 && m_framebufferHeight > 0)
     {
-        this->onFramebufferSize(this->framebufferWidth, this->framebufferHeight);
+        onFramebufferSize(m_framebufferWidth, m_framebufferHeight);
     }
     else
     {
-        this->applySwapChainColorSpace();
+        applySwapChainColorSpace();
     }
     return false;
 }
@@ -333,16 +318,16 @@ bool D3D11Context::setHDREnabled(bool enabled)
 void D3D11Context::unInitDX()
 {
     // Detach RTs
-    if (this->deviceContext)
+    if (m_deviceContext)
     {
         ID3D11RenderTargetView* viewList[1] = { nullptr };
-        this->deviceContext->OMSetRenderTargets(1, viewList, nullptr);
+        m_deviceContext->OMSetRenderTargets(1, viewList, nullptr);
     }
-    D3D_API_RELEASE(this->deviceContext);
-    D3D_API_RELEASE(this->device);
-    D3D_API_RELEASE(this->swapChain);
-    D3D_API_RELEASE(this->renderTargetView);
-    D3D_API_RELEASE(this->depthStencilView);
+    D3D_API_RELEASE(m_deviceContext);
+    D3D_API_RELEASE(m_device);
+    D3D_API_RELEASE(m_swapChain);
+    D3D_API_RELEASE(m_renderTargetView);
+    D3D_API_RELEASE(m_depthStencilView);
 }
 
 double D3D11Context::getScaleFactor()
@@ -350,11 +335,11 @@ double D3D11Context::getScaleFactor()
 #ifdef __WINRT__
     static auto displayInformation = winrt::Windows::Graphics::Display::DisplayInformation::GetForCurrentView();
 
-    return (unsigned int)displayInformation.LogicalDpi() / 96.0f;
+    return (unsigned int) displayInformation.LogicalDpi() / 96.0f;
 #else
-    if (this->GetDpiForWindow)
+    if (m_getDpiForWindow)
     {
-        return this->GetDpiForWindow(this->hWnd) / 96.0;
+        return m_getDpiForWindow(m_hWnd) / 96.0;
     }
 
     HDC hdc = GetDC(nullptr);
@@ -376,27 +361,27 @@ bool D3D11Context::onFramebufferSize(int width, int height, bool init)
     ID3D11Texture2D* backBuffer         = nullptr;
     ID3D11Texture2D* depthStencil       = nullptr;
     ID3D11RenderTargetView* viewList[1] = { nullptr };
-    this->deviceContext->OMSetRenderTargets(1, viewList, nullptr);
+    m_deviceContext->OMSetRenderTargets(1, viewList, nullptr);
 
-    D3D_API_RELEASE(this->renderTargetView);
-    D3D_API_RELEASE(this->depthStencilView);
+    D3D_API_RELEASE(m_renderTargetView);
+    D3D_API_RELEASE(m_depthStencilView);
 
     if (!init)
     {
-        hr = this->swapChain->ResizeBuffers(SwapChainBufferCount, width, height, this->swapChainFormat, this->swapChainFlags);
+        hr = m_swapChain->ResizeBuffers(SwapChainBufferCount, width, height, m_swapChainFormat, m_swapChainFlags);
         if (FAILED(hr))
         {
             return false;
         }
     }
 
-    hr = this->swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
+    hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
     if (FAILED(hr))
     {
         return false;
     }
 
-    hr = this->device->CreateRenderTargetView(backBuffer, nullptr, &this->renderTargetView);
+    hr = m_device->CreateRenderTargetView(backBuffer, nullptr, &m_renderTargetView);
     D3D_API_RELEASE(backBuffer);
     if (FAILED(hr))
     {
@@ -408,15 +393,15 @@ bool D3D11Context::onFramebufferSize(int width, int height, bool init)
     texDesc.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
     texDesc.CPUAccessFlags     = 0;
     texDesc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    texDesc.Height             = (UINT)height;
-    texDesc.Width              = (UINT)width;
+    texDesc.Height             = (UINT) height;
+    texDesc.Width              = (UINT) width;
     texDesc.MipLevels          = 1;
     texDesc.MiscFlags          = 0;
     texDesc.SampleDesc.Count   = sampleDesc.Count;
     texDesc.SampleDesc.Quality = sampleDesc.Quality;
     texDesc.Usage              = D3D11_USAGE_DEFAULT;
 
-    hr = this->device->CreateTexture2D(&texDesc, nullptr, &depthStencil);
+    hr = m_device->CreateTexture2D(&texDesc, nullptr, &depthStencil);
     if (FAILED(hr))
     {
         return false;
@@ -428,7 +413,7 @@ bool D3D11Context::onFramebufferSize(int width, int height, bool init)
     depthViewDesc.Flags              = 0;
     depthViewDesc.Texture2D.MipSlice = 0;
 
-    hr = this->device->CreateDepthStencilView(depthStencil, &depthViewDesc, &this->depthStencilView);
+    hr = m_device->CreateDepthStencilView(depthStencil, &depthViewDesc, &m_depthStencilView);
     D3D_API_RELEASE(depthStencil);
     if (FAILED(hr))
     {
@@ -436,21 +421,21 @@ bool D3D11Context::onFramebufferSize(int width, int height, bool init)
     }
 
     D3D11_VIEWPORT viewport;
-    viewport.Width    = (float)width;
-    viewport.Height   = (float)height;
+    viewport.Width    = (float) width;
+    viewport.Height   = (float) height;
     viewport.MaxDepth = 1.0f;
     viewport.MinDepth = 0.0f;
     viewport.TopLeftX = 0.0f;
     viewport.TopLeftY = 0.0f;
-    this->deviceContext->RSSetViewports(1, &viewport);
+    m_deviceContext->RSSetViewports(1, &viewport);
 
-    if (!this->applySwapChainColorSpace())
+    if (!applySwapChainColorSpace())
     {
         return false;
     }
 
-    this->framebufferWidth  = width;
-    this->framebufferHeight = height;
+    m_framebufferWidth  = width;
+    m_framebufferHeight = height;
 
     return true;
 }
@@ -458,14 +443,11 @@ bool D3D11Context::onFramebufferSize(int width, int height, bool init)
 void D3D11Context::clear(NVGcolor color)
 {
     float clearColor[4] = { color.r, color.g, color.b, color.a };
-    this->deviceContext->ClearRenderTargetView(this->renderTargetView, clearColor);
-    this->deviceContext->ClearDepthStencilView(this->depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
+    m_deviceContext->ClearRenderTargetView(m_renderTargetView, clearColor);
+    m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
 }
 
-void D3D11Context::beginFrame()
-{
-    this->deviceContext->OMSetRenderTargets(1, &this->renderTargetView, this->depthStencilView);
-}
+void D3D11Context::beginFrame() { m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView); }
 
 void D3D11Context::endFrame()
 {
@@ -475,14 +457,14 @@ void D3D11Context::endFrame()
 
     // If tearing is enabled and swap interval is 0 (vsync off), use Present with tearing flag.
 #ifdef __ALLOW_TEARING__
-    if (this->allowTearing && this->swapInterval == 0)
+    if (m_allowTearing && m_swapInterval == 0)
     {
-        this->swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
+        m_swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
         return;
     }
 #endif
 
-    this->swapChain->Present1(swapInterval, 0, &presentParameters);
+    m_swapChain->Present1(m_swapInterval, 0, &presentParameters);
 }
 
 void D3D11Context::setSwapInterval(int interval)
@@ -490,7 +472,7 @@ void D3D11Context::setSwapInterval(int interval)
     if (interval < 0 || interval > 4)
         return;
 
-    this->swapInterval = interval;
+    m_swapInterval = interval;
 }
 
 void D3D11Context::setAllowTearing(bool tearing)
@@ -499,6 +481,6 @@ void D3D11Context::setAllowTearing(bool tearing)
     Logger::warning("D3D11: Failed to set allow tearing, because its disabled internaly.");
     return;
 #endif
-    this->allowTearing = tearing;
+    m_allowTearing = tearing;
 }
 }
