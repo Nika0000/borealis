@@ -51,7 +51,6 @@
 #include <borealis/views/widgets/wireless.hpp>
 #include <set>
 #include <string>
-#include <thread>
 #include <utility>
 
 #define BUTTOM_REPEAT_TRIGGER 250000 // 250ms
@@ -164,11 +163,10 @@ bool Application::mainLoop() { return Application::platform->runLoop(internalMai
 bool Application::internalMainLoop()
 {
     // Frame pacing: spin-wait until the target frame interval has elapsed.
-    if (Application::limitedFrameTime > 0 && Application::frameStartTime > 0)
+    if (Application::limitedFrameTime > 0 && Application::frameStartTime > 0 && VideoContext::swapInterval == 0)
     {
         Time deadline = Application::frameStartTime + Application::limitedFrameTime;
-        while (getCPUTimeUsec() < deadline)
-            std::this_thread::yield();
+        waitUntilUsec(deadline);
     }
 
     Application::frameStartTime = getCPUTimeUsec();

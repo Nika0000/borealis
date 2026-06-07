@@ -16,8 +16,80 @@
 
 #include <borealis/core/time.hpp>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
+#ifdef _WIN32
+#include <timeapi.h>
+
+#elif !defined(__SWITCH__)
+#include <time.h>
+#endif
+
 namespace brls
 {
+
+// Spin margin: microseconds reserved for the final spin-wait.
+// Must be large enough to absorb OS timer jitter so we never overshoot the deadline.
+// 2ms is safe for all platforms; the spin uses pause intrinsics to minimize power.
+static constexpr Time SPIN_MARGIN_USEC = 2000;
+
+void waitUntilUsec(Time targetUsec)
+{
+    Time now = getCPUTimeUsec();
+    if (now >= targetUsec)
+        return;
+
+    Time remaining = targetUsec - now;
+
+    // OS sleep for the bulk — only if there's enough time beyond the spin margin
+    if (remaining > SPIN_MARGIN_USEC)
+    {
+#ifdef _WIN32
+        static HANDLE s_timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+
+        Time sleepUsec = remaining - SPIN_MARGIN_USEC;
+
+        if (s_timer)
+        {
+            LARGE_INTEGER dueTime;
+            dueTime.QuadPart = -(static_cast<LONGLONG>(sleepUsec) * 10);
+            SetWaitableTimer(s_timer, &dueTime, 0, NULL, NULL, FALSE);
+            WaitForSingleObject(s_timer, INFINITE);
+        }
+        else
+        {
+            timeBeginPeriod(1);
+            Sleep(static_cast<DWORD>(sleepUsec / 1000));
+            timeEndPeriod(1);
+        }
+#elif defined(__SWITCH__)
+        extern void svcSleepThread(long long ns);
+        svcSleepThread(static_cast<long long>(remaining - SPIN_MARGIN_USEC) * 1000);
+#else
+        Time sleepUsec = remaining - SPIN_MARGIN_USEC;
+        struct timespec ts;
+        ts.tv_sec  = sleepUsec / 1000000;
+        ts.tv_nsec = (sleepUsec % 1000000) * 1000;
+        nanosleep(&ts, NULL);
+#endif
+    }
+
+    // Spin-wait the final ~2ms with pause intrinsics (low power, no scheduler involvement)
+    while (getCPUTimeUsec() < targetUsec)
+    {
+
+#if defined(_WIN32)
+        YieldProcessor();
+#elif defined(__x86_64__) || defined(__i386__)
+        __builtin_ia32_pause();
+#elif defined(__aarch64__) || defined(__arm__)
+        __asm__ volatile("yield");
+#endif
+    }
+}
 
 void Ticking::updateTickings()
 {
@@ -38,7 +110,7 @@ void Ticking::updateTickings()
     {
         bool run = ticking->onUpdate(delta);
 
-        ticking->tickCallback();
+        ticking->m_tickCallback();
 
         if (!run)
             ticking->stop(true); // will remove the ticking from Ticking::runningTickings
@@ -47,24 +119,21 @@ void Ticking::updateTickings()
 
 void Ticking::start()
 {
-    if (this->running)
+    if (m_running)
         return;
 
     Ticking::runningTickings.push_back(this);
 
-    this->running = true;
+    m_running = true;
 
-    this->onStart();
+    onStart();
 }
 
-void Ticking::stop()
-{
-    this->stop(false);
-}
+void Ticking::stop() { stop(false); }
 
 void Ticking::stop(bool finished)
 {
-    if (!this->running)
+    if (!m_running)
         return;
 
     for (size_t i = 0; i < Ticking::runningTickings.size(); i++)
@@ -76,42 +145,27 @@ void Ticking::stop(bool finished)
         }
     }
 
-    this->running = false;
+    m_running = false;
 
-    this->onStop();
+    onStop();
 
-    this->endCallback(finished);
+    m_endCallback(finished);
 }
 
-void Ticking::setEndCallback(TickingEndCallback endCallback)
-{
-    this->endCallback = endCallback;
-}
+void Ticking::setEndCallback(const TickingEndCallback& endCallback) { m_endCallback = endCallback; }
 
-void Ticking::setTickCallback(TickingTickCallback tickCallback)
-{
-    this->tickCallback = tickCallback;
-}
+void Ticking::setTickCallback(const TickingTickCallback& tickCallback) { m_tickCallback = tickCallback; }
 
-bool Ticking::isRunning()
-{
-    return this->running;
-}
+bool Ticking::isRunning() const { return m_running; }
 
-Ticking::~Ticking()
-{
-    this->stop();
-}
+Ticking::~Ticking() { stop(); }
 
-void FiniteTicking::rewind()
-{
-    this->onRewind();
-}
+void FiniteTicking::rewind() { onRewind(); }
 
 void FiniteTicking::reset()
 {
-    this->stop();
-    this->onReset();
+    stop();
+    onReset();
 }
 
 } // namespace brls

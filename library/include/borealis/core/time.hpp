@@ -30,10 +30,17 @@ typedef retro_time_t Time;
 /**
  * Returns the current CPU time in microseconds.
  */
-inline Time getCPUTimeUsec()
-{
-    return cpu_features_get_time_usec();
-}
+inline Time getCPUTimeUsec() { return cpu_features_get_time_usec(); }
+
+/**
+ * Precise wait until a target timestamp (in microseconds).
+ *
+ * Hybrid approach: OS sleep for the bulk of the wait to keep CPU usage low,
+ * then spin-wait for the final portion to achieve sub-millisecond accuracy.
+ * Avoids the ~16ms granularity penalty of std::this_thread::sleep_for on Windows
+ * and the high CPU cost of pure spin-waiting.
+ */
+void waitUntilUsec(Time targetUsec);
 
 typedef std::function<void()> TickingGenericCallback;
 
@@ -67,7 +74,7 @@ class Ticking
      * The callback argument will be set to true if the ticking stopped
      * on its own, false if it was stopped early by the user.
      */
-    void setEndCallback(TickingEndCallback endCallback);
+    void setEndCallback(const TickingEndCallback& endCallback);
 
     /**
      * Sets a callback to be executed at every tick
@@ -76,12 +83,12 @@ class Ticking
      * The last animation tick will execute the tick callback
      * then the end callback.
      */
-    void setTickCallback(TickingTickCallback tickCallback);
+    void setTickCallback(const TickingTickCallback& tickCallback);
 
     /**
      * Returns true if the ticking is currently running.
      */
-    bool isRunning();
+    bool isRunning() const;
 
     /**
      * Called internally by the main loop. Takes all running tickings
@@ -116,10 +123,10 @@ class Ticking
   private:
     void stop(bool finished);
 
-    bool running = false;
+    bool m_running = false;
 
-    TickingEndCallback endCallback   = [](bool finished) {};
-    TickingTickCallback tickCallback = [] {};
+    TickingEndCallback m_endCallback   = [](bool finished) {};
+    TickingTickCallback m_tickCallback = [] {};
 };
 
 // Represents a "finite" ticking that runs for a known amount of time
