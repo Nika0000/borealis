@@ -37,7 +37,7 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-cc
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
       - name: Build
@@ -50,7 +50,7 @@ jobs:
             -DZLIB_USE_STATIC_LIBS=ON
           cmake --build build
       - name: Upload dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: borealis-windows-x86_64-${{ matrix.driver }}${{ matrix.ext }}
           path: build/borealis_demo.exe
@@ -68,7 +68,7 @@ jobs:
   #        - { driver: gl3, cmake: "-DUSE_SDL3=ON", ext: "-sdl3" }
   #  steps:
   #    - name: Checkout
-  #      uses: actions/checkout@v4
+  #      uses: actions/checkout@v6
   #      with:
   #        submodules: recursive
   #    - name: Install dependencies
@@ -90,7 +90,7 @@ jobs:
   #        mv build/borealis_demo ${output_dir}
   #        tar -czvf ${output_dir}.tar.gz ${output_dir}
   #    - name: Upload dist
-  #      uses: actions/upload-artifact@v4
+  #      uses: actions/upload-artifact@v7
   #      with:
   #        name: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}
   #        path: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}.tar.gz
@@ -99,7 +99,7 @@ jobs:
   #   runs-on: macos-13
   #   steps:
   #     - name: Checkout
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v6
   #       with:
   #         submodules: recursive
   #     - name: cache
@@ -122,7 +122,7 @@ jobs:
   #         path: build
   #         key: ${{ steps.cache-key.outputs.IOS_CACHE_KEY }}
   #     - name: Upload dist
-  #       uses: actions/upload-artifact@v4
+  #       uses: actions/upload-artifact@v7
   #       with:
   #         name: borealis-ios
   #         path: borealis_demo.zip
@@ -131,7 +131,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Checkout
-  #       uses: actions/checkout@v4
+  #       uses: actions/checkout@v6
   #       with:
   #         submodules: recursive
   #     - name: Build
@@ -141,7 +141,7 @@ jobs:
   #               -DCMAKE_BUILD_TYPE=Release && \
   #               make -C build -j$(nproc)"
   #     - name: Upload dist
-  #       uses: actions/upload-artifact@v4
+  #       uses: actions/upload-artifact@v7
   #       with:
   #         name: borealis-ps4
   #         path: build/*.pkg
@@ -156,7 +156,7 @@ jobs:
   #        - { driver: gles2 }
   #  steps:
   #    - name: Checkout
-  #      uses: actions/checkout@v4
+  #      uses: actions/checkout@v6
   #      with:
   #        submodules: recursive
   #
@@ -176,7 +176,7 @@ jobs:
   #        docker run --rm -v $(pwd):/src/ vitasdk/vitasdk:latest sh -C /src/build_gxm.sh
   #
   #    - name: Upload dist
-  #      uses: actions/upload-artifact@v4
+  #      uses: actions/upload-artifact@v7
   #      with:
   #        name: borealis-psv-${{ matrix.driver }}
   #        path: build/*.vpk
@@ -195,7 +195,7 @@ jobs:
   #          - { driver: deko3d, cmake: "-DUSE_DEKO3D=ON", ext: "deko3d" }
   #    steps:
   #      - name: Checkout
-  #        uses: actions/checkout@v4
+  #        uses: actions/checkout@v6
   #        with:
   #          submodules: recursive
   #      - name: Build
@@ -203,7 +203,7 @@ jobs:
   #          cmake -B build -DCMAKE_BUILD_TYPE=Release -DPLATFORM_SWITCH=ON ${{ matrix.cmake }}
   #          make -C build borealis_demo.nro -j$(nproc)
   #      - name: Upload dist
-  #        uses: actions/upload-artifact@v4
+  #        uses: actions/upload-artifact@v7
   #        with:
   #          name: borealis-switch-${{ matrix.ext }}
   #          path: build/borealis_demo.nro
@@ -211,7 +211,7 @@ jobs:
 #  android:
 #    runs-on: ubuntu-latest
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #        with:
 #          submodules: recursive
 #      - name: Setup
@@ -224,7 +224,7 @@ jobs:
 #          ./build_libromfs_generator.sh
 #          cd android-project && ./gradlew assembleDebug
 #      - name: Upload dist
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v7
 #        with:
 #          name: borealis-android
 #          path: android-project/app/build/outputs/apk/debug/*.apk
@@ -239,7 +239,7 @@ jobs:
 #          - { name: sdl3, cmake: "-DUSE_SDL3=ON" }
 #    steps:
 #      - name: Checkout
-#        uses: actions/checkout@v4
+#        uses: actions/checkout@v6
 #        with:
 #          submodules: recursive
 #      - name: Build
@@ -250,7 +250,7 @@ jobs:
 #          mv build/borealis_demo.app borealis-macos-${{ matrix.window.name }}/
 #          tar -czvf borealis-macos-${{ matrix.window.name }}.tar.gz borealis-macos-${{ matrix.window.name }}
 #      - name: Upload dist
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v7
 #        with:
 #          name: borealis-macos-${{ matrix.window.name }}
 #          path: borealis-macos-${{ matrix.window.name }}.tar.gz
