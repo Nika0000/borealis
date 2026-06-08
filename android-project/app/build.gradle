@@ -9,8 +9,8 @@ else {
 
 android {
     namespace = "com.borealis.demo"
-    ndkVersion "26.1.10909125"
-    compileSdk 35
+    compileSdkVersion 35
+    ndkVersion = "28.2.13676358"
     defaultConfig {
         if (buildAsApplication) {
             applicationId "com.borealis.demo"

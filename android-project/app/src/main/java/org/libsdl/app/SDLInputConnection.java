@@ -74,7 +74,7 @@ class SDLInputConnection extends BaseInputConnection
                     nativeGenerateScancodeForUnichar('\b');
                 }
                 return true;
-            }
+           }
         }
 
         if (!super.deleteSurroundingText(beforeLength, afterLength)) {

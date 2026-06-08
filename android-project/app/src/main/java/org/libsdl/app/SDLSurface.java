@@ -26,14 +26,14 @@ import android.view.WindowManager;
 import android.view.ScaleGestureDetector;
 
 /**
- SDLSurface. This is what we draw on, so we need to know when it's created
- in order to do anything useful.
+    SDLSurface. This is what we draw on, so we need to know when it's created
+    in order to do anything useful.
 
- Because of this, that's where we set up the SDL thread
- */
+    Because of this, that's where we set up the SDL thread
+*/
 public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
-        View.OnApplyWindowInsetsListener, View.OnKeyListener, View.OnTouchListener,
-        SensorEventListener, ScaleGestureDetector.OnScaleGestureListener {
+    View.OnApplyWindowInsetsListener, View.OnKeyListener, View.OnTouchListener,
+    SensorEventListener, ScaleGestureDetector.OnScaleGestureListener {
 
     // Sensors
     protected SensorManager mSensorManager;
@@ -155,23 +155,23 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
         if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT) {
             if (mWidth > mHeight) {
-                skip = true;
+               skip = true;
             }
         } else if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE) {
             if (mWidth < mHeight) {
-                skip = true;
+               skip = true;
             }
         }
 
         // Special Patch for Square Resolution: Black Berry Passport
         if (skip) {
-            double min = Math.min(mWidth, mHeight);
-            double max = Math.max(mWidth, mHeight);
+           double min = Math.min(mWidth, mHeight);
+           double max = Math.max(mWidth, mHeight);
 
-            if (max / min < 1.20) {
-                Log.v("SDL", "Don't skip on such aspect-ratio. Could be a square resolution.");
-                skip = false;
-            }
+           if (max / min < 1.20) {
+              Log.v("SDL", "Don't skip on such aspect-ratio. Could be a square resolution.");
+              skip = false;
+           }
         }
 
         // Don't skip if we might be multi-window or have popup dialogs
@@ -182,9 +182,9 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         }
 
         if (skip) {
-            Log.v("SDL", "Skip .. Surface is not ready.");
-            mIsSurfaceReady = false;
-            return;
+           Log.v("SDL", "Skip .. Surface is not ready.");
+           mIsSurfaceReady = false;
+           return;
         }
 
         /* If the surface has been previously destroyed by onNativeSurfaceDestroyed, recreate it here */
@@ -202,10 +202,10 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
     public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
         if (Build.VERSION.SDK_INT >= 30 /* Android 11 (R) */) {
             Insets combined = insets.getInsets(WindowInsets.Type.systemBars() |
-                    WindowInsets.Type.systemGestures() |
-                    WindowInsets.Type.mandatorySystemGestures() |
-                    WindowInsets.Type.tappableElement() |
-                    WindowInsets.Type.displayCutout());
+                                               WindowInsets.Type.systemGestures() |
+                                               WindowInsets.Type.mandatorySystemGestures() |
+                                               WindowInsets.Type.tappableElement() |
+                                               WindowInsets.Type.displayCutout());
 
             SDLActivity.onNativeInsetsChanged(combined.left, combined.right, combined.top, combined.bottom);
         }
@@ -311,11 +311,11 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
         // TODO: This uses getDefaultSensor - what if we have >1 accels?
         if (enabled) {
             mSensorManager.registerListener(this,
-                    mSensorManager.getDefaultSensor(sensortype),
-                    SensorManager.SENSOR_DELAY_GAME, null);
+                            mSensorManager.getDefaultSensor(sensortype),
+                            SensorManager.SENSOR_DELAY_GAME, null);
         } else {
             mSensorManager.unregisterListener(this,
-                    mSensorManager.getDefaultSensor(sensortype));
+                            mSensorManager.getDefaultSensor(sensortype));
         }
     }
 
@@ -363,8 +363,8 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
             }
 
             SDLActivity.onNativeAccel(-x / SensorManager.GRAVITY_EARTH,
-                    y / SensorManager.GRAVITY_EARTH,
-                    event.values[2] / SensorManager.GRAVITY_EARTH);
+                                      y / SensorManager.GRAVITY_EARTH,
+                                      event.values[2] / SensorManager.GRAVITY_EARTH);
 
 
         }

@@ -58,7 +58,7 @@ public class SDLDummyEdit extends View implements View.OnKeyListener
 
         outAttrs.inputType = input_type;
         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI |
-                EditorInfo.IME_FLAG_NO_FULLSCREEN /* API 11 */;
+                              EditorInfo.IME_FLAG_NO_FULLSCREEN /* API 11 */;
 
         return ic;
     }

@@ -231,38 +231,38 @@ public class HIDDeviceManager {
         final int XB360_IFACE_PROTOCOL = 1; // Wired
         final int XB360W_IFACE_PROTOCOL = 129; // Wireless
         final int[] SUPPORTED_VENDORS = {
-                0x0079, // GPD Win 2
-                0x044f, // Thrustmaster
-                0x045e, // Microsoft
-                0x046d, // Logitech
-                0x056e, // Elecom
-                0x06a3, // Saitek
-                0x0738, // Mad Catz
-                0x07ff, // Mad Catz
-                0x0e6f, // PDP
-                0x0f0d, // Hori
-                0x1038, // SteelSeries
-                0x11c9, // Nacon
-                0x12ab, // Unknown
-                0x1430, // RedOctane
-                0x146b, // BigBen
-                0x1532, // Razer Sabertooth
-                0x15e4, // Numark
-                0x162e, // Joytech
-                0x1689, // Razer Onza
-                0x1949, // Lab126, Inc.
-                0x1bad, // Harmonix
-                0x20d6, // PowerA
-                0x24c6, // PowerA
-                0x2c22, // Qanba
-                0x2dc8, // 8BitDo
-                0x9886, // ASTRO Gaming
+            0x0079, // GPD Win 2
+            0x044f, // Thrustmaster
+            0x045e, // Microsoft
+            0x046d, // Logitech
+            0x056e, // Elecom
+            0x06a3, // Saitek
+            0x0738, // Mad Catz
+            0x07ff, // Mad Catz
+            0x0e6f, // PDP
+            0x0f0d, // Hori
+            0x1038, // SteelSeries
+            0x11c9, // Nacon
+            0x12ab, // Unknown
+            0x1430, // RedOctane
+            0x146b, // BigBen
+            0x1532, // Razer Sabertooth
+            0x15e4, // Numark
+            0x162e, // Joytech
+            0x1689, // Razer Onza
+            0x1949, // Lab126, Inc.
+            0x1bad, // Harmonix
+            0x20d6, // PowerA
+            0x24c6, // PowerA
+            0x2c22, // Qanba
+            0x2dc8, // 8BitDo
+            0x9886, // ASTRO Gaming
         };
 
         if (usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_VENDOR_SPEC &&
-                usbInterface.getInterfaceSubclass() == XB360_IFACE_SUBCLASS &&
-                (usbInterface.getInterfaceProtocol() == XB360_IFACE_PROTOCOL ||
-                        usbInterface.getInterfaceProtocol() == XB360W_IFACE_PROTOCOL)) {
+            usbInterface.getInterfaceSubclass() == XB360_IFACE_SUBCLASS &&
+            (usbInterface.getInterfaceProtocol() == XB360_IFACE_PROTOCOL ||
+             usbInterface.getInterfaceProtocol() == XB360W_IFACE_PROTOCOL)) {
             int vendor_id = usbDevice.getVendorId();
             for (int supportedVid : SUPPORTED_VENDORS) {
                 if (vendor_id == supportedVid) {
@@ -277,30 +277,30 @@ public class HIDDeviceManager {
         final int XB1_IFACE_SUBCLASS = 71;
         final int XB1_IFACE_PROTOCOL = 208;
         final int[] SUPPORTED_VENDORS = {
-                0x03f0, // HP
-                0x044f, // Thrustmaster
-                0x045e, // Microsoft
-                0x0738, // Mad Catz
-                0x0b05, // ASUS
-                0x0e6f, // PDP
-                0x0f0d, // Hori
-                0x10f5, // Turtle Beach
-                0x1532, // Razer Wildcat
-                0x20d6, // PowerA
-                0x24c6, // PowerA
-                0x294b, // Snakebyte
-                0x2dc8, // 8BitDo
-                0x2e24, // Hyperkin
-                0x2e95, // SCUF
-                0x3285, // Nacon
-                0x3537, // GameSir
-                0x366c, // ByoWave
+            0x03f0, // HP
+            0x044f, // Thrustmaster
+            0x045e, // Microsoft
+            0x0738, // Mad Catz
+            0x0b05, // ASUS
+            0x0e6f, // PDP
+            0x0f0d, // Hori
+            0x10f5, // Turtle Beach
+            0x1532, // Razer Wildcat
+            0x20d6, // PowerA
+            0x24c6, // PowerA
+            0x294b, // Snakebyte
+            0x2dc8, // 8BitDo
+            0x2e24, // Hyperkin
+            0x2e95, // SCUF
+            0x3285, // Nacon
+            0x3537, // GameSir
+            0x366c, // ByoWave
         };
 
         if (usbInterface.getId() == 0 &&
-                usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_VENDOR_SPEC &&
-                usbInterface.getInterfaceSubclass() == XB1_IFACE_SUBCLASS &&
-                usbInterface.getInterfaceProtocol() == XB1_IFACE_PROTOCOL) {
+            usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_VENDOR_SPEC &&
+            usbInterface.getInterfaceSubclass() == XB1_IFACE_SUBCLASS &&
+            usbInterface.getInterfaceProtocol() == XB1_IFACE_PROTOCOL) {
             int vendor_id = usbDevice.getVendorId();
             for (int supportedVid : SUPPORTED_VENDORS) {
                 if (vendor_id == supportedVid) {
@@ -369,13 +369,13 @@ public class HIDDeviceManager {
         Log.d(TAG, "Initializing Bluetooth");
 
         if (Build.VERSION.SDK_INT >= 31 /* Android 12  */ &&
-                mContext.getPackageManager().checkPermission(android.Manifest.permission.BLUETOOTH_CONNECT, mContext.getPackageName()) != PackageManager.PERMISSION_GRANTED) {
+            mContext.getPackageManager().checkPermission(android.Manifest.permission.BLUETOOTH_CONNECT, mContext.getPackageName()) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Couldn't initialize Bluetooth, missing android.permission.BLUETOOTH_CONNECT");
             return;
         }
 
         if (Build.VERSION.SDK_INT <= 30 /* Android 11.0 (R) */ &&
-                mContext.getPackageManager().checkPermission(android.Manifest.permission.BLUETOOTH, mContext.getPackageName()) != PackageManager.PERMISSION_GRANTED) {
+            mContext.getPackageManager().checkPermission(android.Manifest.permission.BLUETOOTH, mContext.getPackageName()) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Couldn't initialize Bluetooth, missing android.permission.BLUETOOTH");
             return;
         }

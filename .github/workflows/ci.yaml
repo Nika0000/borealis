@@ -2,7 +2,29 @@ name: Build borealis demo
 
 on:
   push:
+    paths:
+      - "library/**"
+      - "demo/**"
+      - "resources/**"
+      - "android-project/**"
+      - "ps4/**"
+      - "psv/**"
+      - "winrt/**"
+      - "CMakeLists.txt"
+      - "**/*.cmake"
+      - ".github/workflows/ci.yaml"
   pull_request:
+    paths:
+      - "library/**"
+      - "demo/**"
+      - "resources/**"
+      - "android-project/**"
+      - "ps4/**"
+      - "psv/**"
+      - "winrt/**"
+      - "CMakeLists.txt"
+      - "**/*.cmake"
+      - ".github/workflows/ci.yaml"
 jobs:
   windows:
     name: windows (${{ matrix.driver }}${{ matrix.ext }})
@@ -37,7 +59,7 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-cc
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
       - name: Build
@@ -208,26 +230,24 @@ jobs:
   #          name: borealis-switch-${{ matrix.ext }}
   #          path: build/borealis_demo.nro
 
-#  android:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          submodules: recursive
-#      - name: Setup
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install ninja-build pkg-config
-#      - name: Build
-#        id: build
-#        run: |
-#          ./build_libromfs_generator.sh
-#          cd android-project && ./gradlew assembleDebug
-#      - name: Upload dist
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: borealis-android
-#          path: android-project/app/build/outputs/apk/debug/*.apk
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build pkg-config
+      - name: Build
+        id: build
+        run: cd android-project && ./gradlew assembleDebug
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: borealis-android
+          path: android-project/app/build/outputs/apk/debug/*.apk
 
 #  macos:
 #    runs-on: macos-14

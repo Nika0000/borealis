@@ -118,6 +118,7 @@ public class PlatformUtils {
 
     public static float getAppScreenBrightness(Activity activity) {
         Window window = activity.getWindow();
+        if (window == null) return getSystemScreenBrightness(activity);
         WindowManager.LayoutParams lp = window.getAttributes();
         if (lp.screenBrightness < 0) return getSystemScreenBrightness(activity);
         return lp.screenBrightness;
