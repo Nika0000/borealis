@@ -2,9 +2,13 @@ cmake_minimum_required(VERSION 3.6)
 
 project(BOREALIS_DEMO)
 
-# armeabi-v7a requires cpufeatures library
-# include(AndroidNdkModules)
-# android_ndk_import_module_cpufeatures()
+# armeabi-v7a: import cpufeatures only when the legacy NDK module is available
+if(ANDROID_ABI MATCHES "armeabi-v7a")
+    include(AndroidNdkModules OPTIONAL)
+    if(COMMAND android_ndk_import_module_cpufeatures)
+        android_ndk_import_module_cpufeatures()
+    endif()
+endif()
 
 
 # SDL sources are in a subfolder named "SDL"
@@ -19,6 +23,6 @@ add_subdirectory(SDL)
 #add_subdirectory(src)
 
 
-SET(PLATFORM_ANDROID ON CACHE BOOL "")
+set(PLATFORM_ANDROID ON CACHE BOOL "")
 
 add_subdirectory(borealis)

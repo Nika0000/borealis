@@ -231,7 +231,11 @@ jobs:
   #          path: build/borealis_demo.nro
 
   android:
+    name: android (${{ matrix.abi }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -242,11 +246,11 @@ jobs:
           sudo apt-get install ninja-build pkg-config
       - name: Build
         id: build
-        run: cd android-project && ./gradlew assembleDebug
+        run: cd android-project && ./gradlew assembleDebug -Pabi=${{ matrix.abi }}
       - name: Upload dist
         uses: actions/upload-artifact@v7
         with:
-          name: borealis-android
+          name: borealis-android-${{ matrix.abi }}
           path: android-project/app/build/outputs/apk/debug/*.apk
 
 #  macos:
