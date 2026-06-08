@@ -64,15 +64,9 @@ namespace brls
 
 static double scaleFactor = 1.0;
 
-static int mini(int x, int y)
-{
-    return x < y ? x : y;
-}
+static int mini(int x, int y) { return x < y ? x : y; }
 
-static int maxi(int x, int y)
-{
-    return x > y ? x : y;
-}
+static int maxi(int x, int y) { return x > y ? x : y; }
 
 static GLFWmonitor* getCurrentMonitor(GLFWwindow* window)
 {
@@ -175,12 +169,12 @@ static void glfwWindowPositionCallback(GLFWwindow* window, int windowXPos, int w
 
     if (!VideoContext::FULLSCREEN)
     {
-        VideoContext::posX = (float)windowXPos;
-        VideoContext::posY = (float)windowYPos;
+        VideoContext::posX = (float) windowXPos;
+        VideoContext::posY = (float) windowYPos;
     }
 }
 
-GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowX, float windowY)
+GLFWVideoContext::GLFWVideoContext(const std::string& title, uint32_t windowWidth, uint32_t windowHeight, float windowX, float windowY)
 {
     if (!glfwInit())
     {
@@ -220,8 +214,8 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
 #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
     // If the window appears outside the screen, using the default settings
     GLFWmonitor* monitor = nullptr;
-    if (!isnan(windowX) && !isnan(windowY))
-        monitor = getAvailableMonitor(VideoContext::monitorIndex, (int)windowX, (int)windowY, (int)windowWidth, (int)windowHeight);
+    if (!std::isnan(windowX) && !std::isnan(windowY))
+        monitor = getAvailableMonitor(VideoContext::monitorIndex, (int) windowX, (int) windowY, (int) windowWidth, (int) windowHeight);
 
     if (monitor == nullptr)
     {
@@ -244,7 +238,7 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
 #if defined(__linux__) || defined(_WIN32) || defined(__APPLE__)
     if (VideoContext::FULLSCREEN)
     {
-        this->window = glfwCreateWindow(mode->width, mode->height, windowTitle.c_str(), monitor, nullptr);
+        this->window = glfwCreateWindow(mode->width, mode->height, title.c_str(), monitor, nullptr);
 #ifdef _WIN32
         // glfw will disable screen sleep when in full-screen mode
         // We will cancel it here and let the application handle this issue internally
@@ -255,7 +249,7 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
     else
 #endif
     {
-        this->window = glfwCreateWindow((int)windowWidth, (int)windowHeight, windowTitle.c_str(), nullptr, nullptr);
+        this->window = glfwCreateWindow((int) windowWidth, (int) windowHeight, title.c_str(), nullptr, nullptr);
     }
 
     if (!this->window)
@@ -272,7 +266,7 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
     try
     {
         auto& icon       = romfs::get("icon/icon.png");
-        images[0].pixels = stbi_load_from_memory((stbi_uc*)icon.data(), icon.size(), &images[0].width, &images[0].height, 0, 4);
+        images[0].pixels = stbi_load_from_memory((stbi_uc*) icon.data(), icon.size(), &images[0].width, &images[0].height, 0, 4);
         glfwSetWindowIcon(this->window, 1, images);
     }
     catch (...)
@@ -292,32 +286,30 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
     // Set window position
     if (!VideoContext::FULLSCREEN)
     {
-        if (mode->width >= (int)windowWidth && mode->height >= (int)windowHeight)
+        if (mode->width >= (int) windowWidth && mode->height >= (int) windowHeight)
         {
-            if (!isnan(windowX) && !isnan(windowY))
+            if (!std::isnan(windowX) && !std::isnan(windowY))
             {
-                glfwSetWindowPos(this->window, (int)windowX, (int)windowY);
+                glfwSetWindowPos(this->window, (int) windowX, (int) windowY);
             }
             else
             {
                 // When there is no specified window position, center the window
-                glfwSetWindowPos(this->window, (int)(mode->width - windowWidth) / 2,
-                    (int)(mode->height - windowHeight) / 2);
+                glfwSetWindowPos(this->window, (int) (mode->width - windowWidth) / 2, (int) (mode->height - windowHeight) / 2);
             }
         }
         else
         {
             // When the window size is too large, reduce the size and center it
-            float maxAllowedWidth  = (float)mode->width * 0.8f;
-            float maxAllowedHeight = (float)mode->height * 0.8f;
-            float scale            = std::min(maxAllowedWidth / (float)windowWidth, maxAllowedHeight / (float)windowHeight);
-            float newWidth         = (float)windowWidth * scale;
-            float newHeight        = (float)windowHeight * scale;
+            float maxAllowedWidth  = (float) mode->width * 0.8f;
+            float maxAllowedHeight = (float) mode->height * 0.8f;
+            float scale            = std::min(maxAllowedWidth / (float) windowWidth, maxAllowedHeight / (float) windowHeight);
+            float newWidth         = (float) windowWidth * scale;
+            float newHeight        = (float) windowHeight * scale;
 
-            glfwSetWindowSize(this->window, (int)newWidth, (int)newHeight);
+            glfwSetWindowSize(this->window, (int) newWidth, (int) newHeight);
 
-            glfwSetWindowPos(this->window, (mode->width - newWidth) / 2,
-                (mode->height - newHeight) / 2);
+            glfwSetWindowPos(this->window, (mode->width - newWidth) / 2, (mode->height - newHeight) / 2);
         }
     }
 #endif
@@ -335,13 +327,13 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
     glfwMakeContextCurrent(window);
 #ifndef __PSV__
     // Load OpenGL routines using glad
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
 #endif
     glfwSwapInterval(1);
 
-    Logger::info("glfw: GL Vendor: {}", (const char*)glGetString(GL_VENDOR));
-    Logger::info("glfw: GL Renderer: {}", (const char*)glGetString(GL_RENDERER));
-    Logger::info("glfw: GL Version: {}", (const char*)glGetString(GL_VERSION));
+    Logger::info("glfw: GL Vendor: {}", (const char*) glGetString(GL_VENDOR));
+    Logger::info("glfw: GL Renderer: {}", (const char*) glGetString(GL_RENDERER));
+    Logger::info("glfw: GL Version: {}", (const char*) glGetString(GL_VERSION));
 #endif
     Logger::info("glfw: GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION);
 
@@ -401,8 +393,8 @@ GLFWVideoContext::GLFWVideoContext(const std::string& windowTitle, uint32_t wind
     {
         VideoContext::sizeW = wWidth;
         VideoContext::sizeH = wHeight;
-        VideoContext::posX  = (float)xPos;
-        VideoContext::posY  = (float)yPos;
+        VideoContext::posX  = (float) xPos;
+        VideoContext::posY  = (float) yPos;
     }
 
 #ifdef __SWITCH__
@@ -452,21 +444,13 @@ void GLFWVideoContext::clear(NVGcolor color)
 {
 
 #ifdef BOREALIS_USE_OPENGL
-    glClearColor(
-        color.r,
-        color.g,
-        color.b,
-        color.a);
+    glClearColor(color.r, color.g, color.b, color.a);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 #elif defined(BOREALIS_USE_METAL)
     nvgClearWithColor(nvgContext, nvgRGBAf(color.r, color.g, color.b, color.a));
 #elif defined(BOREALIS_USE_D3D11)
-    D3D11_CONTEXT->clear(nvgRGBAf(
-        color.r,
-        color.g,
-        color.b,
-        color.a));
+    D3D11_CONTEXT->clear(nvgRGBAf(color.r, color.g, color.b, color.a));
 #endif
 }
 
@@ -481,10 +465,7 @@ void GLFWVideoContext::resetState()
 #endif
 }
 
-double GLFWVideoContext::getScaleFactor()
-{
-    return scaleFactor;
-}
+double GLFWVideoContext::getScaleFactor() { return scaleFactor; }
 
 GLFWVideoContext::~GLFWVideoContext()
 {
@@ -519,10 +500,7 @@ GLFWVideoContext::~GLFWVideoContext()
     glfwTerminate();
 }
 
-NVGcontext* GLFWVideoContext::getNVGContext()
-{
-    return this->nvgContext;
-}
+NVGcontext* GLFWVideoContext::getNVGContext() { return this->nvgContext; }
 
 int GLFWVideoContext::getCurrentMonitorIndex()
 {
@@ -573,18 +551,20 @@ void GLFWVideoContext::fullScreen(bool fs)
         glfwGetMonitorPos(monitor, &monitorX, &monitorY);
         glfwRestoreWindow(this->window);
 
-        if (sizeW == 0 || sizeH == 0 || posX < monitorX || posY < monitorY || posX + sizeW > mode->width + monitorX || posY + sizeH > mode->height + monitorY)
+        if (sizeW == 0 || sizeH == 0 || posX < monitorX || posY < monitorY || posX + sizeW > mode->width + monitorX
+            || posY + sizeH > mode->height + monitorY)
         {
             int width  = Application::ORIGINAL_WINDOW_WIDTH;
             int height = Application::ORIGINAL_WINDOW_HEIGHT;
             // If the window appears outside the screen, using the default settings
-            glfwSetWindowMonitor(this->window, nullptr, fabs(mode->width - width) / 2,
-                fabs(mode->height - height) / 2, width, height, GLFW_DONT_CARE);
+            glfwSetWindowMonitor(
+                this->window, nullptr, fabs(mode->width - width) / 2, fabs(mode->height - height) / 2, width, height, GLFW_DONT_CARE
+            );
         }
         else
         {
             // Set the window position and size
-            glfwSetWindowMonitor(this->window, nullptr, (int)posX, (int)posY, (int)sizeW, (int)sizeH, mode->refreshRate);
+            glfwSetWindowMonitor(this->window, nullptr, (int) posX, (int) posY, (int) sizeW, (int) sizeH, mode->refreshRate);
         }
     }
 #ifdef BOREALIS_USE_OPENGL
@@ -592,9 +572,6 @@ void GLFWVideoContext::fullScreen(bool fs)
 #endif
 }
 
-GLFWwindow* GLFWVideoContext::getGLFWWindow()
-{
-    return this->window;
-}
+GLFWwindow* GLFWVideoContext::getGLFWWindow() { return this->window; }
 
 } // namespace brls

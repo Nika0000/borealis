@@ -25,6 +25,8 @@
 #endif
 #include <GLFW/glfw3.h>
 
+#include <string>
+
 namespace brls
 {
 
@@ -32,7 +34,7 @@ namespace brls
 class GLFWVideoContext : public VideoContext
 {
   public:
-    GLFWVideoContext(const std::string& windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowX = NAN, float windowY = NAN);
+    GLFWVideoContext(const std::string& title, uint32_t windowWidth, uint32_t windowHeight, float windowX = NAN, float windowY = NAN);
     ~GLFWVideoContext() override;
 
     NVGcontext* getNVGContext() override;
