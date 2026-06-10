@@ -479,7 +479,14 @@ void SDLVideoContext::setSwapInterval(int interval)
 {
     VideoContext::swapInterval = interval;
 #ifdef BOREALIS_USE_OPENGL
+#ifdef ANDROID
+    // On Android, eglSwapBuffers with interval=0 overflows BLASTBufferQueue.
+    // Clamp to 1 so eglSwapBuffers provides backpressure from SurfaceFlinger.
+    // The AChoreographer run loop already paces frame submission to one per vsync.
+    SDL_GL_SetSwapInterval(interval < 1 ? 1 : interval);
+#else
     SDL_GL_SetSwapInterval(interval);
+#endif
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->setSwapInterval(interval);
 #endif

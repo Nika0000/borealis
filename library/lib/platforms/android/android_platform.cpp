@@ -15,6 +15,7 @@
 */
 
 #include <SDL3/SDL.h>
+#include <android/looper.h>
 #include <arpa/inet.h>
 #include <jni.h>
 #include <net/if.h>
@@ -27,7 +28,6 @@
 #include <borealis/core/i18n.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/platforms/android/android_platform.hpp>
-
 
 namespace brls
 {
@@ -252,5 +252,50 @@ void AndroidPlatform::setBacklightBrightness(float brightness)
 }
 
 bool AndroidPlatform::canSetBacklightBrightness() { return true; }
+
+void AndroidPlatform::choreographerCallback(long /* frameTimeNanos */, void* data)
+{
+    auto* self = static_cast<AndroidPlatform*>(data);
+
+    if (!self->m_loopRunning)
+        return;
+
+    bool continueLoop = (*self->m_runLoopImpl)();
+
+    if (continueLoop && self->m_loopRunning)
+        AChoreographer_postFrameCallback(self->m_choreographer, choreographerCallback, self);
+    else
+        self->m_loopRunning = false;
+}
+
+bool AndroidPlatform::runLoop(const std::function<bool()>& runLoopImpl)
+{
+    ALooper* looper = ALooper_forThread();
+    if (!looper)
+        looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+
+    m_choreographer = AChoreographer_getInstance();
+    if (!m_choreographer)
+    {
+        Logger::warning("AndroidPlatform: AChoreographer unavailable, falling back to spin loop");
+        while (runLoopImpl())
+        {
+        }
+        return false;
+    }
+
+    m_runLoopImpl = &runLoopImpl;
+    m_loopRunning = true;
+
+    AChoreographer_postFrameCallback(m_choreographer, choreographerCallback, this);
+
+    while (m_loopRunning)
+    {
+        // Block until the next vsync callback (or any fd event on this looper).
+        ALooper_pollOnce(-1, nullptr, nullptr, nullptr);
+    }
+
+    return false;
+}
 
 } // namespace brls

@@ -18,6 +18,10 @@
 
 #include <borealis/platforms/sdl/sdl_platform.hpp>
 
+#include <android/choreographer.h>
+#include <atomic>
+#include <functional>
+
 namespace brls
 {
 
@@ -37,6 +41,15 @@ class AndroidPlatform : public SDLPlatform
         float getBacklightBrightness() override;
         void setBacklightBrightness(float brightness) override;
         bool canSetBacklightBrightness() override;
+
+        bool runLoop(const std::function<bool()>& runLoopImpl) override;
+
+    private:
+        static void choreographerCallback(long frameTimeNanos, void* data);
+
+        AChoreographer* m_choreographer  = nullptr;
+        std::atomic<bool> m_loopRunning  { false };
+        const std::function<bool()>* m_runLoopImpl = nullptr;
 };
 
 } // namespace brls
