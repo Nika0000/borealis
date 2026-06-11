@@ -161,6 +161,7 @@
                     width="33%"
                     height="auto"
                     marginRight="30px"
+                    singleLine="false"
                     text="@i18n/demo/components/button_wrapping" />
 
                     <brls:Box
