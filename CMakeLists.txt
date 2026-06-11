@@ -172,9 +172,10 @@ elseif (PLATFORM_TVOS)
             "borealis"
             "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_ALTER}")
 elseif (PLATFORM_WASM)
-    # Produce an HTML shell + .js + .wasm (+ .data with preloaded resources)
+    set(WASM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/wasm/shell.html")
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
     target_link_options(${PROJECT_NAME} PRIVATE
+        "SHELL:--shell-file ${WASM_SHELL_FILE}"
         "SHELL:-s USE_WEBGL2=1"
         "SHELL:-s FULL_ES3=1"
         "SHELL:-s MIN_WEBGL_VERSION=2"

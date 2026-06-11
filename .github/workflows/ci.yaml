@@ -230,6 +230,34 @@ jobs:
   #          name: borealis-switch-${{ matrix.ext }}
   #          path: build/borealis_demo.nro
 
+  wasm:
+    name: wasm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.61
+      - name: Build
+        run: |
+          emcmake cmake -B build_wasm -G "Unix Makefiles" \
+            -DPLATFORM_WASM=ON \
+            -DUSE_SDL3=ON \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_wasm --parallel
+      - name: Upload dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: borealis-wasm
+          path: |
+            build_wasm/borealis_demo.html
+            build_wasm/borealis_demo.js
+            build_wasm/borealis_demo.wasm
+            build_wasm/borealis_demo.data
+
   android:
     name: android (${{ matrix.abi }})
     runs-on: ubuntu-latest
