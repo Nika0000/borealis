@@ -173,7 +173,7 @@ elseif(PLATFORM_ANDROID)
             ${BOREALIS_PATH}/lib/platforms/sdl
             ${BOREALIS_PATH}/lib/platforms/desktop
             ${BOREALIS_PATH}/lib/platforms/android)
-    list(APPEND BRLS_PLATFORM_LIBS SDL3-shared)
+    list(APPEND BRLS_PLATFORM_LIBS SDL3-shared android)
     list(APPEND BRLS_PLATFORM_OPTION -D__SDL3__ -DANDROID)
 elseif(PLATFORM_IOS OR PLATFORM_TVOS)
     set(BUILD_SHARED_LIBS OFF)
