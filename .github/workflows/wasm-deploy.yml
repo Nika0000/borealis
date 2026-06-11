@@ -31,7 +31,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Rename to index.html
-        run: mv _site/build_wasm/borealis_demo.html _site/index.html && mv _site/build_wasm/* _site/ && rmdir _site/build_wasm
+        run: mv _site/borealis_demo.html _site/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
