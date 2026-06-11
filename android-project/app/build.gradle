@@ -23,7 +23,7 @@ android {
         minSdkVersion 24
         targetSdkVersion 35
         versionCode generateVersionCode(versionName)
-        versionName "1.0.0" // x-release-please-version
+        versionName "1.1.0" // x-release-please-version
 
         externalNativeBuild {
              cmake {
