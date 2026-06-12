@@ -163,11 +163,14 @@ bool Application::mainLoop() { return Application::platform->runLoop(internalMai
 bool Application::internalMainLoop()
 {
     // Frame pacing: spin-wait until the target frame interval has elapsed.
+    // On Android, the choreographer callback handles frame skipping instead.
+#ifndef __ANDROID__
     if (Application::limitedFrameTime > 0 && Application::frameStartTime > 0 && VideoContext::swapInterval == 0)
     {
         Time deadline = Application::frameStartTime + Application::limitedFrameTime;
         waitUntilUsec(deadline);
     }
+#endif
 
     Application::frameStartTime = getCPUTimeUsec();
     Application::updateFPS();

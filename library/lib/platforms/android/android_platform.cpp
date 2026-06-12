@@ -253,12 +253,31 @@ void AndroidPlatform::setBacklightBrightness(float brightness)
 
 bool AndroidPlatform::canSetBacklightBrightness() { return true; }
 
-void AndroidPlatform::choreographerCallback(long /* frameTimeNanos */, void* data)
+void AndroidPlatform::choreographerCallback(long frameTimeNanos, void* data)
 {
     auto* self = static_cast<AndroidPlatform*>(data);
 
     if (!self->m_loopRunning)
         return;
+
+    static long nextFrameNanos = 0;
+
+    Time limitedFrameTime = Application::getLimitedFrameTime();
+    if (limitedFrameTime > 0 && nextFrameNanos > 0)
+    {
+        if (frameTimeNanos < nextFrameNanos)
+        {
+            AChoreographer_postFrameCallback(self->m_choreographer, choreographerCallback, self);
+            return;
+        }
+        nextFrameNanos += static_cast<long>(limitedFrameTime) * 1000;
+        if (nextFrameNanos < frameTimeNanos)
+            nextFrameNanos = frameTimeNanos + static_cast<long>(limitedFrameTime) * 1000;
+    }
+    else
+    {
+        nextFrameNanos = frameTimeNanos + static_cast<long>(limitedFrameTime) * 1000;
+    }
 
     bool continueLoop = (*self->m_runLoopImpl)();
 

@@ -350,6 +350,11 @@ class Application
     static void setLimitedFPS(size_t fps);
 
     /**
+     * Returns the target frame time in microseconds, or 0 if no limit is set.
+     */
+    static Time getLimitedFrameTime() { return limitedFrameTime; }
+
+    /**
      * Set the swap interval
      * Must be called after createWindow. On some platforms, it is impossible to set it back
      * to 0 after setting it to a non-zero values, so you can use

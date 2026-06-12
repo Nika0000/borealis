@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <borealis/platforms/sdl/sdl_platform.hpp>
-
 #include <android/choreographer.h>
+
 #include <atomic>
+#include <borealis/platforms/sdl/sdl_platform.hpp>
 #include <functional>
 
 namespace brls
@@ -27,29 +27,30 @@ namespace brls
 
 class AndroidPlatform : public SDLPlatform
 {
-    public:
-        bool canShowBatteryLevel() override;
-        bool canShowWirelessLevel() override;
-        int getBatteryLevel() override;
-        bool isBatteryCharging() override;
-        bool hasWirelessConnection() override;
-        int getWirelessLevel() override;
-        bool hasEthernetConnection() override;
-        std::string getIpAddress() override;
-        std::string getDnsServer() override;
-        void openBrowser(std::string url) override;
-        float getBacklightBrightness() override;
-        void setBacklightBrightness(float brightness) override;
-        bool canSetBacklightBrightness() override;
+  public:
+    bool canShowBatteryLevel() override;
+    bool canShowWirelessLevel() override;
+    int getBatteryLevel() override;
+    bool isBatteryCharging() override;
+    bool hasWirelessConnection() override;
+    int getWirelessLevel() override;
+    bool hasEthernetConnection() override;
+    std::string getIpAddress() override;
+    std::string getDnsServer() override;
+    void openBrowser(std::string url) override;
+    float getBacklightBrightness() override;
+    void setBacklightBrightness(float brightness) override;
+    bool canSetBacklightBrightness() override;
 
-        bool runLoop(const std::function<bool()>& runLoopImpl) override;
+    bool runLoop(const std::function<bool()>& runLoopImpl) override;
 
-    private:
-        static void choreographerCallback(long frameTimeNanos, void* data);
+  private:
+    static void choreographerCallback(long frameTimeNanos, void* data);
 
-        AChoreographer* m_choreographer  = nullptr;
-        std::atomic<bool> m_loopRunning  { false };
-        const std::function<bool()>* m_runLoopImpl = nullptr;
+    std::atomic<bool> m_loopRunning { false };
+
+    AChoreographer* m_choreographer            = nullptr;
+    const std::function<bool()>* m_runLoopImpl = nullptr;
 };
 
 } // namespace brls
