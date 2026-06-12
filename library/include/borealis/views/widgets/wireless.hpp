@@ -16,10 +16,10 @@
 
 #pragma once
 
+#include <array>
 #include <borealis/core/application.hpp>
 #include <borealis/core/box.hpp>
 #include <borealis/views/image.hpp>
-#include <borealis/views/rectangle.hpp>
 
 namespace brls
 {
@@ -33,16 +33,15 @@ class WirelessWidget : public Box
     static View* create();
 
   private:
-    Image* _0;
-    Image* _1;
-    Image* _2;
-    Image* _3;
-    Image* ethernet;
-    Platform* platform;
+    static constexpr int WIFI_LEVELS = 4;
+
+    std::array<Image*, WIFI_LEVELS> m_wifi {};
+    Image* m_ethernet = nullptr;
+    Platform* m_platform = nullptr;
 
     void applyTheme(ThemeVariant theme);
-
     void updateState();
+
     inline static bool hasWirelessConnection = false;
     inline static int wifiLevel              = 3;
     inline static bool hasEthernetConnection = false;

@@ -21,71 +21,56 @@ namespace brls
 
 GamepadWidget::GamepadWidget()
 {
-    // Seed from actual connected count so we're correct on startup
+    setGap(4);
+
+    for (int i = 0; i < MAX_CONTROLLERS; i++)
+    {
+        m_icons[i] = new Image();
+        m_icons[i]->setSize(Size(44, 44));
+        m_icons[i]->setScalingType(ImageScalingType::FIT);
+        m_icons[i]->setImageFromRes("img/sys/controller_p" + std::to_string(i + 1) + ".png");
+        m_icons[i]->setVisibility(Visibility::GONE);
+        addView(m_icons[i]);
+    }
+
     refreshCount();
 
     InputManager* inputManager = Application::getPlatform()->getInputManager();
 
-    connectionSub = inputManager->getControllerConnectionEvent()->subscribe([this](const ControllerInfo& e)
+    m_connectionSub = inputManager->getControllerConnectionEvent()->subscribe(
+        [this](const ControllerInfo& e)
         {
             if (e.state == ControllerConnectionState::CONNECTED)
-                controllerCount++;
+                m_controllerCount = std::min(MAX_CONTROLLERS, m_controllerCount + 1);
             else if (e.state == ControllerConnectionState::DISCONNECTED)
-                controllerCount = std::max(0, controllerCount - 1);
+                m_controllerCount = std::max(0, m_controllerCount - 1);
 
             refreshCount();
-
-            //
-        });
+        }
+    );
 }
 
 GamepadWidget::~GamepadWidget()
 {
-    Application::getPlatform()
-        ->getInputManager()
-        ->getControllerConnectionEvent()
-        ->unsubscribe(connectionSub);
+    Application::getPlatform()->getInputManager()->getControllerConnectionEvent()->unsubscribe(m_connectionSub);
 }
 
 void GamepadWidget::refreshCount()
 {
-    controllerCount = Application::getPlatform()->getInputManager()->getControllersConnectedCount();
+    int count         = Application::getPlatform()->getInputManager()->getControllersConnectedCount();
+    m_controllerCount = std::min(MAX_CONTROLLERS, count);
 
-    float totalWidth = controllerCount > 0
-        ? ICON_SIZE * controllerCount + ICON_SPACING * (controllerCount - 1)
-        : 0.0f;
-    setWidth(totalWidth);
-    setHeight(controllerCount > 0 ? ICON_SIZE : 0.0f);
-    setVisibility(controllerCount > 0 ? Visibility::VISIBLE : Visibility::GONE);
+    for (int i = 0; i < MAX_CONTROLLERS; i++)
+        m_icons[i]->setVisibility(i < m_controllerCount ? Visibility::VISIBLE : Visibility::GONE);
+
+    setVisibility(m_controllerCount > 0 ? Visibility::VISIBLE : Visibility::GONE);
 }
 
 void GamepadWidget::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
 {
-    if (controllerCount <= 0)
-        return;
-
-    nvgSave(vg);
-    nvgFontFaceId(vg, Application::getFont(FONT_MATERIAL_ICONS));
-    nvgFontSize(vg, ICON_SIZE);
-    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-
-    float cx = x;
-    for (int i = 0; i < controllerCount; i++)
-    {
-        const auto& c = PLAYER_COLORS[i % PLAYER_COLORS.size()];
-        nvgFillColor(vg, nvgRGB(c[0], c[1], c[2]));
-        nvgText(vg, cx, y + height * 0.5f, GAMEPAD_ICON, nullptr);
-        cx += ICON_SIZE + ICON_SPACING;
-    }
-
-    nvgRestore(vg);
-
     Box::draw(vg, x, y, width, height, style, ctx);
 }
 
-View* GamepadWidget::create()
-{
-    return new GamepadWidget();
-}
+View* GamepadWidget::create() { return new GamepadWidget(); }
 
 } // namespace brls

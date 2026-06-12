@@ -30,66 +30,38 @@ namespace brls
 
 WirelessWidget::WirelessWidget()
 {
-    platform = Application::getPlatform();
-    if (!platform->canShowWirelessLevel())
+    m_platform = Application::getPlatform();
+    if (!m_platform->canShowWirelessLevel())
         return;
 
     setSize(Size(44, 44));
 
-    _0 = new Image();
-    _0->setSize(Size(44, 44));
-    _0->setScalingType(ImageScalingType::FIT);
-    _0->detach();
+    for (int i = 0; i < WIFI_LEVELS; i++)
+    {
+        m_wifi[i] = new Image();
+        m_wifi[i]->setSize(Size(44, 44));
+        m_wifi[i]->setScalingType(ImageScalingType::FIT);
+        m_wifi[i]->detach();
+        addView(m_wifi[i]);
+    }
 
-    _1 = new Image();
-    _1->setSize(Size(44, 44));
-    _1->setScalingType(ImageScalingType::FIT);
-    _1->detach();
+    m_ethernet = new Image();
+    m_ethernet->setSize(Size(44, 44));
+    m_ethernet->setScalingType(ImageScalingType::FIT);
+    m_ethernet->detach();
+    addView(m_ethernet);
 
-    _2 = new Image();
-    _2->setSize(Size(44, 44));
-    _2->setScalingType(ImageScalingType::FIT);
-    _2->detach();
-
-    _3 = new Image();
-    _3->setSize(Size(44, 44));
-    _3->setScalingType(ImageScalingType::FIT);
-    _3->detach();
-
-    ethernet = new Image();
-    ethernet->setSize(Size(44, 44));
-    ethernet->setScalingType(ImageScalingType::FIT);
-    ethernet->detach();
-
-    platform = Application::getPlatform();
-    applyTheme(platform->getThemeVariant());
-
-    addView(_0);
-    addView(_1);
-    addView(_2);
-    addView(_3);
-    addView(ethernet);
+    applyTheme(m_platform->getThemeVariant());
 }
 
 void WirelessWidget::applyTheme(ThemeVariant theme)
 {
-    switch (theme)
-    {
-        case ThemeVariant::LIGHT:
-            _0->setImageFromRes("img/sys/wifi_0_light.png");
-            _1->setImageFromRes("img/sys/wifi_1_light.png");
-            _2->setImageFromRes("img/sys/wifi_2_light.png");
-            _3->setImageFromRes("img/sys/wifi_3_light.png");
-            ethernet->setImageFromRes("img/sys/ethernet_light.png");
-            break;
-        case ThemeVariant::DARK:
-            _0->setImageFromRes("img/sys/wifi_0_dark.png");
-            _1->setImageFromRes("img/sys/wifi_1_dark.png");
-            _2->setImageFromRes("img/sys/wifi_2_dark.png");
-            _3->setImageFromRes("img/sys/wifi_3_dark.png");
-            ethernet->setImageFromRes("img/sys/ethernet_dark.png");
-            break;
-    }
+    const char* suffix = theme == ThemeVariant::LIGHT ? "light" : "dark";
+
+    for (int i = 0; i < WIFI_LEVELS; i++)
+        m_wifi[i]->setImageFromRes("img/sys/wifi_" + std::to_string(i) + "_" + suffix + ".png");
+
+    m_ethernet->setImageFromRes(std::string("img/sys/ethernet_") + suffix + ".png");
 }
 
 void WirelessWidget::updateState()
@@ -105,7 +77,8 @@ void WirelessWidget::updateState()
         wifiLevel             = Application::getPlatform()->getWirelessLevel();
 #else
         ASYNC_RETAIN
-        brls::async([ASYNC_TOKEN]()
+        brls::async(
+            [ASYNC_TOKEN]()
             {
                 ASYNC_RELEASE
 #ifdef __SWITCH__
@@ -126,14 +99,15 @@ void WirelessWidget::updateState()
                 }
                 else
                 {
-                    wifiLevel = (int)wifiSignal;
+                    wifiLevel = (int) wifiSignal;
                 }
 #else
                 hasEthernetConnection = Application::getPlatform()->hasEthernetConnection();
                 hasWirelessConnection = Application::getPlatform()->hasWirelessConnection();
                 wifiLevel             = Application::getPlatform()->getWirelessLevel();
 #endif
-            });
+            }
+        );
 #endif
         time = now;
     }
@@ -145,59 +119,31 @@ void WirelessWidget::draw(NVGcontext* vg, float x, float y, float width, float h
 
     if (hasEthernetConnection)
     {
-        _0->setVisibility(Visibility::GONE);
-        _1->setVisibility(Visibility::GONE);
-        _2->setVisibility(Visibility::GONE);
-        _3->setVisibility(Visibility::GONE);
-        ethernet->setVisibility(Visibility::VISIBLE);
+        for (int i = 0; i < WIFI_LEVELS; i++)
+            m_wifi[i]->setVisibility(Visibility::GONE);
+        m_ethernet->setVisibility(Visibility::VISIBLE);
     }
     else if (!hasWirelessConnection)
     {
-        _0->setVisibility(Visibility::VISIBLE);
-        _1->setVisibility(Visibility::GONE);
-        _2->setVisibility(Visibility::GONE);
-        _3->setVisibility(Visibility::GONE);
-        ethernet->setVisibility(Visibility::GONE);
+        m_wifi[0]->setVisibility(Visibility::VISIBLE);
+        for (int i = 1; i < WIFI_LEVELS; i++)
+            m_wifi[i]->setVisibility(Visibility::GONE);
+        m_ethernet->setVisibility(Visibility::GONE);
     }
     else
     {
-        _0->setVisibility(Visibility::GONE);
-        _1->setVisibility(Visibility::VISIBLE);
-        _2->setVisibility(Visibility::VISIBLE);
-        _3->setVisibility(Visibility::VISIBLE);
-        ethernet->setVisibility(Visibility::GONE);
-
-        switch (wifiLevel)
+        m_wifi[0]->setVisibility(Visibility::GONE);
+        for (int i = 1; i < WIFI_LEVELS; i++)
         {
-            case 0:
-                _1->setAlpha(0.2f);
-                _2->setAlpha(0.2f);
-                _3->setAlpha(0.2f);
-                break;
-            case 1:
-                _1->setAlpha(1);
-                _2->setAlpha(0.2f);
-                _3->setAlpha(0.2f);
-                break;
-            case 2:
-                _1->setAlpha(1);
-                _2->setAlpha(1);
-                _3->setAlpha(0.2f);
-                break;
-            default:
-                _1->setAlpha(1);
-                _2->setAlpha(1);
-                _3->setAlpha(1);
-                break;
+            m_wifi[i]->setVisibility(Visibility::VISIBLE);
+            m_wifi[i]->setAlpha(i <= wifiLevel ? 1.0f : 0.2f);
         }
+        m_ethernet->setVisibility(Visibility::GONE);
     }
 
     Box::draw(vg, x, y, width, height, style, ctx);
 }
 
-View* WirelessWidget::create()
-{
-    return new WirelessWidget();
-}
+View* WirelessWidget::create() { return new WirelessWidget(); }
 
 } // namespace brls

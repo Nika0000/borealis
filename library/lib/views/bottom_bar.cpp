@@ -104,11 +104,17 @@ BottomBar::BottomBar()
     battery->setVisibility(platform->canShowBatteryLevel() ? Visibility::VISIBLE : Visibility::GONE);
     wireless->setVisibility(platform->canShowWirelessLevel() ? Visibility::VISIBLE : Visibility::GONE);
 
-    safearea = Application::getWindowSafeAreaChangedEvent()->subscribe([this](SafeAreaInsets safearea)
+#ifdef __SWITCH__
+    battery->setVisibility(Visibility::GONE);
+#endif
+
+    safearea = Application::getWindowSafeAreaChangedEvent()->subscribe(
+        [this](SafeAreaInsets safearea)
         {
             this->setPaddingLeft(safearea.left);
             this->setPaddingRight(safearea.right); //
-        });
+        }
+    );
 }
 
 void BottomBar::draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx)
@@ -148,14 +154,8 @@ void BottomBar::updateText()
     }
 }
 
-View* BottomBar::create()
-{
-    return new BottomBar();
-}
+View* BottomBar::create() { return new BottomBar(); }
 
-BottomBar::~BottomBar()
-{
-    Application::getWindowSafeAreaChangedEvent()->unsubscribe(safearea);
-}
+BottomBar::~BottomBar() { Application::getWindowSafeAreaChangedEvent()->unsubscribe(safearea); }
 
 } // namespace brls
