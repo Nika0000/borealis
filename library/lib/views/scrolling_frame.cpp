@@ -732,6 +732,30 @@ bool BaseScrollingFrame::updateScrolling(bool animated)
         parent = parent->getParent();
     }
 
+    if (parent && parent->getParent() && parent->getParent() != this)
+    {
+        View* nestedFrame = parent->getParent();
+        if (scrollAxis == ScrollingAxis::VERTICAL)
+        {
+            localPos = nestedFrame->getLocalY();
+            itemLen  = nestedFrame->getHeight();
+        }
+        else
+        {
+            localPos = nestedFrame->getLocalX();
+            itemLen  = nestedFrame->getWidth();
+        }
+        parent = nestedFrame->getParent();
+        while (parent && dynamic_cast<BaseScrollingFrame*>(parent->getParent()) == nullptr)
+        {
+            if (scrollAxis == ScrollingAxis::VERTICAL)
+                localPos += parent->getLocalY();
+            else
+                localPos += parent->getLocalX();
+            parent = parent->getParent();
+        }
+    }
+
     float areaLen   = getScrollingAreaLength();
     float newScroll = (localPos + itemLen / 2) - areaLen / 2;
 
