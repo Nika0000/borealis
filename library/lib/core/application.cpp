@@ -591,7 +591,20 @@ bool Application::hasActiveEvent()
     // Switch does not support waiting for events
     return true;
 #else
-    return !Application::deactivatedBehavior || activeEvent || Application::frameStartTime - lastActiveTime < Application::deactivatedTime;
+    if (!Application::deactivatedBehavior)
+        return true;
+
+    if (activeEvent || Application::frameStartTime - lastActiveTime < Application::deactivatedTime)
+        return true;
+
+    // Keep rendering while finite animations/timers are running (not repeating background timers)
+    for (auto* ticking : Ticking::runningTickings)
+    {
+        if (dynamic_cast<FiniteTicking*>(ticking))
+            return true;
+    }
+
+    return false;
 #endif
 }
 
