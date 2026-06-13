@@ -21,7 +21,7 @@
 namespace brls
 {
 
-static const int SwapChainBufferCount    = 2;
+static const int SwapChainBufferCount    = 3;
 static const DXGI_SAMPLE_DESC sampleDesc = { 1, 0 };
 
 static DXGI_FORMAT getSwapChainFormatForHDR(bool enabled) { return enabled ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM; }
@@ -136,6 +136,11 @@ bool D3D11Context::initDX(HWND window, IUnknown* coreWindow, int width, int heig
 
     if (SUCCEEDED(hr))
     {
+        // Use frame latency waitable object so Present() returns immediately.
+        // This prevents the D3D11 device context from being held during vsync
+        // wait, allowing decoder threads to submit GPU work concurrently.
+        m_swapChainFlags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+
         DXGI_SWAP_CHAIN_DESC1 swapDesc;
         ZeroMemory(&swapDesc, sizeof(swapDesc));
         swapDesc.SampleDesc.Count   = sampleDesc.Count;
@@ -200,6 +205,18 @@ bool D3D11Context::initDX(HWND window, IUnknown* coreWindow, int width, int heig
         this->applySwapChainColorSpace();
     }
 
+    // Set up frame latency waitable object for non-blocking Present.
+    if (SUCCEEDED(hr))
+    {
+        IDXGISwapChain2* swapChain2 = nullptr;
+        if (SUCCEEDED(m_swapChain->QueryInterface(IID_PPV_ARGS(&swapChain2))))
+        {
+            swapChain2->SetMaximumFrameLatency(1);
+            m_frameLatencyWaitableObject = swapChain2->GetFrameLatencyWaitableObject();
+            swapChain2->Release();
+        }
+    }
+
     // Disable Alt+Enter fullscreen toggle, PrintScreen and window message snooping.
     if (dxgiFactory && window)
     {
@@ -227,10 +244,8 @@ bool D3D11Context::initDX(HWND window, IUnknown* coreWindow, int width, int heig
     // Cache tearing support state for Present
 #ifdef __ALLOW_TEARING__
     m_allowTearing = !!m_allowTearing;
-    Logger::info("D3D11: __ALLOW_TEARING__ defined, allowTearing={}", m_allowTearing);
 #else
     m_allowTearing = false;
-    Logger::info("D3D11: __ALLOW_TEARING__ NOT defined");
 #endif
 
     return true;
@@ -317,6 +332,12 @@ bool D3D11Context::setHDREnabled(bool enabled)
 
 void D3D11Context::unInitDX()
 {
+    if (m_frameLatencyWaitableObject)
+    {
+        CloseHandle(m_frameLatencyWaitableObject);
+        m_frameLatencyWaitableObject = nullptr;
+    }
+
     // Detach RTs
     if (m_deviceContext)
     {
@@ -447,15 +468,23 @@ void D3D11Context::clear(NVGcolor color)
     m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
 }
 
-void D3D11Context::beginFrame() { m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView); }
+void D3D11Context::beginFrame()
+{
+    // Wait for the swap chain to signal it's ready for a new frame.
+    // This blocks here (before any GPU work) instead of inside Present.
+    if (m_frameLatencyWaitableObject && m_swapInterval > 0)
+    {
+        WaitForSingleObjectEx(m_frameLatencyWaitableObject, 1000, TRUE);
+    }
+
+    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+}
 
 void D3D11Context::endFrame()
 {
-    // https://learn.microsoft.com/zh-cn/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present
     DXGI_PRESENT_PARAMETERS presentParameters;
     ZeroMemory(&presentParameters, sizeof(DXGI_PRESENT_PARAMETERS));
 
-    // If tearing is enabled and swap interval is 0 (vsync off), use Present with tearing flag.
 #ifdef __ALLOW_TEARING__
     if (m_allowTearing && m_swapInterval == 0)
     {
@@ -464,7 +493,15 @@ void D3D11Context::endFrame()
     }
 #endif
 
-    m_swapChain->Present1(m_swapInterval, 0, &presentParameters);
+    if (m_frameLatencyWaitableObject && m_swapInterval > 0)
+    {
+        // Present(0) with flip-model doesn't tear - DWM composites at vsync!
+        m_swapChain->Present1(0, 0, &presentParameters);
+    }
+    else
+    {
+        m_swapChain->Present1(m_swapInterval, 0, &presentParameters);
+    }
 }
 
 void D3D11Context::setSwapInterval(int interval)

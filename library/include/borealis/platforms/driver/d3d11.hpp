@@ -112,6 +112,8 @@ class D3D11Context
 
     UINT m_swapChainFlags = 0;
 
+    HANDLE m_frameLatencyWaitableObject = nullptr;
+
     DXGI_FORMAT m_swapChainFormat      = DXGI_FORMAT_R8G8B8A8_UNORM;
     DXGI_COLOR_SPACE_TYPE m_colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
