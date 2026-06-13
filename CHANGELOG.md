@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.0](https://github.com/Nika0000/borealis/compare/v1.1.0...v1.2.0) (2026-06-13)
+
+
+### Features
+
+* add D3D11 frame latency waitable object for non-blocking vsync ([a6fe8fb](https://github.com/Nika0000/borealis/commit/a6fe8fb9b8d4d64de3653b0bf0400928c96d44ef))
+* add per-player controller icons and refactor status bar widgets ([2babfdc](https://github.com/Nika0000/borealis/commit/2babfdc60a21ab467f47526c51241bcb3758b595))
+* add wasm build and deployment support ([a3e9208](https://github.com/Nika0000/borealis/commit/a3e9208793e1ec6726f057607c915d234379f837))
+* enable scroll animation in nested scroll views ([83fa039](https://github.com/Nika0000/borealis/commit/83fa0390bd2b20ec23e3513174d6873d6d1331f6))
+
+
+### Bug Fixes
+
+* android fps limiter using choreographer frame skipping instead of spin-wait ([494a0e5](https://github.com/Nika0000/borealis/commit/494a0e562b6b384b40b8e62db29f41f9e550aeef))
+* correct artifact path in wasm deploy workflow ([1c9b263](https://github.com/Nika0000/borealis/commit/1c9b26317aa40de2adc57c38fd0c6135bf55dce2))
+* correct versionCode ordering in build.gradle ([1e5e03b](https://github.com/Nika0000/borealis/commit/1e5e03b9e3536ebde7043498124d1eebe5eb3922))
+* keep rendering while finite animations/timers are running ([f8f5b7a](https://github.com/Nika0000/borealis/commit/f8f5b7af06b0a3fa97ab2442f56a423465afb97a))
+* link missing android native library ([dcf7953](https://github.com/Nika0000/borealis/commit/dcf7953de56d1924049b0ed0408681bfe9a20d19))
+
 ## [1.1.0](https://github.com/Nika0000/borealis/compare/v1.0.0...v1.1.0) (2026-06-11)
 
 
