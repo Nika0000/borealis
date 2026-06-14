@@ -105,6 +105,7 @@ class Application
         {
             yogaConfig = YGConfigNew();
             YGConfigSetUseWebDefaults(yogaConfig, true);
+            YGConfigSetErrata(yogaConfig, YGErrataClassic);
         }
         return yogaConfig;
     }
