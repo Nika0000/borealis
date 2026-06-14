@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Nika0000/borealis/compare/v1.2.0...v1.2.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* enable classic errata for Yoga 3 layout compatibility ([ea02657](https://github.com/Nika0000/borealis/commit/ea026576e5d36b7905dc388c0a4435f00e0a43a7))
+
 ## [1.2.0](https://github.com/Nika0000/borealis/compare/v1.1.0...v1.2.0) (2026-06-13)
 
 
