@@ -26,7 +26,7 @@ include(${BOREALIS_LIBRARY}/cmake/toolchain.cmake)
 project(borealis_demo)
 set(VERSION_MAJOR "1") # x-release-please-major
 set(VERSION_MINOR "2") # x-release-please-minor
-set(VERSION_ALTER "0") # x-release-please-patch
+set(VERSION_ALTER "1") # x-release-please-patch
 set(VERSION_BUILD "0")
 set(PACKAGE_NAME "com.borealis.demo")
 set(PSN_TITLE_ID  "BRLS00000")
