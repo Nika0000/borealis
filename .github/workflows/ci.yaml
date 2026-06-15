@@ -281,29 +281,31 @@ jobs:
           name: borealis-android-${{ matrix.abi }}
           path: android-project/app/build/outputs/apk/debug/*.apk
 
-#  macos:
-#    runs-on: macos-14
-#    name: macos (${{ matrix.window.name }})
-#    strategy:
-#      matrix:
-#        window:
-#          - { name: glfw, cmake: "-DUSE_GLFW=ON" }
-#          - { name: sdl3, cmake: "-DUSE_SDL3=ON" }
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#        with:
-#          submodules: recursive
-#      - name: Build
-#        run: |
-#          cmake -B build -DCMAKE_BUILD_TYPE=Release -DPLATFORM_DESKTOP=ON -DBUNDLE_MACOS_APP=ON ${{ matrix.window.cmake }}
-#          make -C build -j$(sysctl -n hw.ncpu)
-#          mkdir borealis-macos-${{ matrix.window.name }}
-#          mv build/borealis_demo.app borealis-macos-${{ matrix.window.name }}/
-#          tar -czvf borealis-macos-${{ matrix.window.name }}.tar.gz borealis-macos-${{ matrix.window.name }}
-#      - name: Upload dist
-#        uses: actions/upload-artifact@v7
-#        with:
-#          name: borealis-macos-${{ matrix.window.name }}
-#          path: borealis-macos-${{ matrix.window.name }}.tar.gz
+  macos:
+    runs-on: macos-26
+    name: macos (${{ matrix.window.name }})
+    strategy:
+      matrix:
+        window:
+          - { name: glfw, cmake: "-DUSE_GLFW=ON" }
+          - { name: sdl3, cmake: "-DUSE_SDL3=ON" }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: brew install ninja
+      - name: Build
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPLATFORM_DESKTOP=ON -DBUNDLE_MACOS_APP=ON ${{ matrix.window.cmake }}
+          cmake --build build
+          mkdir borealis-macos-${{ matrix.window.name }}
+          mv build/borealis_demo.app borealis-macos-${{ matrix.window.name }}/
+          tar -czvf borealis-macos-${{ matrix.window.name }}.tar.gz borealis-macos-${{ matrix.window.name }}
+      - name: Upload dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: borealis-macos-${{ matrix.window.name }}
+          path: borealis-macos-${{ matrix.window.name }}.tar.gz
 
