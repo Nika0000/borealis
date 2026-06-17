@@ -329,4 +329,108 @@ bool GLFWImeManager::openForNumber(std::function<void(long)> f, std::string head
     return true;
 }
 
+bool GLFWImeManager::openInlineForText(const InlineInputCallbacks& callbacks,
+    std::string initialText, int maxStringLength)
+{
+    if (m_inlineActive)
+        closeInlineInput();
+
+    m_inlineCallbacks  = callbacks;
+    m_inlineBuffer     = std::move(initialText);
+    m_inlineMaxLength  = maxStringLength;
+    m_inlineActive     = true;
+
+    glfwSetInputMode(window, GLFW_IME, GLFW_TRUE);
+    textBuffer = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_inlineBuffer);
+    showIME    = true;
+    cursor     = textBuffer.size();
+
+    m_inlineKeyEvent = Application::getPlatform()->getInputManager()->getKeyboardKeyStateChanged()->subscribe(
+        [this](const KeyState& state)
+        {
+            if (!state.pressed || !m_inlineActive)
+                return;
+
+            switch (state.key)
+            {
+                case BRLS_KBD_KEY_ENTER:
+                case BRLS_KBD_KEY_KP_ENTER:
+                    if (m_inlineCallbacks.onSubmit)
+                        m_inlineCallbacks.onSubmit();
+                    break;
+                case BRLS_KBD_KEY_ESCAPE:
+                    if (m_inlineCallbacks.onCancel)
+                        m_inlineCallbacks.onCancel();
+                    break;
+                case BRLS_KBD_KEY_BACKSPACE:
+                    if (!textBuffer.empty() && cursor > 0)
+                    {
+                        textBuffer.erase(cursor - 1, 1);
+                        cursor--;
+                        m_inlineBuffer = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(textBuffer);
+                        if (m_inlineCallbacks.onTextChanged)
+                            m_inlineCallbacks.onTextChanged(m_inlineBuffer);
+                    }
+                    break;
+                case BRLS_KBD_KEY_V:
+#ifdef __APPLE__
+                    if (state.mods & (BRLS_KBD_MODIFIER_CTRL | BRLS_KBD_MODIFIER_META))
+                    {
+#else
+                    if (state.mods & BRLS_KBD_MODIFIER_CTRL)
+                    {
+#endif
+                        std::string clipboard = Application::getPlatform()->pasteFromClipboard();
+                        if (!clipboard.empty())
+                        {
+                            auto wclip = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(clipboard);
+                            textBuffer.insert(textBuffer.begin() + cursor, wclip.begin(), wclip.end());
+                            cursor += wclip.size();
+                            if ((int)textBuffer.size() > m_inlineMaxLength)
+                                textBuffer.resize(m_inlineMaxLength);
+                            if (cursor > (int)textBuffer.size())
+                                cursor = textBuffer.size();
+                            m_inlineBuffer = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(textBuffer);
+                            if (m_inlineCallbacks.onTextChanged)
+                                m_inlineCallbacks.onTextChanged(m_inlineBuffer);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        });
+
+    m_inlineRunLoopEvent = Application::getRunLoopEvent()->subscribe([this]()
+        {
+            if (!m_inlineActive)
+                return;
+            static size_t lastSize = 0;
+            if (textBuffer.size() != lastSize)
+            {
+                if ((int)textBuffer.size() > m_inlineMaxLength)
+                    textBuffer.resize(m_inlineMaxLength);
+                lastSize       = textBuffer.size();
+                m_inlineBuffer = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(textBuffer);
+                if (m_inlineCallbacks.onTextChanged)
+                    m_inlineCallbacks.onTextChanged(m_inlineBuffer);
+            }
+        });
+
+    return true;
+}
+
+void GLFWImeManager::closeInlineInput()
+{
+    if (!m_inlineActive)
+        return;
+
+    m_inlineActive = false;
+    showIME        = false;
+    glfwSetInputMode(window, GLFW_IME, GLFW_FALSE);
+    Application::getPlatform()->getInputManager()->getKeyboardKeyStateChanged()->unsubscribe(m_inlineKeyEvent);
+    Application::getRunLoopEvent()->unsubscribe(m_inlineRunLoopEvent);
+    m_inlineCallbacks = {};
+}
+
 };

@@ -30,6 +30,7 @@ class InputCell : public DetailCell
 {
   public:
     InputCell();
+    void onFocusLost() override;
 
     void init(std::string title, std::string value, Event<std::string>::Callback callback = [](std::string text) { }, std::string placeholder = "", std::string hint = "", int maxInputLength = 32, int kbdDisableBitmask = 0);
 
@@ -77,9 +78,13 @@ class InputCell : public DetailCell
     int maxInputLength;
     int kbdDisableBitmask;
     bool headerVisible;
+    bool editing = false;
+    std::string originalValue;
 
     Event<std::string> event;
     void updateUI();
+    void startInlineEditing();
+    void stopInlineEditing(bool submit);
 };
 
 class InputNumericCell : public DetailCell

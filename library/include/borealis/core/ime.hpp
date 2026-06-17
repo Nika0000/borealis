@@ -37,21 +37,44 @@ enum KeyboardKeyDisableBitmask
     KEYBOARD_DISABLE_USERNAME     = 1 << 7,
 };
 
+struct InlineInputCallbacks
+{
+    std::function<void(const std::string&)> onTextChanged;
+    std::function<void()> onSubmit;
+    std::function<void()> onCancel;
+};
+
 class ImeManager
 {
   public:
-    virtual ~ImeManager() { }
+    virtual ~ImeManager() {}
 
-    virtual bool openForText(std::function<void(std::string)> f, std::string headerText = "",
-        std::string subText = "", int maxStringLength = 32, std::string initialText = "",
-        int kbdDisableBitmask = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE)
-        = 0;
+    virtual bool openForText(
+        std::function<void(std::string)> f,
+        std::string headerText  = "",
+        std::string subText     = "",
+        int maxStringLength     = 32,
+        std::string initialText = "",
+        int kbdDisableBitmask   = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE
+    ) = 0;
 
-    virtual bool openForNumber(std::function<void(long)> f, std::string headerText = "",
-        std::string subText = "", int maxStringLength = 18, std::string initialText = "",
-        std::string leftButton = "", std::string rightButton = "",
-        int kbdDisableBitmask = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE)
-        = 0;
+    virtual bool openForNumber(
+        std::function<void(long)> f,
+        std::string headerText  = "",
+        std::string subText     = "",
+        int maxStringLength     = 18,
+        std::string initialText = "",
+        std::string leftButton  = "",
+        std::string rightButton = "",
+        int kbdDisableBitmask   = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE
+    ) = 0;
+
+    virtual bool openInlineForText(const InlineInputCallbacks& callbacks, std::string initialText = "", int maxStringLength = 32)
+    {
+        return false;
+    }
+
+    virtual void closeInlineInput() {}
 };
 
 };

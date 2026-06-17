@@ -16,33 +16,62 @@ limitations under the License.
 
 #pragma once
 
-#include <borealis/core/ime.hpp>
-#include <borealis/core/event.hpp>
 #include <SDL3/SDL.h>
+
+#include <borealis/core/event.hpp>
+#include <borealis/core/ime.hpp>
+#include <borealis/core/input.hpp>
 
 namespace brls
 {
 class SDLImeManager : public ImeManager
 {
   public:
-    SDLImeManager(Event<SDL_Event*> *event);
+    SDLImeManager(Event<SDL_Event*>* event);
 
-    bool openForText(std::function<void(std::string)> f, std::string headerText = "",
-        std::string subText = "", int maxStringLength = 32, std::string initialText = "",
-        int kbdDisableBitmask = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE) override;
+    bool openForText(
+        std::function<void(std::string)> f,
+        std::string headerText  = "",
+        std::string subText     = "",
+        int maxStringLength     = 32,
+        std::string initialText = "",
+        int kbdDisableBitmask   = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE
+    ) override;
 
-    bool openForNumber(std::function<void(long)> f, std::string headerText = "",
-        std::string subText = "", int maxStringLength = 18, std::string initialText = "",
-        std::string leftButton = "", std::string rightButton = "",
-        int kbdDisableBitmask = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE) override;
+    bool openForNumber(
+        std::function<void(long)> f,
+        std::string headerText  = "",
+        std::string subText     = "",
+        int maxStringLength     = 18,
+        std::string initialText = "",
+        std::string leftButton  = "",
+        std::string rightButton = "",
+        int kbdDisableBitmask   = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE
+    ) override;
 
-    void openInputDialog(std::function<void(std::string)> cb, std::string headerText,
-        std::string subText, size_t maxStringLength = 50, std::string initialText = "");
+    void openInputDialog(
+        std::function<void(std::string)> cb,
+        std::string headerText,
+        std::string subText,
+        size_t maxStringLength  = 50,
+        std::string initialText = ""
+    );
+
+    bool openInlineForText(const InlineInputCallbacks& callbacks, std::string initialText = "", int maxStringLength = 32) override;
+    void closeInlineInput() override;
+
   private:
-    Event<SDL_Event*> *event;
+    Event<SDL_Event*>* event;
     int cursor;
     std::string inputBuffer;
-    bool isEditing = false; // 是否正在编辑文字
+    bool isEditing = false;
     std::string editingBuffer;
+
+    InlineInputCallbacks m_inlineCallbacks;
+    std::string m_inlineBuffer;
+    int m_inlineMaxLength = 0;
+    bool m_inlineActive   = false;
+    Event<KeyState>::Subscription m_inlineKeyEvent;
+    Event<SDL_Event*>::Subscription m_inlineSDLEvent;
 };
 }

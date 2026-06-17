@@ -16,6 +16,8 @@
 
 #include "borealis/views/cells/cell_input.hpp"
 
+#include <borealis/core/thread.hpp>
+
 namespace brls
 {
 
@@ -25,12 +27,70 @@ InputCell::InputCell()
 
     this->registerClickAction([this](View* view)
         {
-            Application::getImeManager()->openForText([&](std::string text) {
-            this->setValue(std::move(text));
-        },
-           this->headerVisible? this->title->getFullText() : "", this->hint, this->maxInputLength, this->value, this->kbdDisableBitmask);
+            startInlineEditing();
+            return true;
+        });
+}
 
-        return true; });
+void InputCell::startInlineEditing()
+{
+    InlineInputCallbacks callbacks;
+    callbacks.onTextChanged = [this](const std::string& text)
+    {
+        this->value = text;
+        updateUI();
+    };
+    callbacks.onSubmit = [this]()
+    {
+        brls::sync([this]() { stopInlineEditing(true); });
+    };
+    callbacks.onCancel = [this]()
+    {
+        brls::sync([this]() { stopInlineEditing(false); });
+    };
+
+    bool inlineOpened = Application::getImeManager()->openInlineForText(
+        callbacks, this->value, this->maxInputLength);
+
+    if (inlineOpened)
+    {
+        this->editing       = true;
+        this->originalValue = this->value;
+        this->detail->setCursor((int)CursorPosition::END);
+    }
+    else
+    {
+        Application::getImeManager()->openForText([this](std::string text)
+            { this->setValue(std::move(text)); },
+            this->headerVisible ? this->title->getFullText() : "",
+            this->hint, this->maxInputLength, this->value, this->kbdDisableBitmask);
+    }
+}
+
+void InputCell::stopInlineEditing(bool submit)
+{
+    if (!this->editing)
+        return;
+
+    Application::getImeManager()->closeInlineInput();
+    this->editing = false;
+    this->detail->setCursor((int)CursorPosition::UNSET);
+
+    if (submit)
+    {
+        this->event.fire(this->value);
+    }
+    else
+    {
+        this->value = this->originalValue;
+    }
+    updateUI();
+}
+
+void InputCell::onFocusLost()
+{
+    stopInlineEditing(true);
+    Box::onFocusLost();
 }
 
 void InputCell::init(std::string title, std::string value, Event<std::string>::Callback callback, std::string placeholder, std::string hint, int maxInputLength, int kbdDisableBitmask)

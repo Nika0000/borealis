@@ -16,7 +16,9 @@ limitations under the License.
 
 #pragma once
 
+#include <borealis/core/event.hpp>
 #include <borealis/core/ime.hpp>
+#include <borealis/core/input.hpp>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -41,7 +43,17 @@ class GLFWImeManager : public ImeManager
     void openInputDialog(std::function<void(std::string)> cb, std::string headerText,
         std::string subText, size_t maxStringLength = 50, std::string initialText = "");
 
+    bool openInlineForText(const InlineInputCallbacks& callbacks,
+        std::string initialText = "", int maxStringLength = 32) override;
+    void closeInlineInput() override;
+
   private:
+    InlineInputCallbacks m_inlineCallbacks;
+    std::string m_inlineBuffer;
+    int m_inlineMaxLength = 0;
+    bool m_inlineActive   = false;
+    Event<KeyState>::Subscription m_inlineKeyEvent;
+    Event<>::Subscription m_inlineRunLoopEvent;
     GLFWwindow* window;
     inline static bool showIME;
     inline static std::wstring textBuffer;

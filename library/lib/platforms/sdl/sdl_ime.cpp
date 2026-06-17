@@ -36,11 +36,7 @@ __attribute__((weak)) uint32_t vita_ime_type = 0;
 
 namespace brls
 {
-SDLImeManager::SDLImeManager(Event<SDL_Event*>* event)
-    : event(event)
-    , cursor(-1)
-{
-}
+SDLImeManager::SDLImeManager(Event<SDL_Event*>* event) : event(event), cursor(-1) {}
 
 static int utf8_len(std::string& s)
 {
@@ -98,13 +94,10 @@ static int utf8_find_next(std::string& s, int offset, int size)
 }
 
 void SDLImeManager::openInputDialog(
-    std::function<void(std::string)> cb,
-    std::string headerText,
-    std::string subText,
-    size_t maxStringLength,
-    std::string initialText)
+    std::function<void(std::string)> cb, std::string headerText, std::string subText, size_t maxStringLength, std::string initialText
+)
 {
-    SDLVideoContext* videoContext = (SDLVideoContext*)Application::getPlatform()->getVideoContext();
+    SDLVideoContext* videoContext = (SDLVideoContext*) Application::getPlatform()->getVideoContext();
     SDL_Window* window            = videoContext->getSDLWindow();
     EditTextDialog* dialog        = new EditTextDialog();
     this->inputBuffer             = initialText;
@@ -136,14 +129,13 @@ void SDLImeManager::openInputDialog(
             Application::blockInputs(InputType::GAMEPAD, true);
             static size_t iter = 0;
             cancelDelay(iter);
-            iter = delay(500, []()
-                { Application::unblockInputs(); });
+            iter = delay(500, []() { Application::unblockInputs(); });
         }
     };
     auto updateTextCursor = [this, dialog]()
     {
         int cursor = this->cursor;
-        if (cursor >= (int)CursorPosition::START && this->editingBuffer.size() > 0)
+        if (cursor >= (int) CursorPosition::START && this->editingBuffer.size() > 0)
         {
             cursor += utf8_len(this->editingBuffer) + 2;
         }
@@ -190,120 +182,174 @@ void SDLImeManager::openInputDialog(
     float scale = Application::windowScale / Application::getPlatform()->getVideoContext()->getScaleFactor();
 #endif
     // 更新输入法条位置
-    dialog->getLayoutEvent()->subscribe([window, scale](Point p)
+    dialog->getLayoutEvent()->subscribe(
+        [window, scale](Point p)
         {
 #ifndef PS4
-            const SDL_Rect rect = { (int)(p.x * scale), (int)(p.y * scale), 100, 20 };
+            const SDL_Rect rect = { (int) (p.x * scale), (int) (p.y * scale), 100, 20 };
             SDL_SetTextInputArea(window, &rect, 0);
 #endif
-        });
+        }
+    );
 
-    dialog->getClipboardEvent()->subscribe([this, updateTextAndCursor](const std::string& str)
+    dialog->getClipboardEvent()->subscribe(
+        [this, updateTextAndCursor](const std::string& str)
         {
-                if(this->isEditing || str.empty()) return;
-                updateTextAndCursor(str); });
+            if (this->isEditing || str.empty())
+                return;
+            updateTextAndCursor(str);
+        }
+    );
 
-    auto eventID1 = event->subscribe([this, updateTextAndCursor, updateText, updateTextCursor](SDL_Event* e)
+    auto eventID1 = event->subscribe(
+        [this, updateTextAndCursor, updateText, updateTextCursor](SDL_Event* e)
         {
-            switch (e->type) {
-            case SDL_EVENT_TEXT_INPUT:
-                this->isEditing = false;
-                updateTextAndCursor(e->text.text);
-                break;
-            case SDL_EVENT_TEXT_EDITING:
-                this->isEditing = strlen(e->edit.text) != 0;
-                this->editingBuffer = e->edit.text;
+            switch (e->type)
+            {
+                case SDL_EVENT_TEXT_INPUT:
+                    this->isEditing = false;
+                    updateTextAndCursor(e->text.text);
+                    break;
+                case SDL_EVENT_TEXT_EDITING:
+                    this->isEditing     = strlen(e->edit.text) != 0;
+                    this->editingBuffer = e->edit.text;
+                    updateTextCursor();
+                    updateText();
+                    break;
+            }
+        }
+    );
+
+    dialog->registerAction(
+        "hints/left"_i18n,
+        BUTTON_LEFT,
+        [this, updateTextCursor](...)
+        {
+            if (this->isEditing)
+                return true;
+            if (this->cursor == (int) CursorPosition::END)
+            {
+                this->cursor = utf8_len(this->inputBuffer) - 1;
+                if (this->cursor < 0)
+                    this->cursor = 0;
                 updateTextCursor();
-                updateText();
-                break;
-            } });
-
+            }
+            else if (this->cursor > (int) CursorPosition::START)
+            {
+                this->cursor--;
+                updateTextCursor();
+            }
+            return true;
+        },
+        true,
+        true
+    );
     dialog->registerAction(
-        "hints/left"_i18n, BUTTON_LEFT, [this, updateTextCursor](...)
+        "hints/right"_i18n,
+        BUTTON_RIGHT,
+        [this, updateTextCursor](...)
         {
-                if (this->isEditing) return true;
-                if (this->cursor == (int)CursorPosition::END) {
-                    this->cursor = utf8_len(this->inputBuffer) - 1;
-                    if(this->cursor < 0) this->cursor = 0;
-                    updateTextCursor();
-                } else if (this->cursor > (int)CursorPosition::START) {
-                    this->cursor--;
+            if (this->isEditing)
+                return true;
+            if (this->cursor >= (int) CursorPosition::START)
+            {
+                if (this->cursor < utf8_len(this->inputBuffer))
+                {
+                    this->cursor++;
                     updateTextCursor();
                 }
-                return true; }, true, true);
-    dialog->registerAction(
-        "hints/right"_i18n, BUTTON_RIGHT, [this, updateTextCursor](...)
-        {
-                if (this->isEditing) return true;
-                if (this->cursor >= (int)CursorPosition::START) {
-                    if (this->cursor < utf8_len(this->inputBuffer)) {
-                        this->cursor++;
-                        updateTextCursor();
-                    }
-                }
-                return true; }, true, true);
+            }
+            return true;
+        },
+        true,
+        true
+    );
 
     // delete text
-    dialog->getBackspaceEvent()->subscribe([this, updateText, updateTextCursor](...)
+    dialog->getBackspaceEvent()->subscribe(
+        [this, updateText, updateTextCursor](...)
         {
-            if(inputBuffer.empty()) return true;
-            if (this->cursor == (int)CursorPosition::START) return true;
-            if (this->cursor > (int)CursorPosition::START) {
-                int start = utf8_find_next(inputBuffer, 0, this->cursor-1);
-                int n = utf8_find_next(inputBuffer, start, 1);
+            if (inputBuffer.empty())
+                return true;
+            if (this->cursor == (int) CursorPosition::START)
+                return true;
+            if (this->cursor > (int) CursorPosition::START)
+            {
+                int start = utf8_find_next(inputBuffer, 0, this->cursor - 1);
+                int n     = utf8_find_next(inputBuffer, start, 1);
                 inputBuffer.erase(start, n);
                 this->cursor -= 1;
                 updateTextCursor();
-            } else {
+            }
+            else
+            {
                 int offset = utf8_find_prev(inputBuffer, 1);
-                inputBuffer.erase(inputBuffer.size()-offset, offset);
+                inputBuffer.erase(inputBuffer.size() - offset, offset);
             }
             updateText();
-            return true; });
+            return true;
+        }
+    );
 
     // cancel
-    dialog->getCancelEvent()->subscribe([this, window, eventID1]()
+    dialog->getCancelEvent()->subscribe(
+        [this, window, eventID1]()
         {
             SDL_StopTextInput(window);
-            event->unsubscribe(eventID1); });
+            event->unsubscribe(eventID1);
+        }
+    );
 
     // submit
-    dialog->getSubmitEvent()->subscribe([this, window, eventID1, cb]()
+    dialog->getSubmitEvent()->subscribe(
+        [this, window, eventID1, cb]()
         {
-        
             SDL_StopTextInput(window);
             event->unsubscribe(eventID1);
             cb(this->inputBuffer);
-            return true; });
+            return true;
+        }
+    );
 
     SDL_StartTextInput(window);
     dialog->open();
 }
 
-bool SDLImeManager::openForText(std::function<void(std::string)> f, std::string headerText,
-    std::string subText, int maxStringLength, std::string initialText,
-    int kbdDisableBitmask)
+bool SDLImeManager::openForText(
+    std::function<void(std::string)> f,
+    std::string headerText,
+    std::string subText,
+    int maxStringLength,
+    std::string initialText,
+    int kbdDisableBitmask
+)
 {
 #ifdef __PSV__
     vita_ime_type = 0;
 #endif
-    this->openInputDialog([f](const std::string& text)
-        { f(text); },
-        headerText, subText, maxStringLength, initialText);
+    this->openInputDialog([f](const std::string& text) { f(text); }, headerText, subText, maxStringLength, initialText);
     return true;
 }
 
-bool SDLImeManager::openForNumber(std::function<void(long)> f, std::string headerText,
-    std::string subText, int maxStringLength, std::string initialText,
-    std::string leftButton, std::string rightButton,
-    int kbdDisableBitmask)
+bool SDLImeManager::openForNumber(
+    std::function<void(long)> f,
+    std::string headerText,
+    std::string subText,
+    int maxStringLength,
+    std::string initialText,
+    std::string leftButton,
+    std::string rightButton,
+    int kbdDisableBitmask
+)
 {
 #ifdef __PSV__
     vita_ime_type = 2;
 #endif
-    this->openInputDialog([f](const std::string& text)
+    this->openInputDialog(
+        [f](const std::string& text)
         {
-            if(text.empty()) return ;
+            if (text.empty())
+                return;
             try
             {
                 f(stoll(text));
@@ -312,13 +358,143 @@ bool SDLImeManager::openForNumber(std::function<void(long)> f, std::string heade
             {
                 Logger::error("Could not parse input, did you enter a valid integer? {}", e.what());
             }
-            catch (const std::out_of_range& e) {
+            catch (const std::out_of_range& e)
+            {
                 Logger::error("Out of range: {}", e.what());
             }
             catch (const std::exception& e)
             {
                 Logger::error("Unexpected error occurred: {}", e.what());
-            } }, headerText, subText, maxStringLength, initialText);
+            }
+        },
+        headerText,
+        subText,
+        maxStringLength,
+        initialText
+    );
     return true;
 }
+
+bool SDLImeManager::openInlineForText(const InlineInputCallbacks& callbacks, std::string initialText, int maxStringLength)
+{
+#if defined(__PSV__) || defined(IOS) || defined(ANDROID) || defined(PS4)
+    return false;
+#else
+    if (m_inlineActive)
+        closeInlineInput();
+
+    m_inlineCallbacks = callbacks;
+    m_inlineBuffer    = std::move(initialText);
+    m_inlineMaxLength = maxStringLength;
+    m_inlineActive    = true;
+
+    SDLVideoContext* videoContext = (SDLVideoContext*) Application::getPlatform()->getVideoContext();
+    SDL_Window* window            = videoContext->getSDLWindow();
+    SDL_StartTextInput(window);
+
+    m_inlineKeyEvent = Application::getPlatform()->getInputManager()->getKeyboardKeyStateChanged()->subscribe(
+        [this](const KeyState& state)
+        {
+            if (!state.pressed || !m_inlineActive)
+                return;
+
+            switch (state.key)
+            {
+                case BRLS_KBD_KEY_ENTER:
+                case BRLS_KBD_KEY_KP_ENTER:
+                    if (m_inlineCallbacks.onSubmit)
+                        m_inlineCallbacks.onSubmit();
+                    break;
+                case BRLS_KBD_KEY_ESCAPE:
+                    if (m_inlineCallbacks.onCancel)
+                        m_inlineCallbacks.onCancel();
+                    break;
+                case BRLS_KBD_KEY_BACKSPACE:
+                    if (!m_inlineBuffer.empty())
+                    {
+                        int offset = utf8_find_prev(m_inlineBuffer, 1);
+                        m_inlineBuffer.erase(m_inlineBuffer.size() - offset, offset);
+                        if (m_inlineCallbacks.onTextChanged)
+                            m_inlineCallbacks.onTextChanged(m_inlineBuffer);
+                    }
+                    break;
+                case BRLS_KBD_KEY_V:
+#ifdef __APPLE__
+                    if (state.mods & (BRLS_KBD_MODIFIER_CTRL | BRLS_KBD_MODIFIER_META))
+                    {
+#else
+                    if (state.mods & BRLS_KBD_MODIFIER_CTRL)
+                    {
+#endif
+                        std::string clipboard = Application::getPlatform()->pasteFromClipboard();
+                        if (!clipboard.empty())
+                        {
+                            m_inlineBuffer += clipboard;
+                            int len = utf8_len(m_inlineBuffer);
+                            if (len > m_inlineMaxLength)
+                            {
+                                int end        = utf8_find_next(m_inlineBuffer, 0, m_inlineMaxLength);
+                                m_inlineBuffer = m_inlineBuffer.substr(0, end);
+                            }
+                            if (m_inlineCallbacks.onTextChanged)
+                                m_inlineCallbacks.onTextChanged(m_inlineBuffer);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    );
+
+    m_inlineSDLEvent = event->subscribe(
+        [this](SDL_Event* e)
+        {
+            if (!m_inlineActive)
+                return;
+            switch (e->type)
+            {
+                case SDL_EVENT_TEXT_INPUT:
+                {
+                    std::string text = e->text.text;
+                    m_inlineBuffer += text;
+                    int len = utf8_len(m_inlineBuffer);
+                    if (len > m_inlineMaxLength)
+                    {
+                        int end        = utf8_find_next(m_inlineBuffer, 0, m_inlineMaxLength);
+                        m_inlineBuffer = m_inlineBuffer.substr(0, end);
+                    }
+                    if (m_inlineCallbacks.onTextChanged)
+                        m_inlineCallbacks.onTextChanged(m_inlineBuffer);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    );
+
+    return true;
+#endif
+}
+
+void SDLImeManager::closeInlineInput()
+{
+    if (!m_inlineActive)
+        return;
+
+    m_inlineActive = false;
+
+#if !defined(__PSV__) && !defined(IOS) && !defined(ANDROID) && !defined(PS4)
+    SDLVideoContext* videoContext = (SDLVideoContext*) Application::getPlatform()->getVideoContext();
+    SDL_Window* window            = videoContext->getSDLWindow();
+    SDL_StopTextInput(window);
+
+    Application::getPlatform()->getInputManager()->getKeyboardKeyStateChanged()->unsubscribe(m_inlineKeyEvent);
+    event->unsubscribe(m_inlineSDLEvent);
+#endif
+
+    m_inlineCallbacks = {};
+}
+
 }
