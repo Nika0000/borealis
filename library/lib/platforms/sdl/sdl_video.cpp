@@ -57,6 +57,11 @@ extern "C"
 
 #include <borealis/platforms/driver/d3d11.hpp>
 std::unique_ptr<brls::D3D11Context> D3D11_CONTEXT;
+#elif defined(BOREALIS_USE_VULKAN)
+#define NANOVG_VULKAN_IMPLEMENTATION
+#include <borealis/platforms/driver/vulkan.hpp>
+
+std::unique_ptr<brls::VulkanContext> VULKAN_CONTEXT;
 #endif
 
 #ifdef __SWITCH__
@@ -100,6 +105,11 @@ static void sdlWindowFramebufferSizeCallback(SDL_Window* window, int width, int 
     fHeight     = height;
     scaleFactor = D3D11_CONTEXT->getScaleFactor();
     D3D11_CONTEXT->onFramebufferSize(fWidth, fHeight);
+#elif defined(BOREALIS_USE_VULKAN)
+    fWidth      = width;
+    fHeight     = height;
+    scaleFactor = VULKAN_CONTEXT->getScaleFactor();
+    VULKAN_CONTEXT->onFramebufferSize(fWidth, fHeight);
 #endif
 
     Application::onWindowResized(fWidth, fHeight);
@@ -308,6 +318,8 @@ SDLVideoContext::SDLVideoContext(const std::string& title, uint32_t windowWidth,
     windowFlags |= SDL_WINDOW_OPENGL;
 #elif defined(BOREALIS_USE_METAL)
     windowFlags |= SDL_WINDOW_METAL;
+#elif defined(BOREALIS_USE_VULKAN)
+    windowFlags |= SDL_WINDOW_VULKAN;
 #endif
     if (VideoContext::FULLSCREEN)
     {
@@ -390,6 +402,10 @@ SDLVideoContext::SDLVideoContext(const std::string& title, uint32_t windowWidth,
     Logger::info("sdl: USE_D3D11");
     D3D11_CONTEXT = std::make_unique<D3D11Context>(m_window, windowWidth, windowHeight);
     m_nvgContext  = nvgCreateD3D11(D3D11_CONTEXT->getDevice(), NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+#elif defined(BOREALIS_USE_VULKAN)
+    Logger::info("sdl: USE_VULKAN");
+    VULKAN_CONTEXT = std::make_unique<VulkanContext>(m_window, windowWidth, windowHeight);
+    m_nvgContext   = nvgCreateVk(VULKAN_CONTEXT->createVKInfo(), NVG_ANTIALIAS | NVG_STENCIL_STROKES, VULKAN_CONTEXT->getGraphicsQueue());
 #endif
     if (!m_nvgContext)
     {
@@ -418,6 +434,12 @@ SDLVideoContext::SDLVideoContext(const std::string& title, uint32_t windowWidth,
     fHeight     = height;
     Application::setWindowSize(fWidth, fHeight);
     D3D11_CONTEXT->onFramebufferSize(fWidth, fHeight);
+#elif defined(BOREALIS_USE_VULKAN)
+    scaleFactor = VULKAN_CONTEXT->getScaleFactor();
+    fWidth      = width;
+    fHeight     = height;
+    Application::setWindowSize(fWidth, fHeight);
+    VULKAN_CONTEXT->onFramebufferSize(fWidth, fHeight);
 #endif
 
 #if defined(__APPLE__) && !defined(IOS)
@@ -463,6 +485,8 @@ void SDLVideoContext::beginFrame()
     }
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->beginFrame();
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->beginFrame();
 #endif
 }
 
@@ -472,6 +496,8 @@ void SDLVideoContext::endFrame()
     SDL_GL_SwapWindow(m_window);
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->endFrame();
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->endFrame();
 #endif
 }
 
@@ -482,6 +508,8 @@ void SDLVideoContext::setSwapInterval(int interval)
     SDL_GL_SetSwapInterval(interval);
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->setSwapInterval(interval);
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->setSwapInterval(interval);
 #endif
 }
 
@@ -495,6 +523,8 @@ void SDLVideoContext::clear(NVGcolor color)
     mnvgClearWithColor(m_nvgContext, color);
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->clear(nvgRGBAf(color.r, color.g, color.b, color.a));
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->clear(nvgRGBAf(color.r, color.g, color.b, color.a));
 #endif
 }
 
@@ -530,6 +560,9 @@ SDLVideoContext::~SDLVideoContext()
 #elif defined(BOREALIS_USE_D3D11)
             nvgDeleteD3D11(m_nvgContext);
             D3D11_CONTEXT = nullptr;
+#elif defined(BOREALIS_USE_VULKAN)
+            nvgDeleteVk(m_nvgContext);
+            VULKAN_CONTEXT = nullptr;
 #endif
         }
     }

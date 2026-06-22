@@ -43,6 +43,11 @@ static void* METAL_CONTEXT = nullptr;
 
 #include <borealis/platforms/driver/d3d11.hpp>
 std::unique_ptr<brls::D3D11Context> D3D11_CONTEXT;
+#elif defined(BOREALIS_USE_VULKAN)
+#define NANOVG_VULKAN_IMPLEMENTATION
+#include <borealis/platforms/driver/vulkan.hpp>
+
+std::unique_ptr<brls::VulkanContext> VULKAN_CONTEXT;
 #endif
 
 #if defined(__linux__) || defined(_WIN32)
@@ -152,6 +157,14 @@ static void glfwWindowFramebufferSizeCallback(GLFWwindow* window, int width, int
     scaleFactor = D3D11_CONTEXT->getScaleFactor();
     int wWidth = width, wHeight = height;
     D3D11_CONTEXT->onFramebufferSize(width, height);
+#elif defined(BOREALIS_USE_VULKAN)
+    if (VULKAN_CONTEXT == nullptr)
+    {
+        return;
+    }
+    scaleFactor = VULKAN_CONTEXT->getScaleFactor();
+    int wWidth = width, wHeight = height;
+    VULKAN_CONTEXT->onFramebufferSize(width, height);
 #endif
 
     Application::onWindowResized(width, height);
@@ -359,6 +372,11 @@ GLFWVideoContext::GLFWVideoContext(const std::string& title, uint32_t windowWidt
     D3D11_CONTEXT    = std::make_unique<D3D11Context>(this->window, windowWidth, windowHeight);
     this->nvgContext = nvgCreateD3D11(D3D11_CONTEXT->getDevice(), NVG_ANTIALIAS | NVG_STENCIL_STROKES);
     scaleFactor      = D3D11_CONTEXT->getScaleFactor();
+#elif defined(BOREALIS_USE_VULKAN)
+    Logger::info("glfw: USE_VULKAN");
+    VULKAN_CONTEXT   = std::make_unique<VulkanContext>(this->window, windowWidth, windowHeight);
+    this->nvgContext = nvgCreateVk(VULKAN_CONTEXT->createVKInfo(), NVG_ANTIALIAS | NVG_STENCIL_STROKES, VULKAN_CONTEXT->getGraphicsQueue());
+    scaleFactor      = VULKAN_CONTEXT->getScaleFactor();
 #endif
     if (!this->nvgContext)
     {
@@ -383,6 +401,8 @@ GLFWVideoContext::GLFWVideoContext(const std::string& title, uint32_t windowWidt
 
 #if defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->onFramebufferSize(width, height);
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->onFramebufferSize(width, height);
 #elif defined(BOREALIS_USE_METAL)
 #else
     scaleFactor = width * 1.0 / wWidth;
@@ -418,6 +438,8 @@ void GLFWVideoContext::beginFrame()
     }
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->beginFrame();
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->beginFrame();
 #endif
 }
 
@@ -427,6 +449,8 @@ void GLFWVideoContext::endFrame()
     glfwSwapBuffers(this->window);
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->endFrame();
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->endFrame();
 #endif
 }
 
@@ -435,6 +459,8 @@ void GLFWVideoContext::setSwapInterval(int interval)
     VideoContext::swapInterval = interval;
 #ifdef BOREALIS_USE_D3D11
     D3D11_CONTEXT->setSwapInterval(interval);
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->setSwapInterval(interval);
 #else
     glfwSwapInterval(interval);
 #endif
@@ -451,6 +477,8 @@ void GLFWVideoContext::clear(NVGcolor color)
     nvgClearWithColor(nvgContext, nvgRGBAf(color.r, color.g, color.b, color.a));
 #elif defined(BOREALIS_USE_D3D11)
     D3D11_CONTEXT->clear(nvgRGBAf(color.r, color.g, color.b, color.a));
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->clear(nvgRGBAf(color.r, color.g, color.b, color.a));
 #endif
 }
 
@@ -489,6 +517,9 @@ GLFWVideoContext::~GLFWVideoContext()
 #elif defined(BOREALIS_USE_D3D11)
             nvgDeleteD3D11(this->nvgContext);
             D3D11_CONTEXT = nullptr;
+#elif defined(BOREALIS_USE_VULKAN)
+            nvgDeleteVk(this->nvgContext);
+            VULKAN_CONTEXT = nullptr;
 #endif
         }
     }
@@ -569,6 +600,8 @@ void GLFWVideoContext::fullScreen(bool fs)
     }
 #ifdef BOREALIS_USE_OPENGL
     glfwSwapInterval(VideoContext::swapInterval);
+#elif defined(BOREALIS_USE_VULKAN)
+    VULKAN_CONTEXT->setSwapInterval(VideoContext::swapInterval);
 #endif
 }
 

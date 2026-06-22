@@ -237,12 +237,27 @@ else ()
     message(FATAL_ERROR "Please set build target. Example: -DPLATFORM_DESKTOP=ON or -DPLATFORM_SWITCH=ON")
 endif ()
 
+# vulkan (volk meta-loader)
+if (BOREALIS_USE_VULKAN)
+    set(VOLK_PULL_IN_VULKAN OFF CACHE BOOL "" FORCE)
+    set(VOLK_INSTALL OFF CACHE BOOL "" FORCE)
+    add_subdirectory(${BOREALIS_PATH}/lib/extern/volk EXCLUDE_FROM_ALL)
+    target_include_directories(volk PUBLIC ${BOREALIS_PATH}/lib/extern/Vulkan-Headers/include)
+    list(APPEND BOREALIS_SRC
+        ${BOREALIS_PATH}/lib/platforms/driver/vulkan.cpp)
+    list(APPEND BOREALIS_INCLUDE
+        ${BOREALIS_PATH}/lib/extern/Vulkan-Headers/include
+        ${BOREALIS_PATH}/lib/extern/nanovg/shaders/vulkan)
+    list(APPEND BRLS_PLATFORM_LIBS volk::volk)
+endif ()
+
 # borealis c/cpp source
 list(APPEND BOREALIS_INCLUDE
         ${BOREALIS_PATH}/include
         ${BOREALIS_PATH}/include/borealis/extern
         ${BOREALIS_PATH}/lib/extern/nanovg/include
         ${BOREALIS_PATH}/lib/extern/nanovg/include/nanovg
+        ${BOREALIS_PATH}/lib/extern/nanovg/third_party
         )
 list(APPEND BOREALIS_SOURCE
         ${BOREALIS_PATH}/lib/core
@@ -255,7 +270,7 @@ list(APPEND BOREALIS_SOURCE
         ${BOREALIS_PATH}/lib/extern/libretro-common/encodings
         ${BOREALIS_PATH}/lib/extern/libretro-common/features
         )
-if (PLATFORM_PSV OR PLATFORM_PS4 OR PLATFORM_WASM)
+if (PLATFORM_PSV OR PLATFORM_PS4 OR PLATFORM_WASM OR BOREALIS_USE_VULKAN)
         list(REMOVE_ITEM BOREALIS_SOURCE ${BOREALIS_PATH}/lib/extern/glad)
 endif ()
 
@@ -290,6 +305,8 @@ if (BOREALIS_USE_METAL)
     set(BOREALIS_DRIVER BOREALIS_USE_METAL)
 elseif (BOREALIS_USE_D3D11)
     set(BOREALIS_DRIVER BOREALIS_USE_D3D11)
+elseif (BOREALIS_USE_VULKAN)
+    set(BOREALIS_DRIVER BOREALIS_USE_VULKAN)
 elseif (BOREALIS_USE_DEKO3D)
     set(BOREALIS_DRIVER BOREALIS_USE_DEKO3D)
 endif ()

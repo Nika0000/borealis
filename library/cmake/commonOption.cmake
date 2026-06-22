@@ -19,6 +19,9 @@ option(PLATFORM_WASM "build for WebAssembly (Emscripten)" OFF)
 cmake_dependent_option(WIN32_TERMINAL "Show terminal when run on Windows" ON "WIN32" OFF)
 cmake_dependent_option(USE_D3D11 "Using directx 11 instead of OpenGL." OFF "WIN32" OFF)
 
+# Windows and Linux (ANDROID NOT WORKING YET!)
+cmake_dependent_option(USE_VULKAN "Using Vulkan instead of OpenGL." OFF "WIN32 OR UNIX AND NOT APPLE OR PLATFORM_ANDROID" OFF)
+
 # Apple Only
 cmake_dependent_option(USE_METAL "Using Metal instead of OpenGL." OFF "APPLE" OFF)
 

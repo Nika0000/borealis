@@ -22,3 +22,9 @@
 [submodule "library/lib/extern/tweeny"]
 	path = library/lib/extern/tweeny
 	url = https://github.com/mobius3/tweeny
+[submodule "library/lib/extern/Vulkan-Headers"]
+	path = library/lib/extern/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "library/lib/extern/volk"]
+	path = library/lib/extern/volk
+	url = https://github.com/zeux/volk.git
