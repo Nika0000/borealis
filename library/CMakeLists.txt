@@ -153,8 +153,7 @@ elseif(PLATFORM_PS4)
     find_package(SDL3 REQUIRED)
     list(APPEND BOREALIS_SOURCE
             ${BOREALIS_PATH}/lib/platforms/sdl
-            ${BOREALIS_PATH}/lib/platforms/desktop
-            ${BOREALIS_PATH}/lib/extern/nanovg/src/ps4)
+            ${BOREALIS_PATH}/lib/platforms/desktop)
     file(GLOB_RECURSE PS4_PLATFORM_SRC "${BOREALIS_PATH}/lib/platforms/ps4/*.cpp")
     list(APPEND BOREALIS_SRC ${PS4_PLATFORM_SRC})
     list(APPEND BOREALIS_INCLUDE /opt/OpenOrbis-PS4-Toolchain/include)
@@ -255,9 +254,6 @@ endif ()
 list(APPEND BOREALIS_INCLUDE
         ${BOREALIS_PATH}/include
         ${BOREALIS_PATH}/include/borealis/extern
-        ${BOREALIS_PATH}/lib/extern/nanovg/include
-        ${BOREALIS_PATH}/lib/extern/nanovg/include/nanovg
-        ${BOREALIS_PATH}/lib/extern/nanovg/third_party
         )
 list(APPEND BOREALIS_SOURCE
         ${BOREALIS_PATH}/lib/core
@@ -274,23 +270,20 @@ if (PLATFORM_PSV OR PLATFORM_PS4 OR PLATFORM_WASM OR BOREALIS_USE_VULKAN)
         list(REMOVE_ITEM BOREALIS_SOURCE ${BOREALIS_PATH}/lib/extern/glad)
 endif ()
 
-# nanovg
-list(APPEND BOREALIS_SRC ${BOREALIS_PATH}/lib/extern/nanovg/src/nanovg.c)
-if(BRLS_FONTSTASH_STREAM)
-    set_source_files_properties(
-        ${BOREALIS_PATH}/lib/extern/nanovg/src/nanovg.c
-        PROPERTIES
-        COMPILE_DEFINITIONS "FONTSTASH_STREAM_IMPLEMENTATION"
-    )
-    message(STATUS "borealis fontstash use stream")
-endif()
+# nanovg — use upstream CMakeLists with backend-specific options
+set(NANOVG_FONTSTASH_STREAM ${BRLS_FONTSTASH_STREAM} CACHE BOOL "" FORCE)
 if (PLATFORM_SWITCH AND BOREALIS_USE_DEKO3D)
-    file(GLOB_RECURSE NANOVG_PLATFORM_SRC ${BOREALIS_PATH}/lib/extern/nanovg/src/deko3d/*.cpp)
-    list(APPEND BOREALIS_SRC ${NANOVG_PLATFORM_SRC})
+    set(NANOVG_PLATFORM_DEKO3D ON CACHE BOOL "" FORCE)
 endif ()
 if (BOREALIS_USE_METAL)
-    enable_language(OBJC)
-    list(APPEND BOREALIS_SRC ${BOREALIS_PATH}/lib/extern/nanovg/src/metal/nanovg_mtl.m)
+    set(NANOVG_PLATFORM_METAL ON CACHE BOOL "" FORCE)
+endif ()
+if (PLATFORM_PS4)
+    set(NANOVG_PLATFORM_PS4 ON CACHE BOOL "" FORCE)
+endif ()
+add_subdirectory(${BOREALIS_PATH}/lib/extern/nanovg EXCLUDE_FROM_ALL)
+if(BRLS_FONTSTASH_STREAM)
+    message(STATUS "borealis fontstash use stream")
 endif()
 message(STATUS "BOREALIS_SOURCE: ${BOREALIS_SOURCE}")
 
@@ -322,7 +315,7 @@ set_target_properties(borealis PROPERTIES
 set_source_files_properties(${BOREALIS_PATH}/lib/platforms/desktop/desktop_darwin.mm PROPERTIES
         SKIP_UNITY_BUILD_INCLUSION ON)
 target_include_directories(borealis PUBLIC ${BOREALIS_INCLUDE})
-target_link_libraries(borealis fmt tweeny yogacore ${BRLS_PLATFORM_LIBS})
+target_link_libraries(borealis fmt tweeny yogacore nanovg ${BRLS_PLATFORM_LIBS})
 target_compile_options(borealis PUBLIC
         -DBRLS_RESOURCES=${BRLS_PLATFORM_RESOURCES_PATH}
         -ffunction-sections
