@@ -26,9 +26,6 @@ namespace brls
 
 NotificationManager::NotificationManager()
 {
-    float width = Application::getStyle().getMetric("brls/notification/width");
-    this->setWidth(width);
-    this->setTranslationX(Application::ORIGINAL_WINDOW_WIDTH - width);
     this->setAxis(Axis::COLUMN);
 }
 
@@ -37,9 +34,13 @@ void NotificationManager::notify(const std::string& text, size_t duration)
     brls::Logger::debug("Showing notification \"{}\"", text);
 
     auto style    = Application::getStyle();
+    float width   = style.getMetric("brls/notification/width");
     float timeout = duration <= 0 ? style.getMetric("brls/animations/notification_timeout") : duration;
     float show    = style.getMetric("brls/animations/notification_show");
     float slide   = style.getMetric("brls/notification/slide");
+
+    this->setWidth(width);
+    this->setTranslationX(Application::ORIGINAL_WINDOW_WIDTH - width);
 
     if (notificationFactory)
     {
