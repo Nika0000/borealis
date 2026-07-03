@@ -1530,6 +1530,15 @@ class View
     void setCustomNavigationRoute(FocusDirection direction, const std::string& targetId);
 
     /**
+     * Sets a custom navigation route for all direction from this view to the
+     * target one, by ID. The final target view will be the "nearest" with the given ID.
+     *
+     * Resolution of the ID to View is made when the navigation event occurs, not
+     * when the route is registered.
+     */
+    void setCustomNavigationRoute(const std::string& targetId);
+
+    /**
      * Returns whether a custom navigation route by pointer exists for the given direction.
      */
     bool hasCustomNavigationRouteByPtr(FocusDirection direction);

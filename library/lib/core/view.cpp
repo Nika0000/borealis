@@ -1501,6 +1501,17 @@ void View::setCustomNavigationRoute(FocusDirection direction, const std::string&
     this->m_customFocusById[direction] = targetId;
 }
 
+void View::setCustomNavigationRoute(const std::string& targetId)
+{
+    if (!this->m_focusable)
+        fatal("Only focusable views can have a custom navigation route");
+
+    m_customFocusById[FocusDirection::UP]    = targetId;
+    m_customFocusById[FocusDirection::DOWN]  = targetId;
+    m_customFocusById[FocusDirection::LEFT]  = targetId;
+    m_customFocusById[FocusDirection::RIGHT] = targetId;
+}
+
 bool View::hasCustomNavigationRouteByPtr(FocusDirection direction) { return this->m_customFocusByPtr.count(direction) > 0; }
 
 bool View::hasCustomNavigationRouteById(FocusDirection direction) { return this->m_customFocusById.count(direction) > 0; }
@@ -2067,6 +2078,8 @@ void View::registerCommonAttributes()
     this->registerStringXMLAttribute(
         "focusLeft", [this](const std::string& value) { this->setCustomNavigationRoute(FocusDirection::LEFT, value); }
     );
+
+    this->registerStringXMLAttribute("focusTarget", [this](const std::string& value) { this->setCustomNavigationRoute(value); });
 
     // Shape
     this->registerColorXMLAttribute("backgroundColor", [this](NVGcolor value) { this->setBackgroundColor(value); });
