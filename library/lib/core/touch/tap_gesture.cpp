@@ -38,15 +38,17 @@ TapGestureRecognizer::TapGestureRecognizer(View* view, TapGestureConfig config)
                 switch (status.state)
                 {
                     case GestureState::UNSURE:
-                        *soundToPlay = config.unsureSound;
+                        // On touch there's no hover: the press-down would otherwise
+                        // play a focus sound right before the release click. Skip it.
+                        if (Application::getInputType() != InputType::TOUCH)
+                            *soundToPlay = config.unsureSound;
                         break;
                     case GestureState::FAILED:
                     case GestureState::INTERRUPTED:
                         *soundToPlay = config.failedSound;
                         break;
                     case GestureState::END:
-                        if (action.actionListener(view))
-                            *soundToPlay = action.sound;
+                        *soundToPlay = action.actionListener(view) ? action.sound : SOUND_CLICK_ERROR;
                         break;
                     default:
                         break;
@@ -67,7 +69,10 @@ TapGestureRecognizer::TapGestureRecognizer(View* view, std::function<void()> res
         switch (status.state)
         {
             case GestureState::UNSURE:
-                *soundToPlay = config.unsureSound;
+                // On touch there's no hover: the press-down would otherwise
+                // play a focus sound right before the release click. Skip it.
+                if (Application::getInputType() != InputType::TOUCH)
+                    *soundToPlay = config.unsureSound;
                 break;
             case GestureState::FAILED:
             case GestureState::INTERRUPTED:
