@@ -34,6 +34,8 @@ BaseScrollingFrame::BaseScrollingFrame(ScrollingAxis axis) : scrollAxis(axis)
         {
             { "natural", ScrollingBehavior::NATURAL },
             { "centered", ScrollingBehavior::CENTERED },
+            { "start", ScrollingBehavior::START },
+            { "end", ScrollingBehavior::END },
         }
     );
 
@@ -187,6 +189,11 @@ BaseScrollingFrame::BaseScrollingFrame(ScrollingAxis axis) : scrollAxis(axis)
 
     setHideHighlightBackground(true);
     setHideHighlightBorder(true);
+}
+
+static bool isFocusFollowingBehavior(ScrollingBehavior behavior)
+{
+    return behavior == ScrollingBehavior::CENTERED || behavior == ScrollingBehavior::START || behavior == ScrollingBehavior::END;
 }
 
 void BaseScrollingFrame::setupScrollingIndicator()
@@ -506,7 +513,7 @@ void BaseScrollingFrame::willAppear(bool resetState)
 {
     prebakeScrolling();
 
-    if (resetState && behavior == ScrollingBehavior::CENTERED)
+    if (resetState && isFocusFollowingBehavior(behavior))
     {
         updateScrollingOnNextFrame = true;
     }
@@ -613,7 +620,7 @@ View* BaseScrollingFrame::getNextFocus(FocusDirection direction, View* currentVi
 
 View* BaseScrollingFrame::getDefaultFocus()
 {
-    if (behavior == ScrollingBehavior::CENTERED)
+    if (isFocusFollowingBehavior(behavior))
     {
         View* focus = contentView->getDefaultFocus();
         if (focus)
@@ -644,7 +651,7 @@ void BaseScrollingFrame::onChildFocusGained(View* directChild, View* focusedView
 
     childFocused = true;
 
-    if (Application::getInputType() == InputType::GAMEPAD && behavior == ScrollingBehavior::CENTERED)
+    if (Application::getInputType() == InputType::GAMEPAD && isFocusFollowingBehavior(behavior))
         updateScrolling(true);
 }
 
@@ -652,7 +659,7 @@ void BaseScrollingFrame::onChildFocusLost(View* directChild, View* focusedView) 
 
 View* BaseScrollingFrame::getParentNavigationDecision(View* from, View* newFocus, FocusDirection direction)
 {
-    if (behavior == ScrollingBehavior::CENTERED)
+    if (isFocusFollowingBehavior(behavior))
         return Box::getParentNavigationDecision(from, newFocus, direction);
 
     View* currentFocus = Application::getCurrentFocus();
@@ -706,22 +713,34 @@ bool BaseScrollingFrame::updateScrolling(bool animated)
 
     View* focusedView = getDefaultFocus();
 
+    View* alignView = focusedView;
+    if (behavior == ScrollingBehavior::START || behavior == ScrollingBehavior::END)
+    {
+        View* node = focusedView;
+        while (node && node != contentView)
+        {
+            if (node->isFocusable())
+                alignView = node;
+            node = node->getParent();
+        }
+    }
+
     float localPos;
     float itemLen;
     View* parent;
 
     if (scrollAxis == ScrollingAxis::VERTICAL)
     {
-        localPos = focusedView ? focusedView->getLocalY() : 0.0f;
-        itemLen  = focusedView ? focusedView->getHeight() : 0.0f;
+        localPos = alignView ? alignView->getLocalY() : 0.0f;
+        itemLen  = alignView ? alignView->getHeight() : 0.0f;
     }
     else
     {
-        localPos = focusedView ? focusedView->getLocalX() : 0.0f;
-        itemLen  = focusedView ? focusedView->getWidth() : 0.0f;
+        localPos = alignView ? alignView->getLocalX() : 0.0f;
+        itemLen  = alignView ? alignView->getWidth() : 0.0f;
     }
 
-    parent = focusedView ? focusedView->getParent() : nullptr;
+    parent = alignView ? alignView->getParent() : nullptr;
 
     while (parent && dynamic_cast<BaseScrollingFrame*>(parent->getParent()) == nullptr)
     {
@@ -756,8 +775,14 @@ bool BaseScrollingFrame::updateScrolling(bool animated)
         }
     }
 
-    float areaLen   = getScrollingAreaLength();
-    float newScroll = (localPos + itemLen / 2) - areaLen / 2;
+    float areaLen = getScrollingAreaLength();
+    float newScroll;
+    if (behavior == ScrollingBehavior::START)
+        newScroll = localPos;
+    else if (behavior == ScrollingBehavior::END)
+        newScroll = (localPos + itemLen) - areaLen;
+    else
+        newScroll = (localPos + itemLen / 2) - areaLen / 2;
 
     float contentLen = getContentLength();
     float endLimit   = contentLen - areaLen;

@@ -34,6 +34,16 @@ enum class ScrollingBehavior
 
     // The focused view is always in the center, inputs always change focus and scroll immediately
     CENTERED,
+
+    // The top-most focusable ancestor of the focused view is aligned to the start (top, or left for horizontal
+    // frames) of the scrolling area. Inputs always change focus and scroll immediately. Useful for sectioned
+    // layouts where focusing any item within a section brings the entire section into view from its start.
+    START,
+
+    // The top-most focusable ancestor of the focused view is aligned to the end (bottom, or right for horizontal
+    // frames) of the scrolling area. Inputs always change focus and scroll immediately. Useful for sectioned
+    // layouts where focusing any item within a section brings the entire section into view from its end.
+    END,
 };
 
 enum class ScrollingAxis
