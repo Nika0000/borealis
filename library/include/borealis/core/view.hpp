@@ -398,6 +398,11 @@ class View
     void setBackground(ViewBackground background);
 
     /**
+     * Sets a linear gradient background for the view.
+     */
+    void setBackgroundLinearGradient(const NVGcolor start, const NVGcolor end, ViewBackground direction = ViewBackground::VERTICAL_LINEAR);
+
+    /**
      * Plays a shake animation on the highlight in the given direction.
      * Used to indicate that navigation in that direction is not possible.
      */

@@ -739,6 +739,17 @@ void View::drawHighlight(NVGcontext* vg, Theme theme, float alpha, Style style, 
 
 void View::setBackground(ViewBackground background) { this->m_background = background; }
 
+void View::setBackgroundLinearGradient(const NVGcolor start, const NVGcolor end, ViewBackground direction)
+{
+    if (direction != ViewBackground::HORIZONTAL_LINEAR && direction != ViewBackground::VERTICAL_LINEAR)
+        fatal("setBackgroundLinearGradient: orientation must be VERTICAL_LINEAR or HORIZONTAL_LINEAR");
+
+    m_backgroundStartColor = start;
+    m_backgroundEndColor   = end;
+
+    setBackground(direction);
+}
+
 void View::drawBackground(NVGcontext* vg, FrameContext* ctx, Style style, Rect frame)
 {
     float x      = frame.getMinX();
