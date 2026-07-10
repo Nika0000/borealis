@@ -47,6 +47,8 @@ class SDLInputManager : public InputManager
 
     void updateKeyboardState(SDL_KeyboardEvent event);
 
+    void clearInputState() override;
+
   private:
     Point scrollOffset;
     Point pointerOffset;

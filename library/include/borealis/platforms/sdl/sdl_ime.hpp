@@ -16,33 +16,53 @@ limitations under the License.
 
 #pragma once
 
-#include <borealis/core/ime.hpp>
+#include <SDL3/SDL_events.h>
+
 #include <borealis/core/event.hpp>
-#include <SDL3/SDL.h>
+#include <borealis/core/ime.hpp>
 
 namespace brls
 {
 class SDLImeManager : public ImeManager
 {
   public:
-    SDLImeManager(Event<SDL_Event*> *event);
+    SDLImeManager(Event<SDL_Event*>* event);
 
-    bool openForText(std::function<void(std::string)> f, std::string headerText = "",
-        std::string subText = "", int maxStringLength = 32, std::string initialText = "",
-        int kbdDisableBitmask = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE) override;
+    bool openForText(
+        std::function<void(std::string)> f,
+        std::string headerText  = "",
+        std::string subText     = "",
+        int maxStringLength     = 32,
+        std::string initialText = "",
+        int kbdDisableBitmask   = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE
+    ) override;
 
-    bool openForNumber(std::function<void(long)> f, std::string headerText = "",
-        std::string subText = "", int maxStringLength = 18, std::string initialText = "",
-        std::string leftButton = "", std::string rightButton = "",
-        int kbdDisableBitmask = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE) override;
+    bool openForNumber(
+        std::function<void(long)> f,
+        std::string headerText  = "",
+        std::string subText     = "",
+        int maxStringLength     = 18,
+        std::string initialText = "",
+        std::string leftButton  = "",
+        std::string rightButton = "",
+        int kbdDisableBitmask   = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE
+    ) override;
 
-    void openInputDialog(std::function<void(std::string)> cb, std::string headerText,
-        std::string subText, size_t maxStringLength = 50, std::string initialText = "");
+    void openInputDialog(
+        const std::function<void(std::string)>& cb,
+        const std::string& headerText,
+        const std::string& subText,
+        size_t maxStringLength         = 50,
+        const std::string& initialText = ""
+    );
+
   private:
-    Event<SDL_Event*> *event;
-    int cursor;
-    std::string inputBuffer;
-    bool isEditing = false; // 是否正在编辑文字
-    std::string editingBuffer;
+    Event<SDL_Event*>* m_event;
+
+    int m_cursor;
+    std::string m_inputBuffer;
+    std::string m_editingBuffer;
+
+    bool m_isEditing = false; // 是否正在编辑文字
 };
 }

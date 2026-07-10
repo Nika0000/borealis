@@ -19,8 +19,6 @@
 #include <borealis/core/logger.hpp>
 #include <borealis/platforms/sdl/sdl_input.hpp>
 
-#include "SDL3/SDL_hints.h"
-
 namespace brls
 {
 
@@ -41,7 +39,7 @@ void device_rumble(unsigned short lowFreqMotor, unsigned short highFreqMotor, un
 
 /// HidKeyboardScancode
 /// Uses the same key codes as GLFW
-static const BrlsKeyboardScancode sdlToBrlsKeyboardScancode(SDL_Scancode scancode)
+static constexpr BrlsKeyboardScancode sdlToBrlsKeyboardScancode(SDL_Scancode scancode)
 {
     if (scancode == SDL_SCANCODE_UNKNOWN)
         return BRLS_KBD_KEY_UNKNOWN;
@@ -175,7 +173,7 @@ static const BrlsKeyboardScancode sdlToBrlsKeyboardScancode(SDL_Scancode scancod
     }
 }
 
-static const SDL_Scancode brlsToSdlKeyboardScancode(BrlsKeyboardScancode scancode)
+static constexpr SDL_Scancode brlsToSdlKeyboardScancode(BrlsKeyboardScancode scancode)
 {
     if (scancode == BRLS_KBD_KEY_UNKNOWN)
         return SDL_SCANCODE_UNKNOWN;
@@ -516,6 +514,11 @@ static bool sdlEventWatcher(void* data, SDL_Event* event)
 
 SDLInputManager::SDLInputManager(SDL_Window* window) : window(window)
 {
+    SDL_SetHint(SDL_HINT_TV_REMOTE_AS_JOYSTICK, "0");
+    SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
+    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "2");
 
     int32_t flags = SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD;
 #ifndef __WINRT__
@@ -552,10 +555,6 @@ SDLInputManager::SDLInputManager(SDL_Window* window) : window(window)
         Logger::warning("SDL: Input: Unable to load gamepad mappings from file path: {}.", GAMEPAD_DB);
     }
 #endif
-
-    SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-    SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
-    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "2");
 
     if (SDL_HasGamepad())
     {
@@ -713,7 +712,15 @@ void SDLInputManager::updateControllerState(ControllerState* state, int controll
     }
 }
 
-bool SDLInputManager::getKeyboardKeyState(BrlsKeyboardScancode key) { return getKeyboardKeys(brlsToSdlKeyboardScancode(key)); }
+bool SDLInputManager::getKeyboardKeyState(BrlsKeyboardScancode state) { return getKeyboardKeys(brlsToSdlKeyboardScancode(state)); }
+
+void SDLInputManager::clearInputState()
+{
+    keyboardKeys.clear();
+    mouseButtons[0] = SDL_RELEASED;
+    mouseButtons[1] = SDL_RELEASED;
+    mouseButtons[2] = SDL_RELEASED;
+}
 
 void SDLInputManager::updateTouchStates(std::vector<RawTouchState>* states)
 {
@@ -844,7 +851,7 @@ void SDLInputManager::updateMouseMotion(SDL_MouseMotionEvent event)
 
         int width, height;
         SDL_GetWindowSize(window, &width, &height);
-        SDL_WarpMouseInWindow(window, width / 2, height / 2);
+        SDL_WarpMouseInWindow(window, static_cast<float>(width) / 2, static_cast<float>(height) / 2);
     }
 }
 

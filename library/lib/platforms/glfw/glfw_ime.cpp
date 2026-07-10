@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <libretro-common/encodings/utf.h>
 
+#include <borealis/core/application.hpp>
 #include <borealis/core/box.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/core/thread.hpp>
@@ -164,6 +165,7 @@ void GLFWImeManager::openInputDialog(std::function<void(std::string)> cb, std::s
     }
 #endif
     preeditTextBuffer.clear();
+    Application::getPlatform()->getInputManager()->clearInputState();
     glfwSetInputMode(window, GLFW_IME, GLFW_TRUE);
     showIME     = true;
     textBuffer  = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(initialText);
@@ -273,6 +275,7 @@ void GLFWImeManager::openInputDialog(std::function<void(std::string)> cb, std::s
         {
             glfwSetInputMode(window, GLFW_IME, GLFW_FALSE);
             Application::getRunLoopEvent()->unsubscribe(eventID);
+            Application::getPlatform()->getInputManager()->clearInputState();
             showIME = false; });
 
     // submit
@@ -280,6 +283,7 @@ void GLFWImeManager::openInputDialog(std::function<void(std::string)> cb, std::s
         {
             glfwSetInputMode(window, GLFW_IME, GLFW_FALSE);
             Application::getRunLoopEvent()->unsubscribe(eventID);
+            Application::getPlatform()->getInputManager()->clearInputState();
             showIME = false;
             cb(getInputText());
             return true; });

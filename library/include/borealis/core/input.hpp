@@ -90,10 +90,10 @@ typedef enum
     BRLS_KBD_KEY_X             = 88,
     BRLS_KBD_KEY_Y             = 89,
     BRLS_KBD_KEY_Z             = 90,
-    BRLS_KBD_KEY_LEFT_BRACKET  = 91, /* [ */
-    BRLS_KBD_KEY_BACKSLASH     = 92, /* \ */
-    BRLS_KBD_KEY_RIGHT_BRACKET = 93, /* ] */
-    BRLS_KBD_KEY_GRAVE_ACCENT  = 96, /* ` */
+    BRLS_KBD_KEY_LEFT_BRACKET  = 91,  /* [ */
+    BRLS_KBD_KEY_BACKSLASH     = 92,  /* \ */
+    BRLS_KBD_KEY_RIGHT_BRACKET = 93,  /* ] */
+    BRLS_KBD_KEY_GRAVE_ACCENT  = 96,  /* ` */
     BRLS_KBD_KEY_WORLD_1       = 161, /* non-US #1 */
     BRLS_KBD_KEY_WORLD_2       = 162, /* non-US #2 */
 
@@ -218,7 +218,7 @@ enum ControllerAxis
     RIGHT_X, // also called 5th axis
     RIGHT_Y, // also called 4th axis
 
-    LEFT_Z, // LT
+    LEFT_Z,  // LT
     RIGHT_Z, // RT
 
     _AXES_MAX,
@@ -226,26 +226,26 @@ enum ControllerAxis
 
 enum CursorType
 {
-    CURSOR_DEFAULT, /**< Default cursor. Usually an arrow. */
-    CURSOR_TEXT, /**< Text selection. Usually an I-beam. */
-    CURSOR_WAIT, /**< Wait. Usually an hourglass or watch or spinning ball. */
-    CURSOR_CROSSHAIR, /**< Crosshair. */
-    CURSOR_PROGRESS, /**< Program is busy but still interactive. Usually it's WAIT with an arrow. */
+    CURSOR_DEFAULT,     /**< Default cursor. Usually an arrow. */
+    CURSOR_TEXT,        /**< Text selection. Usually an I-beam. */
+    CURSOR_WAIT,        /**< Wait. Usually an hourglass or watch or spinning ball. */
+    CURSOR_CROSSHAIR,   /**< Crosshair. */
+    CURSOR_PROGRESS,    /**< Program is busy but still interactive. Usually it's WAIT with an arrow. */
     CURSOR_NWSE_RESIZE, /**< Double arrow pointing northwest and southeast. */
     CURSOR_NESW_RESIZE, /**< Double arrow pointing northeast and southwest. */
-    CURSOR_EW_RESIZE, /**< Double arrow pointing west and east. */
-    CURSOR_NS_RESIZE, /**< Double arrow pointing north and south. */
-    CURSOR_MOVE, /**< Four pointed arrow pointing north, south, east, and west. */
+    CURSOR_EW_RESIZE,   /**< Double arrow pointing west and east. */
+    CURSOR_NS_RESIZE,   /**< Double arrow pointing north and south. */
+    CURSOR_MOVE,        /**< Four pointed arrow pointing north, south, east, and west. */
     CURSOR_NOT_ALLOWED, /**< Not permitted. Usually a slashed circle or crossbones. */
-    CURSOR_POINTER, /**< Pointer that indicates a link. Usually a pointing hand. */
-    CURSOR_NW_RESIZE, /**< Window resize top-left. This may be a single arrow or a double arrow like NWSE_RESIZE. */
-    CURSOR_N_RESIZE, /**< Window resize top. May be NS_RESIZE. */
-    CURSOR_NE_RESIZE, /**< Window resize top-right. May be NESW_RESIZE. */
-    CURSOR_E_RESIZE, /**< Window resize right. May be EW_RESIZE. */
-    CURSOR_SE_RESIZE, /**< Window resize bottom-right. May be NWSE_RESIZE. */
-    CURSOR_S_RESIZE, /**< Window resize bottom. May be NS_RESIZE. */
-    CURSOR_SW_RESIZE, /**< Window resize bottom-left. May be NESW_RESIZE. */
-    CURSOR_W_RESIZE, /**< Window resize left. May be EW_RESIZE. */
+    CURSOR_POINTER,     /**< Pointer that indicates a link. Usually a pointing hand. */
+    CURSOR_NW_RESIZE,   /**< Window resize top-left. This may be a single arrow or a double arrow like NWSE_RESIZE. */
+    CURSOR_N_RESIZE,    /**< Window resize top. May be NS_RESIZE. */
+    CURSOR_NE_RESIZE,   /**< Window resize top-right. May be NESW_RESIZE. */
+    CURSOR_E_RESIZE,    /**< Window resize right. May be EW_RESIZE. */
+    CURSOR_SE_RESIZE,   /**< Window resize bottom-right. May be NWSE_RESIZE. */
+    CURSOR_S_RESIZE,    /**< Window resize bottom. May be NS_RESIZE. */
+    CURSOR_SW_RESIZE,   /**< Window resize bottom-left. May be NESW_RESIZE. */
+    CURSOR_W_RESIZE,    /**< Window resize left. May be EW_RESIZE. */
     _CURSOR_MAX
 };
 
@@ -333,10 +333,7 @@ inline ControllerFeatures operator|(ControllerFeatures a, ControllerFeatures b)
 {
     return static_cast<ControllerFeatures>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
 }
-inline ControllerFeatures& operator|=(ControllerFeatures& a, ControllerFeatures b)
-{
-    return a = a | b;
-}
+inline ControllerFeatures& operator|=(ControllerFeatures& a, ControllerFeatures b) { return a = a | b; }
 inline bool hasFeature(ControllerFeatures flags, ControllerFeatures bit)
 {
     return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(bit)) != 0;
@@ -362,8 +359,8 @@ struct SensorEvent
 // Represents the state of the controller (a gamepad or a keyboard) in the current frame
 struct ControllerState
 {
-    bool buttons[_BUTTON_MAX]; // true: pressed
-    float axes[_AXES_MAX]; // from 0.0f to 1.0f
+    bool buttons[_BUTTON_MAX];             // true: pressed
+    float axes[_AXES_MAX];                 // from 0.0f to 1.0f
     Time repeatingButtonStop[_BUTTON_MAX]; // When the pressing time is greater than this value, trigger long press or repeat
 };
 
@@ -439,6 +436,11 @@ class InputManager
     virtual bool getKeyboardKeyState(BrlsKeyboardScancode state) = 0;
 
     /**
+     * Clears any cached/latched keyboard, mouse or controller button state.
+     */
+    virtual void clearInputState() {};
+
+    /**
      * Called once every frame to fill the given RawTouchState struct with the raw touch data.
      */
     virtual void updateTouchStates(std::vector<RawTouchState>* states) = 0;
@@ -462,40 +464,25 @@ class InputManager
      * Called once every runloop cycle to perform some cleanup before new one.
      * For internal call only
      */
-    virtual void runloopStart() { };
+    virtual void runloopStart() {};
 
-    virtual void drawCursor(NVGcontext* vg) { };
+    virtual void drawCursor(NVGcontext* vg) {};
 
-    virtual void setPointerLock(bool lock) { };
+    virtual void setPointerLock(bool lock) {};
 
-    virtual void setCursorType(CursorType type) { };
+    virtual void setCursorType(CursorType type) {};
 
     inline static std::string GAMEPAD_DB = BRLS_ASSET("gamepad/gamecontrollerdb.txt");
 
-    inline Event<Point>* getMouseCusorOffsetChanged()
-    {
-        return &mouseCusorOffsetChanged;
-    }
+    inline Event<Point>* getMouseCusorOffsetChanged() { return &m_mouseCusorOffsetChanged; }
 
-    inline Event<Point>* getMouseScrollOffsetChanged()
-    {
-        return &mouseScrollOffsetChanged;
-    }
+    inline Event<Point>* getMouseScrollOffsetChanged() { return &m_mouseScrollOffsetChanged; }
 
-    inline Event<SensorEvent>* getControllerSensorStateChanged()
-    {
-        return &controllerSensorStateChanged;
-    }
+    inline Event<SensorEvent>* getControllerSensorStateChanged() { return &m_controllerSensorStateChanged; }
 
-    inline Event<KeyState>* getKeyboardKeyStateChanged()
-    {
-        return &keyboardKeyStateChanged;
-    }
+    inline Event<KeyState>* getKeyboardKeyStateChanged() { return &m_keyboardKeyStateChanged; }
 
-    inline Event<ControllerInfo>* getControllerConnectionEvent()
-    {
-        return &controllerConnectionEvent;
-    }
+    inline Event<ControllerInfo>* getControllerConnectionEvent() { return &m_controllerConnectionEvent; }
 
     /**
      * Calculate current touch phase based on it's previous state
@@ -510,11 +497,11 @@ class InputManager
     static ControllerButton mapControllerState(ControllerButton button);
 
   private:
-    Event<Point> mouseCusorOffsetChanged;
-    Event<Point> mouseScrollOffsetChanged;
-    Event<KeyState> keyboardKeyStateChanged;
-    Event<SensorEvent> controllerSensorStateChanged;
-    Event<ControllerInfo> controllerConnectionEvent;
+    Event<Point> m_mouseCusorOffsetChanged;
+    Event<Point> m_mouseScrollOffsetChanged;
+    Event<KeyState> m_keyboardKeyStateChanged;
+    Event<SensorEvent> m_controllerSensorStateChanged;
+    Event<ControllerInfo> m_controllerConnectionEvent;
 };
 
 }; // namespace brls
