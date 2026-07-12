@@ -53,7 +53,8 @@ D3D11Context::D3D11Context(SDL_Window* window, int width, int height)
     }
     initDX(nullptr, coreWindow, width, height);
 #else
-    m_hWnd = (HWND) SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    m_windowID = SDL_GetWindowID(window);
+    m_hWnd     = (HWND) SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
     initDX(m_hWnd, nullptr, width, height);
 #endif
 }
@@ -502,6 +503,69 @@ void D3D11Context::endFrame()
     {
         m_swapChain->Present1(m_swapInterval, 0, &presentParameters);
     }
+}
+
+void D3D11Context::hitOcclusion()
+{
+    if (!m_hWnd)
+        return;
+
+    RECT rect;
+    if (!GetWindowRect(m_hWnd, &rect))
+        return;
+
+    HRGN visible = CreateRectRgn(rect.left, rect.top, rect.right, rect.bottom);
+    if (!visible)
+        return;
+
+    bool occluded = false;
+    for (HWND above = GetWindow(m_hWnd, GW_HWNDPREV); above; above = GetWindow(above, GW_HWNDPREV))
+    {
+        if (!IsWindowVisible(above) || IsIconic(above))
+            continue;
+
+        // Skip windows that don't actually paint over us: click-through and
+        // fully transparent layered overlays.
+        LONG_PTR exStyle = GetWindowLongPtrW(above, GWL_EXSTYLE);
+        if (exStyle & WS_EX_TRANSPARENT)
+            continue;
+        BYTE alpha   = 255;
+        DWORD flags  = 0;
+        COLORREF key = 0;
+        if ((exStyle & WS_EX_LAYERED) && GetLayeredWindowAttributes(above, &key, &alpha, &flags) && (flags & LWA_ALPHA) && alpha == 0)
+            continue;
+
+        if (!GetWindowRect(above, &rect))
+            continue;
+
+        HRGN region = CreateRectRgn(rect.left, rect.top, rect.right, rect.bottom);
+        if (!region)
+            continue;
+
+        int type = CombineRgn(visible, visible, region, RGN_DIFF);
+        DeleteObject(region);
+
+        if (type == NULLREGION)
+        {
+            occluded = true;
+            break;
+        }
+    }
+
+    DeleteObject(visible);
+
+    if (occluded == m_occluded)
+        return;
+
+    m_occluded = occluded;
+
+#ifdef __SDL3__
+    SDL_Event event;
+    SDL_zero(event);
+    event.type            = occluded ? SDL_EVENT_WINDOW_OCCLUDED : SDL_EVENT_WINDOW_EXPOSED;
+    event.window.windowID = m_windowID;
+    SDL_PushEvent(&event);
+#endif
 }
 
 void D3D11Context::setSwapInterval(int interval)

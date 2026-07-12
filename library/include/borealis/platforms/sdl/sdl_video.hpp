@@ -51,6 +51,13 @@ class SDLVideoContext : public VideoContext
     /** Returns the underlying SDL window handle. */
     SDL_Window* getSDLWindow();
 
+    /**
+     * Per-frame occlusion poll. Generic entry point; currently only does work
+     * on the D3D11 backend, where flip-model swap chains can't report occlusion
+     * on their own. No-op on other backends.
+     */
+    void hitOcclusion();
+
   private:
     SDL_Window* m_window     = nullptr;
     NVGcontext* m_nvgContext = nullptr;

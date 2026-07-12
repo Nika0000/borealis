@@ -171,43 +171,38 @@ static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
 {
     if (event->type >= SDL_EVENT_WINDOW_FIRST && event->type <= SDL_EVENT_WINDOW_LAST)
     {
-        SDL_Window* win = SDL_GetWindowFromID(event->window.windowID);
+        SDL_Window* eventWindow = SDL_GetWindowFromID(event->window.windowID);
+        if (eventWindow != (SDL_Window*) data)
+            return true;
+
         switch (event->type)
         {
             case SDL_EVENT_WINDOW_RESIZED:
-                if (win == (SDL_Window*) data)
-                {
-                    sdlWindowFramebufferSizeCallback(win, event->window.data1, event->window.data2);
-                }
+                sdlWindowFramebufferSizeCallback(eventWindow, event->window.data1, event->window.data2);
                 break;
             case SDL_EVENT_WINDOW_MOVED:
-                if (win == (SDL_Window*) data)
-                {
-                    sdlWindowPositionCallback(win, event->window.data1, event->window.data2);
-                }
+                sdlWindowPositionCallback(eventWindow, event->window.data1, event->window.data2);
                 break;
             case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
-                if (win == (SDL_Window*) data)
-                {
-                    sdlWindowSafeAreaCallback(win);
-                }
+                sdlWindowSafeAreaCallback(eventWindow);
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                Application::getWindowFocusChangedEvent()->fire(true);
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+                Application::getWindowFocusChangedEvent()->fire(false);
+                break;
+            case SDL_EVENT_WINDOW_OCCLUDED:
+            case SDL_EVENT_WINDOW_MINIMIZED:
+                brls::Application::setForegroundMode(false);
+                break;
+            case SDL_EVENT_WINDOW_EXPOSED:
+            case SDL_EVENT_WINDOW_RESTORED:
+            case SDL_EVENT_WINDOW_MAXIMIZED:
+                brls::Application::setForegroundMode(true);
                 break;
         }
     }
-
-#if defined(ANDROID) || defined(IOS)
-    if (event->type == SDL_EVENT_DID_ENTER_BACKGROUND)
-    {
-        brls::Application::getWindowFocusChangedEvent()->fire(false);
-        brls::Application::setForegroundMode(false);
-    }
-    else if (event->type == SDL_EVENT_DID_ENTER_FOREGROUND)
-    {
-        brls::Application::getWindowFocusChangedEvent()->fire(true);
-        brls::Application::setForegroundMode(true);
-    }
-#endif
-
     return true;
 }
 
@@ -584,6 +579,13 @@ SDLVideoContext::~SDLVideoContext()
 NVGcontext* SDLVideoContext::getNVGContext() { return m_nvgContext; }
 
 SDL_Window* SDLVideoContext::getSDLWindow() { return m_window; }
+
+void SDLVideoContext::hitOcclusion()
+{
+#ifdef BOREALIS_USE_D3D11
+    D3D11_CONTEXT->hitOcclusion();
+#endif
+}
 
 void SDLVideoContext::fullScreen(bool fs)
 {

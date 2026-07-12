@@ -81,6 +81,15 @@ class D3D11Context
     /** Returns whether HDR output is currently enabled. */
     bool isHDREnabled() const { return m_hdrEnabled; }
 
+    /** Returns whether the window is currently occluded (minimized/hidden/cloaked). */
+    bool isOccluded() const { return m_occluded; }
+
+    /**
+     * Refreshes the cached occlusion state from the current window state and, on
+     * a transition.
+     */
+    void hitOcclusion();
+
     /**
      * Handles framebuffer resize by recreating the swap chain buffers.
      * @param width new framebuffer width in pixels
@@ -120,6 +129,11 @@ class D3D11Context
     UINT(WINAPI* m_getDpiForWindow)(HWND);
 
     HWND m_hWnd = nullptr;
+#ifdef __SDL3__
+    uint32_t m_windowID = 0;
+#endif
+
+    bool m_occluded = false;
 
     bool initDX(HWND window, IUnknown* coreWindow, int width, int height);
     bool applySwapChainColorSpace();

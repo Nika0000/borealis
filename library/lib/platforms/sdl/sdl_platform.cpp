@@ -79,12 +79,8 @@ SDLPlatform::SDLPlatform()
         if (locales != nullptr && numLocales > 0)
         {
             std::unordered_map<std::string, std::string> localeMap = {
-                { "zh_CN", LOCALE_ZH_HANS },
-                { "zh_TW", LOCALE_ZH_HANT },
-                { "ja_JP", LOCALE_JA },
-                { "ko_KR", LOCALE_Ko },
-                { "it_IT", LOCALE_IT },
-                { "ru", LOCALE_RU }
+                { "zh_CN", LOCALE_ZH_HANS }, { "zh_TW", LOCALE_ZH_HANT }, { "ja_JP", LOCALE_JA },
+                { "ko_KR", LOCALE_Ko },      { "it_IT", LOCALE_IT },      { "ru", LOCALE_RU },
             };
 
             for (int i = 0; i < numLocales; ++i)
@@ -122,15 +118,9 @@ void SDLPlatform::createWindow(std::string windowTitle, uint32_t windowWidth, ui
     this->imeManager   = new SDLImeManager(&this->otherEvent);
 }
 
-void SDLPlatform::restoreWindow()
-{
-    SDL_RestoreWindow(this->videoContext->getSDLWindow());
-}
+void SDLPlatform::restoreWindow() { SDL_RestoreWindow(this->videoContext->getSDLWindow()); }
 
-void SDLPlatform::setWindowAlwaysOnTop(bool enable)
-{
-    SDL_SetWindowAlwaysOnTop(this->videoContext->getSDLWindow(), enable);
-}
+void SDLPlatform::setWindowAlwaysOnTop(bool enable) { SDL_SetWindowAlwaysOnTop(this->videoContext->getSDLWindow(), enable); }
 
 void SDLPlatform::setWindowSize(uint32_t windowWidth, uint32_t windowHeight)
 {
@@ -176,15 +166,9 @@ void SDLPlatform::disableScreenDimming(bool disable, const std::string& /* reaso
     }
 }
 
-bool SDLPlatform::isScreenDimmingDisabled()
-{
-    return !SDL_ScreenSaverEnabled();
-}
+bool SDLPlatform::isScreenDimmingDisabled() { return !SDL_ScreenSaverEnabled(); }
 
-void SDLPlatform::pasteToClipboard(const std::string& text)
-{
-    SDL_SetClipboardText(text.c_str());
-}
+void SDLPlatform::pasteToClipboard(const std::string& text) { SDL_SetClipboardText(text.c_str()); }
 
 std::string SDLPlatform::pasteFromClipboard()
 {
@@ -194,10 +178,7 @@ std::string SDLPlatform::pasteFromClipboard()
     return std::string { str };
 }
 
-std::string SDLPlatform::getName()
-{
-    return "SDL";
-}
+std::string SDLPlatform::getName() { return "SDL"; }
 
 bool SDLPlatform::processEvent(SDL_Event* event)
 {
@@ -247,6 +228,8 @@ bool SDLPlatform::processEvent(SDL_Event* event)
 
 bool SDLPlatform::mainLoopIteration()
 {
+    videoContext->hitOcclusion();
+
     SDL_Event event;
     bool hasEvent = false;
     while (SDL_PollEvent(&event))
@@ -259,8 +242,7 @@ bool SDLPlatform::mainLoopIteration()
     }
     if (!hasEvent && !Application::hasActiveEvent())
     {
-        if (SDL_WaitEventTimeout(&event, (int)(brls::Application::getDeactivatedFrameTime() * 1000))
-            && !processEvent(&event))
+        if (SDL_WaitEventTimeout(&event, (int) (brls::Application::getDeactivatedFrameTime() * 1000)) && !processEvent(&event))
         {
             return false;
         }
@@ -268,25 +250,13 @@ bool SDLPlatform::mainLoopIteration()
     return true;
 }
 
-AudioPlayer* SDLPlatform::getAudioPlayer()
-{
-    return this->audioPlayer;
-}
+AudioPlayer* SDLPlatform::getAudioPlayer() { return this->audioPlayer; }
 
-VideoContext* SDLPlatform::getVideoContext()
-{
-    return this->videoContext;
-}
+VideoContext* SDLPlatform::getVideoContext() { return this->videoContext; }
 
-InputManager* SDLPlatform::getInputManager()
-{
-    return this->inputManager;
-}
+InputManager* SDLPlatform::getInputManager() { return this->inputManager; }
 
-ImeManager* SDLPlatform::getImeManager()
-{
-    return this->imeManager;
-}
+ImeManager* SDLPlatform::getImeManager() { return this->imeManager; }
 
 std::string SDLPlatform::getHomeDirectory(std::string appName)
 {
