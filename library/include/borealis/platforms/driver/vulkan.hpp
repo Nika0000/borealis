@@ -27,6 +27,7 @@
 #include <SDL3/SDL_vulkan.h>
 #endif
 
+#include <nanovg.h>
 #include <nanovg_vk.h>
 
 namespace brls
@@ -57,7 +58,8 @@ class VulkanContext
     VkQueue getGraphicsQueue() { return m_graphicsQueue; }
 
   private:
-    VkInstance m_instance             = VK_NULL_HANDLE;
+    VkInstance m_instance                       = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT m_debugMessenger   = VK_NULL_HANDLE;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device                 = VK_NULL_HANDLE;
     VkSurfaceKHR m_surface            = VK_NULL_HANDLE;
@@ -70,7 +72,6 @@ class VulkanContext
     VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> m_swapchainImages;
     std::vector<VkImageView> m_swapchainImageViews;
-    std::vector<VkFramebuffer> m_framebuffers;
     uint32_t m_swapchainImageCount = 0;
     VkFormat m_swapchainFormat     = VK_FORMAT_B8G8R8A8_UNORM;
     VkExtent2D m_swapchainExtent   = {};
@@ -80,10 +81,16 @@ class VulkanContext
     VkImageView m_depthImageView = VK_NULL_HANDLE;
     VkFormat m_depthFormat       = VK_FORMAT_D24_UNORM_S8_UINT;
 
-    VkRenderPass m_renderPass           = VK_NULL_HANDLE;
+    // Dynamic rendering (VK_KHR_dynamic_rendering): no VkRenderPass / VkFramebuffer objects.
     VkCommandPool m_commandPool         = VK_NULL_HANDLE;
     VkCommandBuffer m_commandBuffers[3] = {};
     VkCommandBuffer m_uploadCmdBuffer   = VK_NULL_HANDLE;
+
+    // Stable pointer targets for VKNVGCreateInfo blur fields: updated each frame in beginFrame()
+    // to reference the acquired swapchain image / color view / depth view.
+    VkImage m_currentImage              = VK_NULL_HANDLE;
+    VkImageView m_currentImageView      = VK_NULL_HANDLE;
+    VkImageView m_currentDepthImageView = VK_NULL_HANDLE;
 
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
@@ -115,14 +122,13 @@ class VulkanContext
 #endif
 
     bool createInstance();
+    void setupDebugMessenger();
     bool createSurface();
     bool selectPhysicalDevice();
     bool createLogicalDevice();
     bool createSwapchain(VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
     bool createImageViews();
     bool createDepthResources();
-    bool createRenderPass();
-    bool createFramebuffers();
     bool createCommandPool();
     bool createCommandBuffers();
     bool createSyncObjects();
