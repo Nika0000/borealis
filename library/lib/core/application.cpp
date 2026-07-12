@@ -162,11 +162,22 @@ bool Application::mainLoop() { return Application::platform->runLoop(internalMai
 
 bool Application::internalMainLoop()
 {
-    // Frame pacing: spin-wait until the target frame interval has elapsed.
+    const bool interactive = Application::interactive;
+
+    // Frame pacing.
     // On Android, the choreographer callback handles frame skipping instead.
 #ifndef __ANDROID__
-    if (Application::limitedFrameTime > 0 && Application::frameStartTime > 0 && VideoContext::swapInterval == 0)
+    if (!interactive)
     {
+        if (Application::frameStartTime > 0)
+        {
+            Time deadline = Application::frameStartTime + (Time) (Application::getDeactivatedFrameTime() * 1000000.0);
+            waitUntilUsec(deadline);
+        }
+    }
+    else if (Application::limitedFrameTime > 0 && Application::frameStartTime > 0 && VideoContext::swapInterval == 0)
+    {
+        // Foreground mode: spin-wait until the target frame interval has elapsed.
         Time deadline = Application::frameStartTime + Application::limitedFrameTime;
         waitUntilUsec(deadline);
     }
@@ -184,7 +195,7 @@ bool Application::internalMainLoop()
         return false;
     }
 
-    if (Application::interactive)
+    if (interactive)
     {
         // Mouse and touch
         Application::processInput();
@@ -957,7 +968,6 @@ void Application::pushActivity(Activity* activity, bool replace, TransitionAnima
     // Focus: only stash current focus if we are NOT replacing the current activity
     if (!replace && !Application::activitiesStack.empty() && Application::currentFocus != nullptr)
     {
-        Logger::verbose("Pushing {} to the focus stack", Application::currentFocus->describe());
         Application::focusStack.push_back(Application::currentFocus);
     }
 
