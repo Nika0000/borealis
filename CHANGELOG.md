@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.0](https://github.com/Nika0000/borealis/compare/v1.2.0...v1.3.0) (2026-07-12)
+
+
+### Features
+
+* add focusTarget xml attribute to view ([3d97d6f](https://github.com/Nika0000/borealis/commit/3d97d6fbf9b159af70b6a2255335e24a42bbf7a0))
+* add linear gradient background api to View ([4c49271](https://github.com/Nika0000/borealis/commit/4c4927143f90a0561a66919e562ba18137d9eee3))
+* add START and END scrolling behaviors ([0f3b573](https://github.com/Nika0000/borealis/commit/0f3b5739f10474fd956d5d1f4a6866bb4fb58f3f))
+* add Vulkan backend support for Windows and Linux platforms ([51f585b](https://github.com/Nika0000/borealis/commit/51f585be935693c5a99e99e53fed8b80c0f8af77))
+* add Vulkan validation layer debugging with debug messenger ([3a79bd9](https://github.com/Nika0000/borealis/commit/3a79bd938cef3b12e76ec3033ff871fd83e6a409))
+* detect D3D11 flip-model occlusion via Z-order polling ([bd4e255](https://github.com/Nika0000/borealis/commit/bd4e2552099c76dcbf4d9cff6309e5b1a45ccb34))
+* update audio files for system sounds ([0180cb6](https://github.com/Nika0000/borealis/commit/0180cb63865f72f234e9f9d66aef777c26403a55))
+
+
+### Bug Fixes
+
+* disable RC controller as joystick and fix text input on TV ([14b428a](https://github.com/Nika0000/borealis/commit/14b428ad85784162079682de0efff603f2a597d2))
+* enable classic errata for Yoga 3 layout compatibility ([ea02657](https://github.com/Nika0000/borealis/commit/ea026576e5d36b7905dc388c0a4435f00e0a43a7))
+* fix missing shader includes for nanovg ([9ccfc98](https://github.com/Nika0000/borealis/commit/9ccfc9876006a3d0170f7cb52b46d8eaee4c49c6))
+* style metrics for custom notification width ([d234925](https://github.com/Nika0000/borealis/commit/d2349257b70f80818aed047b67f2629db5a6defb))
+* throttle background event loop to deactivated fps to prevent cpu spinning ([4a968c8](https://github.com/Nika0000/borealis/commit/4a968c8d37f4f34e719fcfbf9ca59a42c77ae551))
+* touch gesture plays focus sound along with click sound ([fad21df](https://github.com/Nika0000/borealis/commit/fad21dfefc00da19a9d5a3285b90af9b3b86b1da))
+
 ## [1.2.0](https://github.com/Nika0000/borealis/compare/v1.1.0...v1.2.0) (2026-06-13)
 
 
