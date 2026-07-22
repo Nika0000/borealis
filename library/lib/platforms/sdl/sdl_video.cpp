@@ -121,6 +121,25 @@ static void sdlWindowFramebufferSizeCallback(SDL_Window* window, int width, int 
     }
 }
 
+static void sdlRestoreWindowedGeometry(SDL_Window* window)
+{
+    uint32_t width  = VideoContext::sizeW;
+    uint32_t height = VideoContext::sizeH;
+
+    if (width <= 0 || height <= 0)
+    {
+        width  = Application::ORIGINAL_WINDOW_WIDTH;
+        height = Application::ORIGINAL_WINDOW_HEIGHT;
+    }
+
+    SDL_SetWindowSize(window, (int) width, (int) height);
+    if (!std::isnan(VideoContext::posX) && !std::isnan(VideoContext::posY))
+        SDL_SetWindowPosition(window, (int) VideoContext::posX, (int) VideoContext::posY);
+
+    VideoContext::sizeW = width;
+    VideoContext::sizeH = height;
+}
+
 static void sdlWindowPositionCallback(SDL_Window* window, int windowXPos, int windowYPos)
 {
     Application::onWindowReposition(windowXPos, windowYPos);
@@ -201,6 +220,11 @@ static bool sdlWindowEventWatcher(void* data, SDL_Event* event)
             case SDL_EVENT_WINDOW_MAXIMIZED:
                 brls::Application::setForegroundMode(true);
                 break;
+#if defined(__APPLE__) && !defined(IOS) && !defined(TVOS)
+            case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+                sdlRestoreWindowedGeometry(eventWindow);
+                break;
+#endif
         }
     }
     return true;
