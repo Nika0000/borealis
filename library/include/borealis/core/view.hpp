@@ -1361,6 +1361,11 @@ class View
     void addGestureRecognizer(GestureRecognizer* recognizer);
 
     /**
+     * Remove a gesture recognizer from this view.
+     */
+    void removeGestureRecognizer(GestureRecognizer* recognizer);
+
+    /**
      * Called each frame when touch is registered.
      *
      * @returns sound to play invoked by touch recognizers.

@@ -120,6 +120,13 @@ void View::interruptGestures(bool onlyIfUnsureState)
 
 void View::addGestureRecognizer(GestureRecognizer* recognizer) { this->m_gestureRecognizers.push_back(recognizer); }
 
+void View::removeGestureRecognizer(GestureRecognizer* recognizer)
+{
+    auto it = std::find(this->m_gestureRecognizers.begin(), this->m_gestureRecognizers.end(), recognizer);
+    if (it != this->m_gestureRecognizers.end())
+        this->m_gestureRecognizers.erase(it);
+}
+
 Sound View::gestureRecognizerRequest(TouchState touch, MouseState mouse, View* firstResponder)
 {
     Sound soundToPlay = touch.phase == TouchPhase::START ? SOUND_TOUCH : SOUND_NONE;
