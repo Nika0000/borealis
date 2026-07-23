@@ -32,12 +32,12 @@ class Slider : public Box
     Slider();
 
     void onLayout() override;
-    View* getDefaultFocus() override;
     void draw(NVGcontext* vg, float x, float y, float width, float height, Style style, FrameContext* ctx) override;
+    View* getDefaultFocus() override;
 
     void setProgress(float progress);
 
-    float getProgress();
+    float getProgress() const;
 
     Event<float>* getProgressEvent();
 
@@ -48,18 +48,25 @@ class Slider : public Box
     static View* create();
 
   private:
-    InputManager* input;
-    Rectangle* line;
-    Rectangle* lineEmpty;
-    Rectangle* pointer;
+    Rectangle* m_line;
+    Rectangle* m_lineEmpty;
+    Rectangle* m_pointer;
 
-    Event<float> progressEvent;
+    Event<float> m_progressEvent;
 
-    float progress = 1;
-    float step = 0.5f;
+    Animatable m_pointerScale = 1.0f;
+    float m_basePointerSize   = 24.0f;
 
-    void buttonsProcessing();
+    float m_progress = 1;
+    float m_step     = 0.0f;
+
+    float m_holdTime = 0.0f;
+    bool m_boundHit  = false;
+
     void updateUI();
+    void continuousButtonProcessing();
+    void setPointerPressed(bool pressed);
+    void pointerScaleTick();
 };
 
 } // namespace brls
