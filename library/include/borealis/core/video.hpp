@@ -21,6 +21,9 @@
 #include <cmath>
 #include <cstdint>
 
+namespace brls
+{
+
 // A VideoContext is responsible for providing a nanovg context for the app
 // (so by extension it manages all the graphics state as well as the window / context).
 // The VideoContext implementation must also provide the nanovg implementation. As such, there
@@ -61,7 +64,7 @@ class VideoContext
     /*
      * Full screen window at primary monitor
      */
-    virtual void fullScreen(bool fs) { }
+    virtual void fullScreen(bool fs) {}
 
     /**
      * Returns the NanoVG context used for rendering.
@@ -90,3 +93,4 @@ class VideoContext
 
     static inline int swapInterval = 1;
 };
+}
