@@ -260,24 +260,21 @@ void AndroidPlatform::choreographerCallback(long frameTimeNanos, void* data)
     if (!self->m_loopRunning)
         return;
 
-    static long nextFrameNanos = 0;
-
-    Time limitedFrameTime = Application::getLimitedFrameTime();
-    if (limitedFrameTime > 0 && nextFrameNanos > 0)
+    const Time limitedFrameTime = Application::getLimitedFrameTime(); // microseconds
+    if (limitedFrameTime > 0 && self->m_nextDeadlineNanos >= 0)
     {
-        if (frameTimeNanos < nextFrameNanos)
+        if (frameTimeNanos < self->m_nextDeadlineNanos)
         {
             AChoreographer_postFrameCallback(self->m_choreographer, choreographerCallback, self);
             return;
         }
-        nextFrameNanos += static_cast<long>(limitedFrameTime) * 1000;
-        if (nextFrameNanos < frameTimeNanos)
-            nextFrameNanos = frameTimeNanos + static_cast<long>(limitedFrameTime) * 1000;
     }
+
+    const long minDeltaNanos = static_cast<long>(limitedFrameTime) * 1000;
+    if (limitedFrameTime > 0 && self->m_nextDeadlineNanos >= 0 && frameTimeNanos - self->m_nextDeadlineNanos < minDeltaNanos)
+        self->m_nextDeadlineNanos += minDeltaNanos;
     else
-    {
-        nextFrameNanos = frameTimeNanos + static_cast<long>(limitedFrameTime) * 1000;
-    }
+        self->m_nextDeadlineNanos = frameTimeNanos + minDeltaNanos;
 
     bool continueLoop = (*self->m_runLoopImpl)();
 
@@ -303,8 +300,9 @@ bool AndroidPlatform::runLoop(const std::function<bool()>& runLoopImpl)
         return false;
     }
 
-    m_runLoopImpl = &runLoopImpl;
-    m_loopRunning = true;
+    m_runLoopImpl       = &runLoopImpl;
+    m_loopRunning       = true;
+    m_nextDeadlineNanos = -1;
 
     AChoreographer_postFrameCallback(m_choreographer, choreographerCallback, this);
 

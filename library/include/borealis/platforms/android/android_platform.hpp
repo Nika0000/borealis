@@ -51,6 +51,8 @@ class AndroidPlatform : public SDLPlatform
 
     AChoreographer* m_choreographer            = nullptr;
     const std::function<bool()>* m_runLoopImpl = nullptr;
+
+    long m_nextDeadlineNanos = -1;
 };
 
 } // namespace brls
