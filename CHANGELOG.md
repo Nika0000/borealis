@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.0](https://github.com/Nika0000/borealis/compare/v1.3.0...v1.4.0) (2026-07-23)
+
+
+### Features
+
+* add frame deadline tracking for Android vsync timing ([e583415](https://github.com/Nika0000/borealis/commit/e583415ccf56a5611ce7840eaddae70b76968f95))
+* add hover gesture to slider ([6b1e8e4](https://github.com/Nika0000/borealis/commit/6b1e8e48f16c4e76ea230d3d1dae3c1b8d3108e9))
+* add removeGestureRecognizer method to View ([dd86f9c](https://github.com/Nika0000/borealis/commit/dd86f9cae6060edb15113c0a400b7a022af8ffb6))
+* Improve slider UX with animated thumb scaling ([b55c4e8](https://github.com/Nika0000/borealis/commit/b55c4e84ad43d98d59a96d4e35eb8e9eeef9b0ae))
+
+
+### Bug Fixes
+
+* restore window geometry after exiting fullscreen on macOS ([cde9a72](https://github.com/Nika0000/borealis/commit/cde9a7272bd72dc7b95e9df30faa38285bf605af))
+
 ## [1.3.0](https://github.com/Nika0000/borealis/compare/v1.2.0...v1.3.0) (2026-07-12)
 
 
