@@ -15,6 +15,7 @@
 */
 
 #include <borealis/core/application.hpp>
+#include <borealis/core/touch/hover_gesture.hpp>
 #include <borealis/core/touch/pan_gesture.hpp>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/core/util.hpp>
@@ -38,6 +39,7 @@ Slider::Slider()
     addView(m_lineEmpty);
 
     setHeight(40);
+    setHideClickAnimation(true);
 
     m_line->setHeight(7);
     m_line->setCornerRadius(3.5f);
@@ -113,6 +115,8 @@ Slider::Slider()
     m_pointer->registerAction("", BUTTON_LEFT, [](View*) { return true; }, true, true, SOUND_NONE);
 
     m_pointer->registerAction("", BUTTON_A, [](View* view) { return true; }, true, false, SOUND_NONE);
+
+    this->addGestureRecognizer(new brls::HoverGestureRecognizer(this));
 
     this->addGestureRecognizer(new PanGestureRecognizer(
         [this](PanGestureStatus status, Sound* soundToPlay)
