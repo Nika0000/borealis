@@ -167,6 +167,19 @@ EditTextDialog::EditTextDialog()
         BUTTON_B,
         [this](...)
         {
+#if defined(__PSV__) || defined(IOS) || defined(ANDROID)
+            // While the on-screen keyboard is up, B dismisses the keyboard only; the dialog stays open so the
+            // typed text isn't lost. A second B press (keyboard hidden) closes the dialog.
+            auto* videoContext = (SDLVideoContext*) Application::getPlatform()->getVideoContext();
+            auto* window       = videoContext->getSDLWindow();
+            if (SDL_ScreenKeyboardShown(window))
+            {
+                SDL_StopTextInput(window);
+                Application::getPlatform()->getInputManager()->clearInputState();
+                if (!m_content.empty())
+                    return true;
+            }
+#endif
             Application::popActivity(EDIT_TEXT_DIALOG_POP_ANIMATION, [this]() { this->m_cancelEvent.fire(); });
             return true;
         }
