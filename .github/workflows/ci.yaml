@@ -77,45 +77,47 @@ jobs:
           name: borealis-windows-x86_64-${{ matrix.driver }}${{ matrix.ext }}
           path: build/borealis_demo.exe
 
-  #linux:
-  #  name: linux (${{ matrix.driver }}${{ matrix.ext }})
-  #  runs-on: ubuntu-latest
-  #  strategy:
-  #    matrix:
-  #      include:
-  #        - { driver: gl2, cmake: "-DUSE_GL2=ON" }
-  #        - { driver: gles2, cmake: "-DUSE_GLES2=ON" }
-  #        - { driver: gles3, cmake: "-DUSE_GLES3=ON" }
-  #        - { driver: gl3, cmake: "-DUSE_GLFW=ON", ext: "-glfw" }
-  #        - { driver: gl3, cmake: "-DUSE_SDL3=ON", ext: "-sdl3" }
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v4
-  #      with:
-  #        submodules: recursive
-  #    - name: Install dependencies
-  #      run: |
-  #        sudo apt update -y
-  #        sudo apt install -y libdbus-1-dev libxkbcommon-dev \
-  #          libwayland-dev wayland-protocols libx11-dev libxrandr-dev libxinerama-dev \
-  #          libxcursor-dev libxi-dev --no-install-recommends
-  #    - name: Build
-  #      run: |
-  #        cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake }} \
-  #            -DPLATFORM_DESKTOP=ON \
-  #            -DUSE_LIBROMFS=ON \
-  #            -DX11_X11_LIB=ON
-  #        make -C build -j$(nproc)
-  #        output_dir=borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}
-  #        strip build/borealis_demo
-  #        mkdir -p ${output_dir}
-  #        mv build/borealis_demo ${output_dir}
-  #        tar -czvf ${output_dir}.tar.gz ${output_dir}
-  #    - name: Upload dist
-  #      uses: actions/upload-artifact@v7
-  #      with:
-  #        name: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}
-  #        path: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}.tar.gz
+  linux:
+    name: linux (${{ matrix.driver }}${{ matrix.ext }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { driver: gl2, cmake: "-DUSE_GL2=ON" }
+          - { driver: gles2, cmake: "-DUSE_GLES2=ON" }
+          - { driver: gles3, cmake: "-DUSE_GLES3=ON" }
+          - { driver: gl3, cmake: "-DUSE_GLFW=ON", ext: "-glfw" }
+          - { driver: gl3, cmake: "-DUSE_SDL3=ON", ext: "-sdl3" }
+          - { driver: vulkan, cmake: "-DBOREALIS_USE_VULKAN=ON -DUSE_SDL3=ON", ext: "-sdl3" }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt update -y
+          sudo apt install -y libdbus-1-dev libxkbcommon-dev \
+            libwayland-dev wayland-protocols libx11-dev libxrandr-dev libxinerama-dev \
+            libxcursor-dev libxi-dev libvulkan-dev --no-install-recommends
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake }} \
+              -DPLATFORM_DESKTOP=ON \
+              -DUSE_LIBROMFS=ON \
+              -DX11_X11_LIB=ON
+          make -C build -j$(nproc)
+          output_dir=borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}
+          strip build/borealis_demo
+          mkdir -p ${output_dir}
+          mv build/borealis_demo ${output_dir}
+          tar -czvf ${output_dir}.tar.gz ${output_dir}
+      - name: Upload dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}
+          path: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}.tar.gz
 
   # ios:
   #   runs-on: macos-13
