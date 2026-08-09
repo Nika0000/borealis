@@ -100,7 +100,7 @@ jobs:
           sudo apt update -y
           sudo apt install -y libdbus-1-dev libxkbcommon-dev \
             libwayland-dev wayland-protocols libx11-dev libxrandr-dev libxinerama-dev \
-            libxcursor-dev libxi-dev libxss-dev libvulkan-dev --no-install-recommends
+            libxcursor-dev libxi-dev libxss-dev libxtst-dev libvulkan-dev --no-install-recommends
       - name: Build
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake }} \
@@ -119,37 +119,36 @@ jobs:
           name: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}
           path: borealis-linux-x86_64-${{ matrix.driver }}${{ matrix.ext }}.tar.gz
 
-  # ios:
-  #   runs-on: macos-13
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
-  #     - name: cache
-  #       id: cache-key
-  #       run: echo "IOS_CACHE_KEY=ios-cmake-build-dir-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '.github/workflows/ci.yaml') }}" >> $GITHUB_OUTPUT
-  #     - uses: actions/cache/restore@v4
-  #       id: ios-cache
-  #       with:
-  #         path: build
-  #         key: ${{ steps.cache-key.outputs.IOS_CACHE_KEY }}
-  #     - name: Build
-  #       run: |
-  #         ./build_libromfs_generator.sh
-  #         cmake -B build -G Xcode -DPLATFORM_IOS=ON -DPLATFORM=OS64 -DDEPLOYMENT_TARGET=13.0
-  #         cmake --build build
-  #         ditto -ck --rsrc --sequesterRsrc --keepParent build/Debug-iphoneos/borealis_demo.app borealis_demo.zip
-  #     - uses: actions/cache/save@v4
-  #       if: ${{ !steps.ios-cache.outputs.cache-hit }}
-  #       with:
-  #         path: build
-  #         key: ${{ steps.cache-key.outputs.IOS_CACHE_KEY }}
-  #     - name: Upload dist
-  #       uses: actions/upload-artifact@v7
-  #       with:
-  #         name: borealis-ios
-  #         path: borealis_demo.zip
+  ios:
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: cache
+        id: cache-key
+        run: echo "IOS_CACHE_KEY=ios-cmake-build-dir-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '.github/workflows/ci.yaml') }}" >> $GITHUB_OUTPUT
+      - uses: actions/cache/restore@v4
+        id: ios-cache
+        with:
+          path: build
+          key: ${{ steps.cache-key.outputs.IOS_CACHE_KEY }}
+      - name: Build
+        run: |
+          cmake -B build -G Xcode -DPLATFORM_IOS=ON -DPLATFORM=OS64 -DDEPLOYMENT_TARGET=13.0
+          cmake --build build
+          ditto -ck --rsrc --sequesterRsrc --keepParent build/Debug-iphoneos/borealis_demo.app borealis_demo.zip
+      - uses: actions/cache/save@v4
+        if: ${{ !steps.ios-cache.outputs.cache-hit }}
+        with:
+          path: build
+          key: ${{ steps.cache-key.outputs.IOS_CACHE_KEY }}
+      - name: Upload dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: borealis-ios
+          path: borealis_demo.zip
 
   # ps4:
   #   runs-on: ubuntu-latest
