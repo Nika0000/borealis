@@ -100,7 +100,7 @@ jobs:
           sudo apt update -y
           sudo apt install -y libdbus-1-dev libxkbcommon-dev \
             libwayland-dev wayland-protocols libx11-dev libxrandr-dev libxinerama-dev \
-            libxcursor-dev libxi-dev libvulkan-dev --no-install-recommends
+            libxcursor-dev libxi-dev libxss-dev libvulkan-dev --no-install-recommends
       - name: Build
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake }} \
