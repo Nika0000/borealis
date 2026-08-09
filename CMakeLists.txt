@@ -25,7 +25,7 @@ include(${BOREALIS_LIBRARY}/cmake/toolchain.cmake)
 # project info
 project(borealis_demo)
 set(VERSION_MAJOR "1") # x-release-please-major
-set(VERSION_MINOR "3") # x-release-please-minor
+set(VERSION_MINOR "4") # x-release-please-minor
 set(VERSION_ALTER "0") # x-release-please-patch
 set(VERSION_BUILD "0")
 set(PACKAGE_NAME "com.borealis.demo")
