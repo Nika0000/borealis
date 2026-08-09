@@ -17,16 +17,54 @@
 */
 
 #include <cmath>
+#include <fstream>
+#include <string_view>
+#include <vector>
 
 #include <borealis/core/application.hpp>
 #include <borealis/core/util.hpp>
 #include <borealis/views/image.hpp>
+
+#include <nanosvg.h>
+#include <nanosvgrast.h>
 
 #include "borealis/core/cache_helper.hpp"
 #include "borealis/core/thread.hpp"
 
 namespace brls
 {
+
+// Rasterizing at a higher resolution than the SVG's native size lets the image view
+// upscale it without becoming too blurry, since the texture is otherwise sampled at 1:1.
+static constexpr float SVG_RASTER_SCALE = 2.0f;
+
+static int createTextureFromSVG(const unsigned char* data, int size)
+{
+    std::vector<char> buffer((const char*)data, (const char*)data + size);
+    buffer.push_back('\0');
+
+    NSVGimage* image = nsvgParse(buffer.data(), "px", 96.0f);
+    if (!image)
+        return 0;
+
+    if (image->width <= 0 || image->height <= 0)
+    {
+        nsvgDelete(image);
+        return 0;
+    }
+
+    int rasterWidth  = (int)std::ceil(image->width * SVG_RASTER_SCALE);
+    int rasterHeight = (int)std::ceil(image->height * SVG_RASTER_SCALE);
+
+    std::vector<unsigned char> pixels((size_t)rasterWidth * (size_t)rasterHeight * 4);
+
+    NSVGrasterizer* rasterizer = nsvgCreateRasterizer();
+    nsvgRasterize(rasterizer, image, 0, 0, SVG_RASTER_SCALE, pixels.data(), rasterWidth, rasterHeight, rasterWidth * 4);
+    nsvgDeleteRasterizer(rasterizer);
+    nsvgDelete(image);
+
+    return nvgCreateImageRGBA(Application::getNVGContext(), rasterWidth, rasterHeight, 0, pixels.data());
+}
 
 static float measureWidth(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, float originalWidth, ImageScalingType type)
 {
@@ -342,8 +380,29 @@ void Image::setImageFromFile(const std::string& path)
     if (checkCache(path) > 0)
         return;
 
-    // Load texture
-    int tex = nvgCreateImage(Application::getNVGContext(), path.c_str(), this->getImageFlags());
+    int tex;
+    if (endsWith(path, ".svg"))
+    {
+        std::ifstream file(path, std::ios::binary | std::ios::ate);
+        if (!file)
+        {
+            Logger::error("Cannot open SVG file: {}", path);
+            return;
+        }
+
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::vector<unsigned char> data((size_t)size);
+        file.read((char*)data.data(), size);
+
+        tex = createTextureFromSVG(data.data(), (int)data.size());
+    }
+    else
+    {
+        tex = nvgCreateImage(Application::getNVGContext(), path.c_str(), this->getImageFlags());
+    }
+
     innerSetImage(tex);
 
     // Save cache
@@ -353,6 +412,13 @@ void Image::setImageFromFile(const std::string& path)
 void Image::setImageFromMem(const unsigned char* data, int size)
 {
     NVGcontext* vg = Application::getNVGContext();
+
+    std::string_view head((const char*)data, (size_t)std::max(0, std::min(size, 256)));
+    if (head.find("<svg") != std::string_view::npos)
+    {
+        innerSetImage(createTextureFromSVG(data, size));
+        return;
+    }
 
     // Load texture
     innerSetImage(nvgCreateImageMem(vg, 0, const_cast<unsigned char*>(data), size));

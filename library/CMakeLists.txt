@@ -282,6 +282,9 @@ if (PLATFORM_PS4)
     set(NANOVG_PLATFORM_PS4 ON CACHE BOOL "" FORCE)
 endif ()
 add_subdirectory(${BOREALIS_PATH}/lib/extern/nanovg EXCLUDE_FROM_ALL)
+add_subdirectory(${BOREALIS_PATH}/lib/extern/nanosvg EXCLUDE_FROM_ALL)
+target_include_directories(nanosvg PUBLIC $<BUILD_INTERFACE:${BOREALIS_PATH}/lib/extern/nanosvg/src>)
+target_include_directories(nanosvgrast PUBLIC $<BUILD_INTERFACE:${BOREALIS_PATH}/lib/extern/nanosvg/src>)
 if(BRLS_FONTSTASH_STREAM)
     message(STATUS "borealis fontstash use stream")
 endif()
@@ -315,7 +318,7 @@ set_target_properties(borealis PROPERTIES
 set_source_files_properties(${BOREALIS_PATH}/lib/platforms/desktop/desktop_darwin.mm PROPERTIES
         SKIP_UNITY_BUILD_INCLUSION ON)
 target_include_directories(borealis PUBLIC ${BOREALIS_INCLUDE})
-target_link_libraries(borealis fmt tweeny yogacore nanovg ${BRLS_PLATFORM_LIBS})
+target_link_libraries(borealis fmt tweeny yogacore nanovg nanosvg nanosvgrast ${BRLS_PLATFORM_LIBS})
 target_compile_options(borealis PUBLIC
         -DBRLS_RESOURCES=${BRLS_PLATFORM_RESOURCES_PATH}
         -ffunction-sections

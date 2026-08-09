@@ -28,3 +28,6 @@
 [submodule "library/lib/extern/volk"]
 	path = library/lib/extern/volk
 	url = https://github.com/zeux/volk.git
+[submodule "library/lib/extern/nanosvg"]
+	path = library/lib/extern/nanosvg
+	url = https://github.com/memononen/nanosvg.git
