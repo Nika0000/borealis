@@ -104,7 +104,7 @@ BottomBar::BottomBar()
     battery->setVisibility(platform->canShowBatteryLevel() ? Visibility::VISIBLE : Visibility::GONE);
     wireless->setVisibility(platform->canShowWirelessLevel() ? Visibility::VISIBLE : Visibility::GONE);
 
-#ifdef __SWITCH__
+#if defined(__SWITCH__) || defined(PLATFORM_TV)
     battery->setVisibility(Visibility::GONE);
 #endif
 
