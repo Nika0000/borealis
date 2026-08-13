@@ -17,11 +17,13 @@
 #include <SDL3/SDL.h>
 #include <android/looper.h>
 #include <arpa/inet.h>
+#include <dlfcn.h>
 #include <jni.h>
 #include <net/if.h>
 #include <strings.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <borealis/core/application.hpp>
@@ -253,64 +255,108 @@ void AndroidPlatform::setBacklightBrightness(float brightness)
 
 bool AndroidPlatform::canSetBacklightBrightness() { return true; }
 
-void AndroidPlatform::choreographerCallback(long frameTimeNanos, void* data)
-{
-    auto* self = static_cast<AndroidPlatform*>(data);
+using PostFrameCallback64Fn = void (*)(AChoreographer*, void (*)(int64_t, void*), void*);
 
-    if (!self->m_loopRunning)
+void AndroidPlatform::postFrameCallback()
+{
+    static auto postFrameCallback64 = reinterpret_cast<PostFrameCallback64Fn>(dlsym(RTLD_DEFAULT, "AChoreographer_postFrameCallback64"));
+
+    if (postFrameCallback64)
+        postFrameCallback64(m_choreographer, choreographerCallback64, this);
+    else
+        AChoreographer_postFrameCallback(m_choreographer, choreographerCallback, this);
+}
+
+void AndroidPlatform::choreographerCallback(long, void* data)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    static_cast<AndroidPlatform*>(data)->onFrame(static_cast<int64_t>(ts.tv_sec) * 1000000000LL + ts.tv_nsec);
+}
+
+void AndroidPlatform::choreographerCallback64(int64_t frameTimeNanos, void* data)
+{
+    static_cast<AndroidPlatform*>(data)->onFrame(frameTimeNanos);
+}
+
+void AndroidPlatform::onFrame(int64_t frameTimeNanos)
+{
+    if (!m_running)
         return;
 
-    const Time limitedFrameTime = Application::getLimitedFrameTime(); // microseconds
-    if (limitedFrameTime > 0 && self->m_nextDeadlineNanos >= 0)
+    if (VideoContext::swapInterval != 0)
+        Application::setSwapInterval(0);
+
+    // Track the display refresh interval from consecutive vsync timestamps.
+    if (m_lastFrameTimeNanos > 0)
     {
-        if (frameTimeNanos < self->m_nextDeadlineNanos)
+        const int64_t delta = frameTimeNanos - m_lastFrameTimeNanos;
+        // Ignore outliers (missed callbacks, resume after pause): 4ms..100ms is 10..250Hz.
+        if (delta > 4000000 && delta < 100000000)
+            m_vsyncPeriodNanos = (m_vsyncPeriodNanos == 0) ? delta : (m_vsyncPeriodNanos * 7 + delta) / 8;
+    }
+    m_lastFrameTimeNanos = frameTimeNanos;
+
+    const Time limitedFrameTime = Application::getLimitedFrameTime(); // microseconds
+    int64_t minDeltaNanos       = static_cast<int64_t>(limitedFrameTime) * 1000;
+
+    if (minDeltaNanos > 0 && m_vsyncPeriodNanos > 0 && minDeltaNanos <= m_vsyncPeriodNanos + m_vsyncPeriodNanos / 8)
+        minDeltaNanos = 0;
+
+    if (minDeltaNanos > 0 && m_nextDeadlineNanos >= 0)
+    {
+        // Accept a vsync that lands within half a refresh period before the deadline:
+        // waiting for the next one would overshoot the target interval by more than
+        // rendering now undershoots it.
+        const int64_t slackNanos = m_vsyncPeriodNanos > 0 ? m_vsyncPeriodNanos / 2 : 0;
+        if (frameTimeNanos + slackNanos < m_nextDeadlineNanos)
         {
-            AChoreographer_postFrameCallback(self->m_choreographer, choreographerCallback, self);
+            postFrameCallback();
             return;
         }
     }
 
-    const long minDeltaNanos = static_cast<long>(limitedFrameTime) * 1000;
-    if (limitedFrameTime > 0 && self->m_nextDeadlineNanos >= 0 && frameTimeNanos - self->m_nextDeadlineNanos < minDeltaNanos)
-        self->m_nextDeadlineNanos += minDeltaNanos;
+    if (minDeltaNanos > 0)
+    {
+        if (m_nextDeadlineNanos >= 0 && frameTimeNanos - m_nextDeadlineNanos < minDeltaNanos)
+            m_nextDeadlineNanos += minDeltaNanos;
+        else
+            m_nextDeadlineNanos = frameTimeNanos + minDeltaNanos;
+    }
     else
-        self->m_nextDeadlineNanos = frameTimeNanos + minDeltaNanos;
+    {
+        m_nextDeadlineNanos = -1;
+    }
 
-    bool continueLoop = (*self->m_runLoopImpl)();
-
-    if (continueLoop && self->m_loopRunning)
-        AChoreographer_postFrameCallback(self->m_choreographer, choreographerCallback, self);
+    if ((*m_runLoopImpl)())
+        postFrameCallback();
     else
-        self->m_loopRunning = false;
+        m_running = false;
 }
 
 bool AndroidPlatform::runLoop(const std::function<bool()>& runLoopImpl)
 {
-    ALooper* looper = ALooper_forThread();
-    if (!looper)
-        looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+    if (!ALooper_forThread())
+        ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
 
     m_choreographer = AChoreographer_getInstance();
     if (!m_choreographer)
     {
-        Logger::warning("AndroidPlatform: AChoreographer unavailable, falling back to spin loop");
+        Logger::warning("AndroidPlatform: AChoreographer unavailable, falling back to plain loop");
         while (runLoopImpl())
         {
         }
         return false;
     }
 
-    m_runLoopImpl       = &runLoopImpl;
-    m_loopRunning       = true;
-    m_nextDeadlineNanos = -1;
+    m_runLoopImpl = &runLoopImpl;
+    m_running     = true;
 
-    AChoreographer_postFrameCallback(m_choreographer, choreographerCallback, this);
+    postFrameCallback();
 
-    while (m_loopRunning)
-    {
-        // Block until the next vsync callback (or any fd event on this looper).
+    // Block until the next vsync callback (or any fd event on this looper).
+    while (m_running)
         ALooper_pollOnce(-1, nullptr, nullptr, nullptr);
-    }
 
     return false;
 }

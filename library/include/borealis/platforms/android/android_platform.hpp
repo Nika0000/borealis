@@ -20,6 +20,7 @@
 
 #include <atomic>
 #include <borealis/platforms/sdl/sdl_platform.hpp>
+#include <cstdint>
 #include <functional>
 
 namespace brls
@@ -46,13 +47,19 @@ class AndroidPlatform : public SDLPlatform
 
   private:
     static void choreographerCallback(long frameTimeNanos, void* data);
+    static void choreographerCallback64(int64_t frameTimeNanos, void* data);
 
-    std::atomic<bool> m_loopRunning { false };
+    void postFrameCallback();
+    void onFrame(int64_t frameTimeNanos);
+
+    std::atomic<bool> m_running { false };
 
     AChoreographer* m_choreographer            = nullptr;
     const std::function<bool()>* m_runLoopImpl = nullptr;
 
-    long m_nextDeadlineNanos = -1;
+    int64_t m_nextDeadlineNanos  = -1;
+    int64_t m_lastFrameTimeNanos = 0;
+    int64_t m_vsyncPeriodNanos   = 0;
 };
 
 } // namespace brls
