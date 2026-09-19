@@ -35,10 +35,7 @@ struct IndexPath
     int row;
     size_t item;
 
-    IndexPath()
-        : IndexPath(0, 0, 0)
-    {
-    }
+    IndexPath() : IndexPath(0, 0, 0) {}
 
     IndexPath(size_t section, size_t row, size_t item)
     {
@@ -47,15 +44,9 @@ struct IndexPath
         this->item    = item;
     }
 
-    IndexPath(size_t section, size_t row)
-        : IndexPath(section, row, row)
-    {
-    }
+    IndexPath(size_t section, size_t row) : IndexPath(section, row, row) {}
 
-    bool operator==(const IndexPath& other)
-    {
-        return section == other.section && row == other.row && item == other.item;
-    }
+    bool operator==(const IndexPath& other) const { return section == other.section && row == other.row && item == other.item; }
 };
 
 class RecyclerCell : public Box
@@ -67,7 +58,7 @@ class RecyclerCell : public Box
     /*
      * Cell's position inside recycler frame
      */
-    IndexPath getIndexPath() const { return indexPath; }
+    IndexPath getIndexPath() const { return m_indexPath; }
 
     /*
      * DO NOT USE! FOR INTERNAL USAGE ONLY!
@@ -82,7 +73,7 @@ class RecyclerCell : public Box
     /*
      * Prepares a reusable cell for reuse by the recycler frame's data source.
      */
-    virtual void prepareForReuse() { }
+    virtual void prepareForReuse() {}
 
     static RecyclerCell* create();
 
@@ -90,23 +81,22 @@ class RecyclerCell : public Box
     void onFocusLost() override;
 
   private:
-    IndexPath indexPath;
-    Event<InputType>::Subscription subscription;
+    IndexPath m_indexPath;
+    Event<InputType>::Subscription m_subscription;
 };
 
-class RecyclerHeader
-    : public RecyclerCell
+class RecyclerHeader : public RecyclerCell
 {
   public:
     RecyclerHeader();
 
-    void setTitle(std::string text);
-    void setSubtitle(std::string text);
+    void setTitle(const std::string& title);
+    void setSubtitle(const std::string& subtitle);
 
     static RecyclerHeader* create();
 
   private:
-    Header* header;
+    Header* m_header;
 };
 
 class RecyclerFrame;
@@ -153,7 +143,7 @@ class RecyclerDataSource
     /*
      * Tells the data source a row is selected.
      */
-    virtual void didSelectRowAt(RecyclerFrame* recycler, IndexPath index) { }
+    virtual void didSelectRowAt(RecyclerFrame* recycler, IndexPath index) {}
 
     virtual ~RecyclerDataSource() = default;
 };
@@ -165,7 +155,7 @@ class RecyclerContentBox : public Box
     View* getNextFocus(FocusDirection direction, View* currentView) override;
 
   private:
-    RecyclerFrame* recycler;
+    RecyclerFrame* m_recycler;
 };
 
 // Custom Box for propper recycling navigation
@@ -206,12 +196,12 @@ class RecyclerFrame : public ScrollingFrame
     /*
      * Registers a class for use in creating new recycler cells.
      */
-    void registerCell(std::string identifier, std::function<RecyclerCell*(void)> allocation);
+    void registerCell(const std::string& identifier, const std::function<RecyclerCell*(void)>& allocation);
 
     /*
      * Returns a reusable recycler-frame cell object for the specified reuse identifier
      */
-    RecyclerCell* dequeueReusableCell(std::string identifier);
+    RecyclerCell* dequeueReusableCell(const std::string& identifier);
 
     /*
      * Selects a row in the recycler frame identified by index path.
@@ -224,38 +214,32 @@ class RecyclerFrame : public ScrollingFrame
      */
     float estimatedRowHeight = 44;
 
-    IndexPath getDefaultCellFocus()
-    {
-        return this->defaultCellFocus;
-    }
+    IndexPath getDefaultCellFocus() { return m_defaultCellFocus; }
 
-    void setDefaultCellFocus(IndexPath indexPath)
-    {
-        this->defaultCellFocus = indexPath;
-    }
+    void setDefaultCellFocus(IndexPath indexPath) { m_defaultCellFocus = indexPath; }
 
     static View* create();
 
   private:
-    RecyclerDataSource* dataSource = nullptr;
-    bool deleteDataSource          = false;
-    bool layouted                  = false;
+    RecyclerDataSource* m_dataSource = nullptr;
+    bool m_deleteDataSource          = false;
+    bool m_layouted                  = false;
 
-    uint32_t visibleMin, visibleMax;
+    size_t m_visibleMin, m_visibleMax;
 
-    IndexPath defaultCellFocus;
+    IndexPath m_defaultCellFocus;
 
-    float paddingTop    = 0;
-    float paddingRight  = 0;
-    float paddingBottom = 0;
-    float paddingLeft   = 0;
+    float m_paddingTop    = 0;
+    float m_paddingRight  = 0;
+    float m_paddingBottom = 0;
+    float m_paddingLeft   = 0;
 
-    Box* contentBox;
-    Rect renderedFrame;
-    std::vector<Size> cacheFramesData;
-    std::vector<IndexPath> cacheIndexPathData;
-    std::map<std::string, std::vector<RecyclerCell*>*> queueMap;
-    std::map<std::string, std::function<RecyclerCell*(void)>> allocationMap;
+    Box* m_contentBox;
+    Rect m_renderedFrame;
+    std::vector<Size> m_cacheFramesData;
+    std::vector<IndexPath> m_cacheIndexPathData;
+    std::map<std::string, std::vector<RecyclerCell*>*> m_queueMap;
+    std::map<std::string, std::function<RecyclerCell*(void)>> m_allocationMap;
 
     bool checkWidth();
 

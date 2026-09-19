@@ -32,35 +32,35 @@ RecyclerCell::RecyclerCell()
 
     setHeight(Application::getStyle()["brls/dropdown/listItemHeight"]);
 
-    this->registerClickAction([this](View* view)
+    this->registerClickAction(
+        [this](View* view)
         {
-        RecyclerFrame* recycler = dynamic_cast<RecyclerFrame*>(getParent()->getParent());
-        if (recycler)
-            recycler->getDataSource()->didSelectRowAt(recycler, indexPath);
-        return true; });
+            RecyclerFrame* recycler = dynamic_cast<RecyclerFrame*>(getParent()->getParent());
+            if (recycler)
+                recycler->getDataSource()->didSelectRowAt(recycler, m_indexPath);
+            return true;
+        }
+    );
 
-    subscription = Application::getGlobalInputTypeChangeEvent()->subscribe([this](InputType type)
+    m_subscription = Application::getGlobalInputTypeChangeEvent()->subscribe(
+        [this](InputType type)
         {
-        bool isTouch = type == InputType::TOUCH;
-        this->setLineColor((!isTouch && this->focused) ? TRANSPARENT : Application::getTheme()["brls/sidebar/separator"]); });
+            bool isTouch = type == InputType::TOUCH;
+            this->setLineColor((!isTouch && this->focused) ? TRANSPARENT : Application::getTheme()["brls/sidebar/separator"]);
+        }
+    );
 
     this->addGestureRecognizer(new TapGestureRecognizer(this));
     this->addGestureRecognizer(new HoverGestureRecognizer(this));
 }
 
-RecyclerCell::~RecyclerCell()
-{
-    Application::getGlobalInputTypeChangeEvent()->unsubscribe(subscription);
-}
+RecyclerCell::~RecyclerCell() { Application::getGlobalInputTypeChangeEvent()->unsubscribe(m_subscription); }
 
-RecyclerCell* RecyclerCell::create()
-{
-    return new RecyclerCell();
-}
+RecyclerCell* RecyclerCell::create() { return new RecyclerCell(); }
 
 void RecyclerCell::setIndexPath(IndexPath value)
 {
-    indexPath = value;
+    m_indexPath = value;
 
     this->setLineTop(value.row == 0 ? 1 : 0);
 }
@@ -85,29 +85,20 @@ void RecyclerCell::onFocusLost()
 
 RecyclerHeader::RecyclerHeader()
 {
-    this->header = new Header();
-    this->addView(header);
-    header->setGrow(1);
+    m_header = new Header();
+    this->addView(m_header);
+    m_header->setGrow(1);
 }
 
-void RecyclerHeader::setTitle(std::string title)
-{
-    this->header->setTitle(title);
-}
+void RecyclerHeader::setTitle(const std::string& title) { m_header->setTitle(title); }
 
-void RecyclerHeader::setSubtitle(std::string subtitle)
-{
-    this->header->setSubtitle(subtitle);
-}
+void RecyclerHeader::setSubtitle(const std::string& subtitle) { m_header->setSubtitle(subtitle); }
 
-RecyclerHeader* RecyclerHeader::create()
-{
-    return new RecyclerHeader();
-}
+RecyclerHeader* RecyclerHeader::create() { return new RecyclerHeader(); }
 
 RecyclerCell* RecyclerDataSource::cellForHeader(RecyclerFrame* recycler, int section)
 {
-    RecyclerHeader* header = (RecyclerHeader*)recycler->dequeueReusableCell("brls::Header");
+    RecyclerHeader* header = (RecyclerHeader*) recycler->dequeueReusableCell("brls::Header");
     std::string title      = this->titleForHeader(recycler, section);
     header->setTitle(title);
     header->setVisibility(title.empty() ? Visibility::GONE : Visibility::VISIBLE);
@@ -122,15 +113,11 @@ float RecyclerDataSource::heightForHeader(RecyclerFrame* recycler, int section)
     return 44;
 }
 
-RecyclerContentBox::RecyclerContentBox(RecyclerFrame* recycler)
-    : Box(Axis::COLUMN)
-    , recycler(recycler)
-{
-}
+RecyclerContentBox::RecyclerContentBox(RecyclerFrame* recycler) : Box(Axis::COLUMN), m_recycler(recycler) {}
 
 View* RecyclerContentBox::getNextFocus(FocusDirection direction, View* currentView)
 {
-    return this->recycler->getNextCellFocus(direction, currentView);
+    return m_recycler->getNextCellFocus(direction, currentView);
 }
 
 View* RecyclerFrame::getNextCellFocus(FocusDirection direction, View* currentView)
@@ -138,7 +125,8 @@ View* RecyclerFrame::getNextCellFocus(FocusDirection direction, View* currentVie
     void* parentUserData = currentView->getParentUserData();
 
     // Return nullptr immediately if focus direction mismatches the box axis (clang-format refuses to split it in multiple lines...)
-    if ((this->contentBox->getAxis() == Axis::ROW && direction != FocusDirection::LEFT && direction != FocusDirection::RIGHT) || (this->contentBox->getAxis() == Axis::COLUMN && direction != FocusDirection::UP && direction != FocusDirection::DOWN))
+    if ((m_contentBox->getAxis() == Axis::ROW && direction != FocusDirection::LEFT && direction != FocusDirection::RIGHT)
+        || (m_contentBox->getAxis() == Axis::COLUMN && direction != FocusDirection::UP && direction != FocusDirection::DOWN))
     {
         View* next = getParentNavigationDecision(this, nullptr, direction);
         if (!next && hasParent())
@@ -149,19 +137,20 @@ View* RecyclerFrame::getNextCellFocus(FocusDirection direction, View* currentVie
     // Traverse the children
     size_t offset = 1; // which way we are going in the children list
 
-    if ((this->contentBox->getAxis() == Axis::ROW && direction == FocusDirection::LEFT) || (this->contentBox->getAxis() == Axis::COLUMN && direction == FocusDirection::UP))
+    if ((m_contentBox->getAxis() == Axis::ROW && direction == FocusDirection::LEFT)
+        || (m_contentBox->getAxis() == Axis::COLUMN && direction == FocusDirection::UP))
     {
         offset = -1;
     }
 
-    size_t currentFocusIndex = *((size_t*)parentUserData) + offset;
+    size_t currentFocusIndex = *((size_t*) parentUserData) + offset;
     View* currentFocus       = nullptr;
 
-    while (!currentFocus && currentFocusIndex >= 0 && currentFocusIndex < this->cacheIndexPathData.size())
+    while (!currentFocus && currentFocusIndex >= 0 && currentFocusIndex < m_cacheIndexPathData.size())
     {
-        for (auto it : this->contentBox->getChildren())
+        for (auto it : m_contentBox->getChildren())
         {
-            if (*((size_t*)it->getParentUserData()) == currentFocusIndex)
+            if (*((size_t*) it->getParentUserData()) == currentFocusIndex)
             {
                 currentFocus = it->getDefaultFocus();
                 break;
@@ -178,38 +167,32 @@ View* RecyclerFrame::getNextCellFocus(FocusDirection direction, View* currentVie
 
 RecyclerFrame::RecyclerFrame()
 {
-    registerCell("brls::Header", []()
-        { return RecyclerHeader::create(); });
+    registerCell("brls::Header", []() { return RecyclerHeader::create(); });
 
     // Padding
-    this->registerFloatXMLAttribute("paddingTop", [this](float value)
-        { this->setPaddingTop(value); });
+    this->registerFloatXMLAttribute("paddingTop", [this](float value) { this->setPaddingTop(value); });
 
-    this->registerFloatXMLAttribute("paddingRight", [this](float value)
-        { this->setPaddingRight(value); });
+    this->registerFloatXMLAttribute("paddingRight", [this](float value) { this->setPaddingRight(value); });
 
-    this->registerFloatXMLAttribute("paddingBottom", [this](float value)
-        { this->setPaddingBottom(value); });
+    this->registerFloatXMLAttribute("paddingBottom", [this](float value) { this->setPaddingBottom(value); });
 
-    this->registerFloatXMLAttribute("paddingLeft", [this](float value)
-        { this->setPaddingLeft(value); });
+    this->registerFloatXMLAttribute("paddingLeft", [this](float value) { this->setPaddingLeft(value); });
 
-    this->registerFloatXMLAttribute("padding", [this](float value)
-        { this->setPadding(value); });
+    this->registerFloatXMLAttribute("padding", [this](float value) { this->setPadding(value); });
 
     this->setScrollingBehavior(ScrollingBehavior::CENTERED);
 
     // Create content box
-    this->contentBox = new RecyclerContentBox(this);
-    this->setContentView(this->contentBox);
+    m_contentBox = new RecyclerContentBox(this);
+    this->setContentView(m_contentBox);
 }
 
 RecyclerFrame::~RecyclerFrame()
 {
-    if (this->dataSource && this->deleteDataSource)
-        delete dataSource;
+    if (m_dataSource && m_deleteDataSource)
+        delete m_dataSource;
 
-    for (auto it : queueMap)
+    for (auto it : m_queueMap)
     {
         for (auto item : *it.second)
             delete item;
@@ -219,71 +202,68 @@ RecyclerFrame::~RecyclerFrame()
 
 void RecyclerFrame::setDataSource(RecyclerDataSource* source, bool deleteDataSource)
 {
-    if (this->dataSource && this->deleteDataSource)
-        delete this->dataSource;
+    if (m_dataSource && m_deleteDataSource)
+        delete m_dataSource;
 
-    this->dataSource       = source;
-    this->deleteDataSource = deleteDataSource;
-    if (layouted)
+    m_dataSource       = source;
+    m_deleteDataSource = deleteDataSource;
+    if (m_layouted)
         reloadData();
 }
 
-RecyclerDataSource* RecyclerFrame::getDataSource() const
-{
-    return this->dataSource;
-}
+RecyclerDataSource* RecyclerFrame::getDataSource() const { return m_dataSource; }
 
 void RecyclerFrame::reloadData()
 {
-    if (!layouted)
+    if (!m_layouted)
         return;
 
-    auto children = this->contentBox->getChildren();
+    auto children = m_contentBox->getChildren();
     for (auto const& child : children)
     {
-        queueReusableCell((RecyclerCell*)child);
-        this->contentBox->removeView(child, false);
+        queueReusableCell((RecyclerCell*) child);
+        m_contentBox->removeView(child, false);
     }
 
-    visibleMin = UINT_MAX;
-    visibleMax = 0;
+    m_visibleMin = std::numeric_limits<size_t>::max();
+    m_visibleMax = 0;
 
-    renderedFrame            = Rect();
-    renderedFrame.size.width = getWidth();
+    m_renderedFrame            = Rect();
+    m_renderedFrame.size.width = getWidth();
 
     setContentOffsetY(0, false);
 
-    if (dataSource)
+    if (m_dataSource)
     {
         cacheCellFrames();
         Rect frame  = getLocalFrame();
         int counter = 0;
-        for (int section = 0; section < dataSource->numberOfSections(this); section++)
+        for (int section = 0; section < m_dataSource->numberOfSections(this); section++)
         {
-            for (int row = -1; row < dataSource->numberOfRows(this, section); row++)
+            for (int row = -1; row < m_dataSource->numberOfRows(this, section); row++)
             {
                 addCellAt(counter++, true);
-                if (renderedFrame.getMaxY() > frame.getMaxY())
+                if (m_renderedFrame.getMaxY() > frame.getMaxY())
                     break;
             }
         }
 
-        selectRowAt(defaultCellFocus, false);
+        selectRowAt(m_defaultCellFocus, false);
     }
 }
 
-void RecyclerFrame::registerCell(std::string identifier, std::function<RecyclerCell*()> allocation)
+void RecyclerFrame::registerCell(const std::string& identifier, const std::function<RecyclerCell*()>& allocation)
 {
-    queueMap.insert(std::make_pair(identifier, new std::vector<RecyclerCell*>()));
-    allocationMap.insert(std::make_pair(identifier, allocation));
+    m_queueMap.insert(std::make_pair(identifier, new std::vector<RecyclerCell*>()));
+    m_allocationMap.insert(std::make_pair(identifier, allocation));
 }
 
-RecyclerCell* RecyclerFrame::dequeueReusableCell(std::string identifier)
+RecyclerCell* RecyclerFrame::dequeueReusableCell(const std::string& identifier)
 {
     RecyclerCell* cell = nullptr;
-    auto it            = queueMap.find(identifier);
+    auto it            = m_queueMap.find(identifier);
 
-    if (it != queueMap.end())
+    if (it != m_queueMap.end())
     {
         std::vector<RecyclerCell*>* vector = it->second;
         if (!vector->empty())
@@ -293,7 +273,7 @@ RecyclerCell* RecyclerFrame::dequeueReusableCell(std::string identifier)
         }
         else
         {
-            cell                  = allocationMap.at(identifier)();
+            cell                  = m_allocationMap.at(identifier)();
             cell->reuseIdentifier = identifier;
             cell->detach();
         }
@@ -312,58 +292,56 @@ void RecyclerFrame::selectRowAt(IndexPath indexPath, bool animated)
     float offset = 0;
 
     for (size_t j = 0; j < indexPath.section; j++)
-        for (int i = -1; i < (dataSource->numberOfRows(this, j)); i++)
+        for (int i = -1; i < (m_dataSource->numberOfRows(this, j)); i++)
         {
-            offset += this->cacheFramesData[count++].height;
+            offset += m_cacheFramesData[count++].height;
         }
 
     for (int i = -1; i <= indexPath.row; i++)
-        offset += this->cacheFramesData[count++].height;
+        offset += m_cacheFramesData[count++].height;
 
     offset -= this->getHeight() / 2;
     this->setContentOffsetY(offset, animated);
     this->cellsRecyclingLoop();
 
-    for (View* view : contentBox->getChildren())
+    for (View* view : m_contentBox->getChildren())
     {
-        if (*((size_t*)view->getParentUserData()) == count - 1)
+        if (*((size_t*) view->getParentUserData()) == count - 1)
         {
-            contentBox->setLastFocusedView(view);
+            m_contentBox->setLastFocusedView(view);
             break;
         }
     }
 }
 
-void RecyclerFrame::queueReusableCell(RecyclerCell* cell)
-{
-    queueMap.at(cell->reuseIdentifier)->push_back(cell);
-}
+void RecyclerFrame::queueReusableCell(RecyclerCell* cell) { m_queueMap.at(cell->reuseIdentifier)->push_back(cell); }
 
 void RecyclerFrame::cacheCellFrames()
 {
-    cacheFramesData.clear();
-    cacheIndexPathData.clear();
+    m_cacheFramesData.clear();
+    m_cacheIndexPathData.clear();
     Rect frame = getFrame();
     Point currentOrigin;
 
-    if (dataSource)
+    if (m_dataSource)
     {
-        for (int section = 0; section < dataSource->numberOfSections(this); section++)
+        for (int section = 0; section < m_dataSource->numberOfSections(this); section++)
         {
-            for (int row = -1; row < dataSource->numberOfRows(this, section); row++)
+            for (int row = -1; row < m_dataSource->numberOfRows(this, section); row++)
             {
-                cacheIndexPathData.push_back(IndexPath(section, row));
+                m_cacheIndexPathData.push_back(IndexPath(section, row));
 
-                float height = row == -1 ? dataSource->heightForHeader(this, section) : dataSource->heightForRow(this, IndexPath(section, row));
+                float height
+                    = row == -1 ? m_dataSource->heightForHeader(this, section) : m_dataSource->heightForRow(this, IndexPath(section, row));
 
                 if (height == -1)
                     height = estimatedRowHeight;
 
-                cacheFramesData.push_back(Size(frame.getWidth(), height));
+                m_cacheFramesData.push_back(Size(frame.getWidth(), height));
                 currentOrigin.y += height;
             }
         }
-        contentBox->setHeight(currentOrigin.y + paddingTop + paddingBottom);
+        m_contentBox->setHeight(currentOrigin.y + m_paddingTop + m_paddingBottom);
     }
 }
 
@@ -371,7 +349,7 @@ bool RecyclerFrame::checkWidth()
 {
     float width           = getWidth();
     static float oldWidth = width;
-    if ((int)oldWidth != (int)width && width != 0)
+    if ((int) oldWidth != (int) width && width != 0)
     {
         oldWidth = width;
         return true;
@@ -387,109 +365,111 @@ void RecyclerFrame::cellsRecyclingLoop()
     while (true)
     {
         RecyclerCell* minCell = nullptr;
-        for (auto it : contentBox->getChildren())
-            if (*((size_t*)it->getParentUserData()) == visibleMin)
-                minCell = (RecyclerCell*)it;
+        for (auto it : m_contentBox->getChildren())
+            if (*((size_t*) it->getParentUserData()) == m_visibleMin)
+                minCell = (RecyclerCell*) it;
 
         if (!minCell || minCell->getDetachedPosition().y + minCell->getHeight() >= visibleFrame.getMinY())
             break;
 
         float cellHeight = minCell->getHeight();
-        renderedFrame.origin.y += cellHeight;
-        renderedFrame.size.height -= cellHeight;
+        m_renderedFrame.origin.y += cellHeight;
+        m_renderedFrame.size.height -= cellHeight;
 
         queueReusableCell(minCell);
-        this->contentBox->removeView(minCell, false);
+        m_contentBox->removeView(minCell, false);
 
-        Logger::debug("Cell #{} - destroyed", visibleMin);
+        Logger::debug("Cell #{} - destroyed", m_visibleMin);
 
-        visibleMin++;
+        m_visibleMin++;
     }
 
     while (true)
     {
         RecyclerCell* maxCell = nullptr;
-        for (auto it : contentBox->getChildren())
-            if (*((size_t*)it->getParentUserData()) == visibleMax)
-                maxCell = (RecyclerCell*)it;
+        for (auto it : m_contentBox->getChildren())
+            if (*((size_t*) it->getParentUserData()) == m_visibleMax)
+                maxCell = (RecyclerCell*) it;
 
         if (!maxCell || maxCell->getDetachedPosition().y <= visibleFrame.getMaxY())
             break;
 
         float cellHeight = maxCell->getHeight();
-        renderedFrame.size.height -= cellHeight;
+        m_renderedFrame.size.height -= cellHeight;
 
         queueReusableCell(maxCell);
-        this->contentBox->removeView(maxCell, false);
+        m_contentBox->removeView(maxCell, false);
 
-        Logger::debug("Cell #{} - destroyed", visibleMax);
+        Logger::debug("Cell #{} - destroyed", m_visibleMax);
 
-        visibleMax--;
+        m_visibleMax--;
     }
 
-    while (visibleMin - 1 < cacheFramesData.size() && renderedFrame.getMinY() > visibleFrame.getMinY() - paddingTop)
+    while (m_visibleMin - 1 < m_cacheFramesData.size() && m_renderedFrame.getMinY() > visibleFrame.getMinY() - m_paddingTop)
     {
-        int i = visibleMin - 1;
+        size_t i = m_visibleMin - 1;
         addCellAt(i, false);
     }
 
-    while (visibleMax + 1 < cacheFramesData.size() && renderedFrame.getMaxY() < visibleFrame.getMaxY() - paddingBottom)
+    while (m_visibleMax + 1 < m_cacheFramesData.size() && m_renderedFrame.getMaxY() < visibleFrame.getMaxY() - m_paddingBottom)
     {
-        int i = visibleMax + 1;
+        size_t i = m_visibleMax + 1;
         addCellAt(i, true);
     }
 }
 
 void RecyclerFrame::addCellAt(size_t index, size_t downSide)
 {
-    IndexPath indexPath = cacheIndexPathData[index];
+    IndexPath indexPath = m_cacheIndexPathData[index];
 
     RecyclerCell* cell;
     if (indexPath.row == -1)
-        cell = dataSource->cellForHeader(this, indexPath.section);
+        cell = m_dataSource->cellForHeader(this, indexPath.section);
     else
     {
-        cell = dataSource->cellForRow(this, indexPath);
+        cell = m_dataSource->cellForRow(this, indexPath);
         cell->setLineBottom(1);
     }
 
-    cell->setWidth(renderedFrame.getWidth() - paddingLeft - paddingRight);
-    Point cellOrigin = Point(renderedFrame.getMinX() + paddingLeft,
-        (downSide ? renderedFrame.getMaxY() : renderedFrame.getMinY() - cell->getHeight()) + paddingTop);
+    cell->setWidth(m_renderedFrame.getWidth() - m_paddingLeft - m_paddingRight);
+    Point cellOrigin = Point(
+        m_renderedFrame.getMinX() + m_paddingLeft,
+        (downSide ? m_renderedFrame.getMaxY() : m_renderedFrame.getMinY() - cell->getHeight()) + m_paddingTop
+    );
 
     cell->setDetachedPosition(cellOrigin.x, cellOrigin.y);
     cell->setIndexPath(indexPath);
 
-    this->contentBox->getChildren().insert(this->contentBox->getChildren().end(), cell);
+    m_contentBox->getChildren().insert(m_contentBox->getChildren().end(), cell);
 
     // Allocate and set parent userdata
-    size_t* userdata = (size_t*)malloc(sizeof(size_t));
+    size_t* userdata = (size_t*) malloc(sizeof(size_t));
     *userdata        = index;
 
-    cell->setParent(this->contentBox, userdata);
+    cell->setParent(m_contentBox, userdata);
 
     // Layout and events
-    this->contentBox->invalidate();
+    m_contentBox->invalidate();
     cell->View::willAppear();
 
-    if (index < visibleMin)
-        visibleMin = index;
+    if (index < m_visibleMin)
+        m_visibleMin = index;
 
-    if (index > visibleMax)
-        visibleMax = index;
+    if (index > m_visibleMax)
+        m_visibleMax = index;
 
     Rect cellFrame = cell->getFrame();
 
     if (!downSide)
-        renderedFrame.origin.y -= cellFrame.getHeight();
+        m_renderedFrame.origin.y -= cellFrame.getHeight();
 
-    renderedFrame.size.height += cellFrame.getHeight();
+    m_renderedFrame.size.height += cellFrame.getHeight();
 
-    if (cellFrame.getHeight() != cacheFramesData[index].height)
+    if (cellFrame.getHeight() != m_cacheFramesData[index].height)
     {
-        float delta = cellFrame.getHeight() - cacheFramesData[index].height;
-        contentBox->setHeight(contentBox->getHeight() + delta);
-        cacheFramesData[index].height = cellFrame.getHeight();
+        float delta = cellFrame.getHeight() - m_cacheFramesData[index].height;
+        m_contentBox->setHeight(m_contentBox->getHeight() + delta);
+        m_cacheFramesData[index].height = cellFrame.getHeight();
     }
 
     Logger::debug("Cell #{} - added", index);
@@ -498,10 +478,10 @@ void RecyclerFrame::addCellAt(size_t index, size_t downSide)
 void RecyclerFrame::onLayout()
 {
     ScrollingFrame::onLayout();
-    this->contentBox->setWidth(this->getWidth());
+    m_contentBox->setWidth(this->getWidth());
     if (checkWidth())
     {
-        layouted = true;
+        m_layouted = true;
         reloadData();
     }
 }
@@ -512,48 +492,42 @@ void RecyclerFrame::draw(NVGcontext* vg, float x, float y, float width, float he
     ScrollingFrame::draw(vg, x, y, width, height, style, ctx);
 }
 
-void RecyclerFrame::setPadding(float padding)
-{
-    this->setPadding(padding, padding, padding, padding);
-}
+void RecyclerFrame::setPadding(float padding) { this->setPadding(padding, padding, padding, padding); }
 
 void RecyclerFrame::setPadding(float top, float right, float bottom, float left)
 {
-    paddingTop    = top;
-    paddingRight  = right;
-    paddingBottom = bottom;
-    paddingLeft   = left;
+    m_paddingTop    = top;
+    m_paddingRight  = right;
+    m_paddingBottom = bottom;
+    m_paddingLeft   = left;
 
     this->reloadData();
 }
 
 void RecyclerFrame::setPaddingTop(float top)
 {
-    paddingTop = top;
+    m_paddingTop = top;
     this->reloadData();
 }
 
 void RecyclerFrame::setPaddingRight(float right)
 {
-    paddingRight = right;
+    m_paddingRight = right;
     this->reloadData();
 }
 
 void RecyclerFrame::setPaddingBottom(float bottom)
 {
-    paddingBottom = bottom;
+    m_paddingBottom = bottom;
     this->reloadData();
 }
 
 void RecyclerFrame::setPaddingLeft(float left)
 {
-    paddingLeft = left;
+    m_paddingLeft = left;
     this->reloadData();
 }
 
-View* RecyclerFrame::create()
-{
-    return new RecyclerFrame();
-}
+View* RecyclerFrame::create() { return new RecyclerFrame(); }
 
 } // namespace brls
