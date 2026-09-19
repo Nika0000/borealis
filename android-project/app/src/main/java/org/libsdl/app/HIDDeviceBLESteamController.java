@@ -91,7 +91,7 @@ class HIDDeviceBLESteamController extends BluetoothGattCallback implements HIDDe
             mOp = operation;
             mUuid = uuid;
             mDelayMs = delayMs;
-        }        
+        }
 
         private GattOperation(BluetoothGatt gatt, GattOperation.Operation operation, UUID uuid, byte[] value) {
             mGatt = gatt;
@@ -451,19 +451,19 @@ class HIDDeviceBLESteamController extends BluetoothGattCallback implements HIDDe
         }
 
         Runnable gattOperationRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    synchronized (mOperations) {
-                        if (mCurrentOperation == null) {
-                            Log.e(TAG, "Current operation null in executor?");
-                            return;
-                        }
-
-                        mCurrentOperation.run();
-                        // now wait for the GATT callback and when it comes, finish this operation
+            @Override
+            public void run() {
+                synchronized (mOperations) {
+                    if (mCurrentOperation == null) {
+                        Log.e(TAG, "Current operation null in executor?");
+                        return;
                     }
+
+                    mCurrentOperation.run();
+                    // now wait for the GATT callback and when it comes, finish this operation
                 }
-            };
+            }
+        };
 
         if (mCurrentOperation.getDelayMs() == 0) {
             // Run in main thread
@@ -516,7 +516,7 @@ class HIDDeviceBLESteamController extends BluetoothGattCallback implements HIDDe
                     finalThis.queueGattOperation(retry);
                 }
             }
-        }, 1000);            
+        }, 1000);
     }
 
     void writeCharacteristic(UUID uuid, byte[] value) {
@@ -610,7 +610,7 @@ class HIDDeviceBLESteamController extends BluetoothGattCallback implements HIDDe
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-    // Enable this for verbose logging of controller input reports
+        // Enable this for verbose logging of controller input reports
         //Log.v(TAG, "onCharacteristicChanged uuid=" + characteristic.getUuid() + " data=" + HexDump.dumpHexString(characteristic.getValue()));
 
         if (characteristic.getUuid().equals(mInputCharacteristic) && !mFrozen) {
