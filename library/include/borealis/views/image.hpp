@@ -32,7 +32,8 @@ enum class ImageScalingType
     FIT,
     // The image is scaled to fill the view boundaries, aspect ratio is conserved
     FILL,
-    // The image is stretched to fit the view boundaries (aspect ratio is not conserved). The original image dimensions are entirely ignored in the layout process.
+    // The image is stretched to fit the view boundaries (aspect ratio is not conserved). The original image dimensions are entirely ignored
+    // in the layout process.
     STRETCH,
     // The image is either cropped (not enough space) or untouched (too much space)
     CENTER,
@@ -43,6 +44,20 @@ enum class ImageInterpolation
 {
     LINEAR,
     NEAREST
+};
+
+// Built-in filter presets available through the filter XML attribute
+enum class ImageFilterType
+{
+    NONE,
+    GRAYSCALE,
+    BRIGHTNESS,
+    CONTRAST,
+    BOX_BLUR,
+    GAUSSIAN_BLUR,
+    SHARPEN,
+    UNSHARP_MASK,
+    SOBEL,
 };
 
 // Alignment of the image inside the view for FIT and CROP scaling types
@@ -82,6 +97,42 @@ class Image : public View
     void setInterpolation(ImageInterpolation interpolation);
 
     /**
+     * Sets a filter for subsequent image loads. Value is grayscale strength [0, 1],
+     * brightness offset [-1, 1], contrast [0, 10000], box-blur radius [0, 128],
+     * Gaussian sigma (0, 42], or effect strength [0, 10000], depending on type.
+     * Filtering runs once while loading and does not affect drawing. Filtered
+     * images are not cached and no source pixels or extra texture are retained.
+     * In XML, order attributes as filter, filterValue, then image.
+     */
+    void setFilter(ImageFilterType filterType, float value = 1.0f);
+
+    /**
+     * Disables filtering for subsequent image loads.
+     */
+    void clearFilter();
+
+    /**
+     * Returns whether subsequent image creation should apply a filter.
+     */
+    bool hasFilter() const;
+
+    /**
+     * Returns the selected built-in filter type, or NONE if filtering is disabled.
+     */
+    ImageFilterType getFilterType() const;
+
+    /**
+     * Returns the configured value for the selected filter.
+     */
+    float getFilterValue() const;
+
+    /**
+     * Creates a NanoVG texture from decoded RGBA pixels, applying the configured
+     * filter and interpolation settings. The caller owns the returned texture.
+     */
+    int createImageFromRGBA(const unsigned char* data, int width, int height);
+
+    /**
      * Sets the image from the given resource name.
      *
      * See Image class documentation for the list of supported
@@ -107,7 +158,7 @@ class Image : public View
 
     virtual void innerSetImage(int texture);
 
-    void setImageAsync(std::function<void(std::function<void(const std::string&, size_t length)>)> cb);
+    void setImageAsync(const std::function<void(std::function<void(const std::string&, size_t length)>)>& cb);
 
     void clear();
 
@@ -133,11 +184,11 @@ class Image : public View
      * Whether to destroy the current texture before updating the image texture
      */
     void setFreeTexture(bool value);
-    bool getFreeTexture();
+    bool getFreeTexture() const;
 
-    int getTexture();
-    float getOriginalImageWidth();
-    float getOriginalImageHeight();
+    int getTexture() const;
+    float getOriginalImageWidth() const;
+    float getOriginalImageHeight() const;
 
     static View* create();
 
@@ -149,6 +200,9 @@ class Image : public View
     int texture = 0;
 
     NVGpaint paint;
+
+    ImageFilterType filterType = ImageFilterType::NONE;
+    float filterValue          = 1.0f;
 
     void invalidateImageBounds();
     int getImageFlags();

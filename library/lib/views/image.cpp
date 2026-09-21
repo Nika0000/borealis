@@ -16,20 +16,19 @@
     limitations under the License.
 */
 
-#include <cmath>
-#include <fstream>
-#include <string_view>
-#include <vector>
-
-#include <borealis/core/application.hpp>
-#include <borealis/core/util.hpp>
-#include <borealis/views/image.hpp>
-
 #include <nanosvg.h>
 #include <nanosvgrast.h>
 
-#include "borealis/core/cache_helper.hpp"
-#include "borealis/core/thread.hpp"
+#include <borealis/core/application.hpp>
+#include <borealis/core/cache_helper.hpp>
+#include <borealis/core/thread.hpp>
+#include <borealis/core/util.hpp>
+#include <borealis/views/image.hpp>
+#include <cmath>
+#include <fstream>
+#include <limits>
+#include <string_view>
+#include <vector>
 
 namespace brls
 {
@@ -37,10 +36,79 @@ namespace brls
 // Rasterizing at a higher resolution than the SVG's native size lets the image view
 // upscale it without becoming too blurry, since the texture is otherwise sampled at 1:1.
 static constexpr float SVG_RASTER_SCALE = 2.0f;
+static constexpr float MAX_FILTER_RADIUS = 128.0f;
 
-static int createTextureFromSVG(const unsigned char* data, int size)
+static const NVGfilter* getFilter(ImageFilterType type, float value, NVGfilter& filter)
 {
-    std::vector<char> buffer((const char*)data, (const char*)data + size);
+    if (type == ImageFilterType::NONE)
+        return nullptr;
+
+    switch (type)
+    {
+        case ImageFilterType::GRAYSCALE:
+            filter        = nvgFilterInit(NVG_FILTER_GRAYSCALE);
+            filter.amount = value;
+            break;
+        case ImageFilterType::BRIGHTNESS:
+            filter            = nvgFilterInit(NVG_FILTER_BRIGHTNESS_CONTRAST);
+            filter.brightness = value;
+            break;
+        case ImageFilterType::CONTRAST:
+            filter          = nvgFilterInit(NVG_FILTER_BRIGHTNESS_CONTRAST);
+            filter.contrast = value;
+            break;
+        case ImageFilterType::BOX_BLUR:
+            filter         = nvgFilterInit(NVG_FILTER_BOX_BLUR);
+            filter.radiusX = std::isfinite(value) && value >= 0 && value <= MAX_FILTER_RADIUS ? (int) value : -1;
+            filter.radiusY = filter.radiusX;
+            break;
+        case ImageFilterType::GAUSSIAN_BLUR:
+            filter       = nvgFilterInit(NVG_FILTER_GAUSSIAN_BLUR);
+            filter.sigma = value;
+            break;
+        case ImageFilterType::SHARPEN:
+            filter        = nvgFilterInit(NVG_FILTER_SHARPEN);
+            filter.amount = value;
+            break;
+        case ImageFilterType::UNSHARP_MASK:
+            filter        = nvgFilterInit(NVG_FILTER_UNSHARP_MASK);
+            filter.amount = value;
+            break;
+        case ImageFilterType::SOBEL:
+            filter        = nvgFilterInit(NVG_FILTER_SOBEL);
+            filter.amount = value;
+            break;
+        default:
+            filter        = nvgFilterInit(NVG_FILTER_GRAYSCALE);
+            filter.amount = -1;
+            break;
+    }
+
+    return &filter;
+}
+
+static int createTextureFromPixels(unsigned char* data, int width, int height, int flags, const NVGfilter* filter)
+{
+    NVGcontext* vg = Application::getNVGContext();
+    if (!filter)
+        return nvgCreateImageRGBA(vg, width, height, flags, data);
+
+    NVGpixelBuffer source = {};
+    source.data           = data;
+    source.width          = width;
+    source.height         = height;
+
+    int texture            = 0;
+    NVGfilterStatus status = nvgCreateFilteredImageRGBA(vg, &source, flags, filter, 1, &texture);
+    if (status != NVG_FILTER_OK)
+        Logger::error("Cannot filter image: {}", (int) status);
+
+    return texture;
+}
+
+static int createTextureFromSVG(const unsigned char* data, int size, int flags, const NVGfilter* filter)
+{
+    std::vector<char> buffer((const char*) data, (const char*) data + size);
     buffer.push_back('\0');
 
     NSVGimage* image = nsvgParse(buffer.data(), "px", 96.0f);
@@ -53,20 +121,47 @@ static int createTextureFromSVG(const unsigned char* data, int size)
         return 0;
     }
 
-    int rasterWidth  = (int)std::ceil(image->width * SVG_RASTER_SCALE);
-    int rasterHeight = (int)std::ceil(image->height * SVG_RASTER_SCALE);
+    int rasterWidth  = (int) std::ceil(image->width * SVG_RASTER_SCALE);
+    int rasterHeight = (int) std::ceil(image->height * SVG_RASTER_SCALE);
 
-    std::vector<unsigned char> pixels((size_t)rasterWidth * (size_t)rasterHeight * 4);
+    std::vector<unsigned char> pixels((size_t) rasterWidth * (size_t) rasterHeight * 4);
 
     NSVGrasterizer* rasterizer = nsvgCreateRasterizer();
     nsvgRasterize(rasterizer, image, 0, 0, SVG_RASTER_SCALE, pixels.data(), rasterWidth, rasterHeight, rasterWidth * 4);
     nsvgDeleteRasterizer(rasterizer);
     nsvgDelete(image);
 
-    return nvgCreateImageRGBA(Application::getNVGContext(), rasterWidth, rasterHeight, 0, pixels.data());
+    return createTextureFromPixels(pixels.data(), rasterWidth, rasterHeight, flags, filter);
 }
 
-static float measureWidth(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, float originalWidth, ImageScalingType type)
+static int createTextureFromMem(const unsigned char* data, int size, int flags, const NVGfilter* filter)
+{
+    if (!data || size <= 0)
+        return 0;
+
+    std::string_view head((const char*) data, (size_t) std::min(size, 256));
+    if (head.find("<svg") != std::string_view::npos)
+        return createTextureFromSVG(data, size, flags, filter);
+
+    if (!filter)
+        return nvgCreateImageMem(Application::getNVGContext(), flags, const_cast<unsigned char*>(data), size);
+
+    int texture = nvgCreateFilteredImageMem(Application::getNVGContext(), flags, data, size, filter, 1);
+    if (texture == 0)
+        Logger::error("Cannot decode or filter image");
+
+    return texture;
+}
+
+static float measureWidth(
+    YGNodeConstRef node,
+    float width,
+    YGMeasureMode widthMode,
+    float height,
+    YGMeasureMode heightMode,
+    float originalWidth,
+    ImageScalingType type
+)
 {
     if (widthMode == YGMeasureModeUndefined)
         return originalWidth;
@@ -83,7 +178,15 @@ static float measureWidth(YGNodeConstRef node, float width, YGMeasureMode widthM
     return width;
 }
 
-static float measureHeight(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, float originalHeight, ImageScalingType type)
+static float measureHeight(
+    YGNodeConstRef node,
+    float width,
+    YGMeasureMode widthMode,
+    float height,
+    YGMeasureMode heightMode,
+    float originalHeight,
+    ImageScalingType type
+)
 {
     if (heightMode == YGMeasureModeUndefined)
         return originalHeight;
@@ -102,7 +205,7 @@ static float measureHeight(YGNodeConstRef node, float width, YGMeasureMode width
 
 static YGSize imageMeasureFunc(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
 {
-    Image* image                 = (Image*)YGNodeGetContext(node);
+    Image* image                 = (Image*) YGNodeGetContext(node);
     int texture                  = image->getTexture();
     float originalWidth          = image->getOriginalImageWidth();
     float originalHeight         = image->getOriginalImageHeight();
@@ -207,8 +310,25 @@ Image::Image()
             { "nearest", ImageInterpolation::NEAREST },
         });
 
-    this->registerFilePathXMLAttribute("image", [this](const std::string& value)
-        { this->setImageFromFile(value); }
+    BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
+        "filter", ImageFilterType, this->setFilter,
+        {
+            { "none", ImageFilterType::NONE },
+            { "grayscale", ImageFilterType::GRAYSCALE },
+            { "brightness", ImageFilterType::BRIGHTNESS },
+            { "contrast", ImageFilterType::CONTRAST },
+            { "boxBlur", ImageFilterType::BOX_BLUR },
+            { "gaussianBlur", ImageFilterType::GAUSSIAN_BLUR },
+            { "sharpen", ImageFilterType::SHARPEN },
+            { "unsharpMask", ImageFilterType::UNSHARP_MASK },
+            { "sobel", ImageFilterType::SOBEL },
+        });
+
+    this->registerFloatXMLAttribute("filterValue", [this](float value)
+        { this->setFilter(this->filterType, value); });
+
+    this->registerFilePathXMLAttribute(
+        "image", [this](const std::string& value) { this->setImageFromFile(value); }
 
     );
 
@@ -239,10 +359,7 @@ void Image::draw(NVGcontext* vg, float x, float y, float width, float height, St
     nvgFill(vg);
 }
 
-void Image::onLayout()
-{
-    this->invalidateImageBounds();
-}
+void Image::onLayout() { this->invalidateImageBounds(); }
 
 void Image::setImageAlign(ImageAlignment align)
 {
@@ -322,42 +439,70 @@ void Image::invalidateImageBounds()
 
 size_t Image::checkCache(const std::string& path)
 {
-    if (this->texture > 0)
-    {
-        brls::TextureCache::instance().removeCache(this->texture);
-        brls::Logger::verbose("cache remove: {} {}", path, this->texture);
-    }
-
     int tex = brls::TextureCache::instance().getCache(path);
     if (tex > 0)
     {
         brls::Logger::verbose("cache hit: {} {}", path, tex);
-        this->innerSetImage(tex);
+        if (this->texture == tex)
+            TextureCache::instance().removeCache(tex);
+        else
+            this->innerSetImage(tex);
+        this->setFreeTexture(false);
         return tex;
     }
 
     return 0;
 }
 
-void Image::setImageFromRes(const std::string& path)
+void Image::setImageFromRes(const std::string& name)
 {
-    // Let TextureCache to manage when to delete texture
-    this->setFreeTexture(false);
-
 #ifdef USE_LIBROMFS
-    if (checkCache("@res/" + path) > 0)
+    NVGfilter filterStorage;
+    const NVGfilter* filter = getFilter(this->filterType, this->filterValue, filterStorage);
+    if (!filter && checkCache("@res/" + name) > 0)
         return;
-    auto image = romfs::get(path);
-    this->setImageFromMem((unsigned char*)image.data(), (int)image.size());
-    TextureCache::instance().addCache("@res/" + path, this->texture);
+    auto image = romfs::get(name);
+    int tex    = createTextureFromMem((const unsigned char*) image.data(), (int) image.size(), this->getImageFlags(), filter);
+    if (tex == 0)
+        return;
+
+    this->innerSetImage(tex);
+    this->setFreeTexture(filter != nullptr);
+    if (!filter)
+        TextureCache::instance().addCache("@res/" + name, tex);
 #else
-    this->setImageFromFile(std::string(BRLS_RESOURCES) + path);
+    this->setImageFromFile(std::string(BRLS_RESOURCES) + name);
 #endif
 }
 
-void Image::setInterpolation(ImageInterpolation interpolation)
+void Image::setInterpolation(ImageInterpolation interpolation) { this->interpolation = interpolation; }
+
+void Image::setFilter(ImageFilterType filterType, float value)
 {
-    this->interpolation = interpolation;
+    this->filterType  = filterType;
+    this->filterValue = value;
+}
+
+void Image::clearFilter()
+{
+    this->filterType  = ImageFilterType::NONE;
+    this->filterValue = 1.0f;
+}
+
+bool Image::hasFilter() const { return this->filterType != ImageFilterType::NONE; }
+
+ImageFilterType Image::getFilterType() const { return this->filterType; }
+
+float Image::getFilterValue() const { return this->filterValue; }
+
+int Image::createImageFromRGBA(const unsigned char* data, int width, int height)
+{
+    if (!data || width <= 0 || height <= 0)
+        return 0;
+
+    NVGfilter filterStorage;
+    const NVGfilter* filter = getFilter(this->filterType, this->filterValue, filterStorage);
+    return createTextureFromPixels(const_cast<unsigned char*>(data), width, height, this->getImageFlags(), filter);
 }
 
 int Image::getImageFlags()
@@ -370,14 +515,13 @@ int Image::getImageFlags()
 
 void Image::setImageFromFile(const std::string& path)
 {
-    // Let TextureCache to manage when to delete texture
-    this->setFreeTexture(false);
-
+    NVGfilter filterStorage;
+    const NVGfilter* filter = getFilter(this->filterType, this->filterValue, filterStorage);
 #ifdef USE_LIBROMFS
     if (path.rfind("@res/", 0) == 0)
         return this->setImageFromRes(path.substr(5));
 #endif
-    if (checkCache(path) > 0)
+    if (!filter && checkCache(path) > 0)
         return;
 
     int tex;
@@ -386,54 +530,69 @@ void Image::setImageFromFile(const std::string& path)
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         if (!file)
         {
-            Logger::error("Cannot open SVG file: {}", path);
+            Logger::error("Cannot open image file: {}", path);
             return;
         }
 
         std::streamsize size = file.tellg();
+        if (size <= 0 || size > std::numeric_limits<int>::max())
+            return;
         file.seekg(0, std::ios::beg);
 
-        std::vector<unsigned char> data((size_t)size);
-        file.read((char*)data.data(), size);
+        std::vector<unsigned char> data((size_t) size);
+        if (!file.read((char*) data.data(), size))
+            return;
 
-        tex = createTextureFromSVG(data.data(), (int)data.size());
+        tex = createTextureFromSVG(data.data(), (int) data.size(), this->getImageFlags(), filter);
+    }
+    else if (filter)
+    {
+        tex = nvgCreateFilteredImage(Application::getNVGContext(), path.c_str(), this->getImageFlags(), filter, 1);
     }
     else
     {
         tex = nvgCreateImage(Application::getNVGContext(), path.c_str(), this->getImageFlags());
     }
 
-    innerSetImage(tex);
+    if (tex == 0)
+        return;
 
-    // Save cache
-    TextureCache::instance().addCache(path, tex);
+    this->innerSetImage(tex);
+    this->setFreeTexture(filter != nullptr);
+
+    if (!filter)
+        TextureCache::instance().addCache(path, tex);
 }
 
 void Image::setImageFromMem(const unsigned char* data, int size)
 {
-    NVGcontext* vg = Application::getNVGContext();
-
-    std::string_view head((const char*)data, (size_t)std::max(0, std::min(size, 256)));
-    if (head.find("<svg") != std::string_view::npos)
-    {
-        innerSetImage(createTextureFromSVG(data, size));
+    NVGfilter filterStorage;
+    const NVGfilter* filter = getFilter(this->filterType, this->filterValue, filterStorage);
+    int tex                 = createTextureFromMem(data, size, this->getImageFlags(), filter);
+    if (tex == 0)
         return;
-    }
 
-    // Load texture
-    innerSetImage(nvgCreateImageMem(vg, 0, const_cast<unsigned char*>(data), size));
+    this->innerSetImage(tex);
+    this->setFreeTexture(true);
 }
 
-void Image::setImageAsync(std::function<void(std::function<void(const std::string&, size_t length)>)> cb)
+void Image::setImageAsync(const std::function<void(std::function<void(const std::string&, size_t length)>)>& cb)
 {
     ASYNC_RETAIN
-    cb([ASYNC_TOKEN](const std::string& data, size_t length)
-        { brls::sync([ASYNC_TOKEN, data, length]()
-              {
-            ASYNC_RELEASE
-            if(length == 0)
-                return;
-            this->setImageFromMem((unsigned char *) data.c_str(),(int) length); }); });
+    cb(
+        [ASYNC_TOKEN](const std::string& data, size_t length)
+        {
+            brls::sync(
+                [ASYNC_TOKEN, data, length]()
+                {
+                    ASYNC_RELEASE
+                    if (length == 0)
+                        return;
+                    this->setImageFromMem((unsigned char*) data.c_str(), (int) length);
+                }
+            );
+        }
+    );
 }
 
 void Image::innerSetImage(int tex)
@@ -447,16 +606,21 @@ void Image::innerSetImage(int tex)
     NVGcontext* vg = Application::getNVGContext();
 
     // Free the old texture if necessary
-    if (this->texture != 0 && this->freeTexture)
-        nvgDeleteImage(vg, this->texture);
+    if (this->texture != 0 && this->texture != tex)
+    {
+        if (this->freeTexture)
+            nvgDeleteImage(vg, this->texture);
+        else
+            TextureCache::instance().removeCache(this->texture);
+    }
 
     // Set the new texture
     this->texture = tex;
 
     int width, height;
     nvgImageSize(vg, this->texture, &width, &height);
-    this->originalImageWidth  = (float)width;
-    this->originalImageHeight = (float)height;
+    this->originalImageWidth  = (float) width;
+    this->originalImageHeight = (float) height;
 
     this->invalidate();
 }
@@ -468,8 +632,19 @@ void Image::clear()
 
     if (this->freeTexture)
         nvgDeleteImage(Application::getNVGContext(), this->texture);
+    else
+        TextureCache::instance().removeCache(this->texture);
 
-    this->texture = 0;
+    this->texture             = 0;
+    this->originalImageWidth  = 0;
+    this->originalImageHeight = 0;
+    this->imageX              = 0;
+    this->imageY              = 0;
+    this->imageWidth          = 0;
+    this->imageHeight         = 0;
+    this->freeTexture         = true;
+
+    this->invalidate();
 }
 
 void Image::setScalingType(ImageScalingType scalingType)
@@ -479,35 +654,17 @@ void Image::setScalingType(ImageScalingType scalingType)
     this->invalidate();
 }
 
-ImageScalingType Image::getScalingType()
-{
-    return this->scalingType;
-}
+ImageScalingType Image::getScalingType() { return this->scalingType; }
 
-float Image::getOriginalImageWidth()
-{
-    return this->originalImageWidth;
-}
+float Image::getOriginalImageWidth() const { return this->originalImageWidth; }
 
-int Image::getTexture()
-{
-    return this->texture;
-}
+int Image::getTexture() const { return this->texture; }
 
-void Image::setFreeTexture(bool value)
-{
-    this->freeTexture = value;
-}
+void Image::setFreeTexture(bool value) { this->freeTexture = value; }
 
-bool Image::getFreeTexture()
-{
-    return this->freeTexture;
-}
+bool Image::getFreeTexture() const { return this->freeTexture; }
 
-float Image::getOriginalImageHeight()
-{
-    return this->originalImageHeight;
-}
+float Image::getOriginalImageHeight() const { return this->originalImageHeight; }
 
 Image::~Image()
 {
@@ -517,9 +674,6 @@ Image::~Image()
         TextureCache::instance().removeCache(this->texture);
 }
 
-View* Image::create()
-{
-    return new Image();
-}
+View* Image::create() { return new Image(); }
 
 } // namespace brls
