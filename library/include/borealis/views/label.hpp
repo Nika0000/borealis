@@ -103,10 +103,10 @@ class Label : public View
     void setLineHeight(float value);
     void setTextColor(NVGcolor color);
 
-    int getFont();
-    float getFontSize();
-    float getFontQuality();
-    float getLineHeight();
+    int getFont() const;
+    float getFontSize() const;
+    float getFontQuality() const;
+    float getLineHeight() const;
     NVGcolor getTextColor();
 
     std::string getFullText();
@@ -140,7 +140,7 @@ class Label : public View
      */
     void setSingleLine(bool singleLine);
 
-    bool isSingleLine();
+    bool isSingleLine() const;
 
     /**
      * Limits the number of wrapped lines that are displayed.

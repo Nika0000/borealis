@@ -124,7 +124,7 @@ void Application::createWindow(const std::string& windowTitle)
         audioPlayer->load(sound);
 
     // Init rng
-    std::srand(std::time(nullptr));
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     // Init static variables
     Application::currentFocus = nullptr;
@@ -1113,7 +1113,7 @@ bool Application::loadFontFromFile(const std::string& fontName, const std::strin
 
 bool Application::loadFontFromMemory(const std::string& fontName, void* data, size_t size, bool freeData)
 {
-    int handle = nvgCreateFontMem(Application::getNVGContext(), fontName.c_str(), (unsigned char*) data, size, freeData);
+    int handle = nvgCreateFontMem(Application::getNVGContext(), fontName.c_str(), (unsigned char*) data, static_cast<int>(size), freeData);
 
     if (handle == FONT_INVALID)
     {

@@ -54,7 +54,7 @@ static int utf8_len(std::string& s)
 static int utf8_find_prev(std::string& s, int size)
 {
     int result = 0;
-    for (int i = s.size() - 1; i >= 0; i--)
+    for (int i = static_cast<int>(s.size()) - 1; i >= 0; i--)
     {
         char p = s.at(i);
         result += 1;
@@ -155,7 +155,7 @@ void SDLImeManager::openInputDialog(
         int n = utf8_len(text);
         if (prev_n + n > maxStringLength)
         {
-            n       = maxStringLength - prev_n;
+            n       = static_cast<int>(maxStringLength - prev_n);
             int end = utf8_find_next(text, 0, n);
             text    = text.substr(0, end);
         }

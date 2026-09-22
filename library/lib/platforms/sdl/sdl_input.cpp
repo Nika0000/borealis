@@ -636,7 +636,7 @@ void SDLInputManager::updateUnifiedControllerState(ControllerState* state)
     for (auto& c : controllers)
     {
         ControllerState localState {};
-        updateControllerState(&localState, c.first);
+        updateControllerState(&localState, static_cast<int>(c.first));
 
         for (size_t i = 0; i < _BUTTON_MAX; i++)
             state->buttons[i] |= localState.buttons[i];

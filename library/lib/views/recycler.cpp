@@ -292,7 +292,7 @@ void RecyclerFrame::selectRowAt(IndexPath indexPath, bool animated)
     float offset = 0;
 
     for (size_t j = 0; j < indexPath.section; j++)
-        for (int i = -1; i < (m_dataSource->numberOfRows(this, j)); i++)
+        for (int i = -1; i < (m_dataSource->numberOfRows(this, static_cast<int>(j))); i++)
         {
             offset += m_cacheFramesData[count++].height;
         }
@@ -424,7 +424,7 @@ void RecyclerFrame::addCellAt(size_t index, size_t downSide)
 
     RecyclerCell* cell;
     if (indexPath.row == -1)
-        cell = m_dataSource->cellForHeader(this, indexPath.section);
+        cell = m_dataSource->cellForHeader(this, static_cast<int>(indexPath.section));
     else
     {
         cell = m_dataSource->cellForRow(this, indexPath);

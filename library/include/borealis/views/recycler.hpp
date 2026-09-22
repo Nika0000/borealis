@@ -32,7 +32,7 @@ namespace brls
 struct IndexPath
 {
     size_t section;
-    int row;
+    size_t row;
     size_t item;
 
     IndexPath() : IndexPath(0, 0, 0) {}

@@ -78,14 +78,14 @@
     CHHapticPattern* hapticPattern             = [[CHHapticPattern alloc] initWithEvents:[NSArray arrayWithObject:hapticEvent] parameters:[[NSArray alloc] init] error:&error];
     if (error != nil)
     {
-        NSLog(@"Controller %d: Haptic pattern creation failed: %@", _playerIndex, error);
+        NSLog(@"Controller %ld: Haptic pattern creation failed: %@", (long)_playerIndex, error);
         return;
     }
 
     _hapticPlayer = [_hapticEngine createPlayerWithPattern:hapticPattern error:&error];
     if (error != nil)
     {
-        NSLog(@"Controller %d: Haptic player creation failed: %@", _playerIndex, error);
+        NSLog(@"Controller %ld: Haptic player creation failed: %@", (long)_playerIndex, error);
         return;
     }
 
@@ -93,7 +93,7 @@
     if (error != nil)
     {
         _hapticPlayer = nil;
-        NSLog(@"Controller %d: Haptic playback start failed: %@", _playerIndex, error);
+        NSLog(@"Controller %ld: Haptic playback start failed: %@", (long)_playerIndex, error);
         return;
     }
 
@@ -118,7 +118,7 @@
     [_hapticEngine startAndReturnError:&error];
     if (error != nil)
     {
-        NSLog(@"Controller %d: Haptic engine failed to start: %@", _playerIndex, error);
+        NSLog(@"Controller %ld: Haptic engine failed to start: %@", (long)_playerIndex, error);
         return nil;
     }
 
@@ -130,7 +130,7 @@
             return;
         }
 
-        NSLog(@"Controller %d: Haptic engine stopped: %p", me->_playerIndex, stoppedReason);
+        NSLog(@"Controller %ld: Haptic engine stopped: %ld", (long)me->_playerIndex, (long)stoppedReason);
         me->_hapticPlayer = nil;
         me->_hapticEngine = nil;
         me->_playing      = NO;
@@ -142,7 +142,7 @@
             return;
         }
 
-        NSLog(@"Controller %d: Haptic engine reset", me->_playerIndex);
+        NSLog(@"Controller %ld: Haptic engine reset", (long)me->_playerIndex);
         me->_hapticPlayer = nil;
         me->_playing      = NO;
         [me->_hapticEngine startAndReturnError:nil];

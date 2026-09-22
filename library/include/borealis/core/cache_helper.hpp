@@ -18,13 +18,13 @@
 
 #include <stdexcept>
 
+#include "borealis/core/application.hpp"
 #include "borealis/core/singleton.hpp"
 
 namespace brls
 {
 
-template <typename K, typename T>
-struct Node
+template <typename K, typename T> struct Node
 {
     K key;
     T value;
@@ -35,11 +35,7 @@ struct Node
     /// Reference count, 1 for each cache hit
     size_t count = 1;
 
-    Node(K k, T v)
-        : key(k)
-        , value(v)
-    {
-    }
+    Node(K k, T v) : key(std::move(k)), value(v) {}
 };
 
 /**
@@ -47,8 +43,7 @@ struct Node
  * If the reference count is not 0, the cache will never expire.
  * Cache items with a reference count of 0 are cached according to LRU rules
  */
-template <typename K, typename T>
-class LRUCache
+template <typename K, typename T> class LRUCache
 {
   public:
     typedef typename std::list<Node<K, T>>::iterator CacheIter;
@@ -56,31 +51,29 @@ class LRUCache
     inline static size_t DEFAULT_CAPACITY      = 400;
     inline static bool ALWAYS_CACHE_LOCAL_FILE = true;
 
-    LRUCache(size_t c, T defaultValue)
-        : capacity(c)
-        , defaultValue(defaultValue)
+    LRUCache(size_t c, T defaultValue) : m_capacity(c), m_defaultValue(defaultValue)
     {
         if (c < 1)
             throw std::logic_error("Cache capacity cannot less than 1.");
     }
 
-    T get(K key)
+    T get(const K& key)
     {
         if (!isCacheHit(key))
         {
             // Cache not hit
-            return defaultValue;
+            return m_defaultValue;
         }
 
         // Cache hit
-        cacheList.splice(cacheList.begin(), cacheList, cacheMap[key]);
-        cacheMap[key]                  = cacheList.begin();
-        valueMap[cacheMap[key]->value] = cacheList.begin();
-        cacheMap[key]->count++;
-        return cacheMap[key]->value;
+        m_cacheList.splice(m_cacheList.begin(), m_cacheList, m_cacheMap[key]);
+        m_cacheMap[key]                    = m_cacheList.begin();
+        m_valueMap[m_cacheMap[key]->value] = m_cacheList.begin();
+        m_cacheMap[key]->count++;
+        return m_cacheMap[key]->value;
     }
 
-    void set(K key, T value)
+    void set(const K& key, T value)
     {
         if (isCacheHit(key))
         {
@@ -88,16 +81,16 @@ class LRUCache
         }
 
         // Check capacity limits
-        if (cacheList.size() >= capacity)
+        if (m_cacheList.size() >= m_capacity)
         {
-            deleteCache(cacheList.size() - capacity);
+            deleteCache(m_cacheList.size() - m_capacity);
         }
         // Add new cache
-        cacheList.push_front(Node<K, T>(key, value));
+        m_cacheList.push_front(Node<K, T>(key, value));
 
         // Update the values of two maps
-        cacheMap[key]                  = cacheList.begin();
-        valueMap[cacheMap[key]->value] = cacheList.begin();
+        m_cacheMap[key]                    = m_cacheList.begin();
+        m_valueMap[m_cacheMap[key]->value] = m_cacheList.begin();
     }
 
     /**
@@ -109,7 +102,7 @@ class LRUCache
         {
             return;
         }
-        valueMap[value]->count--;
+        m_valueMap[value]->count--;
     }
 
     /**
@@ -121,9 +114,9 @@ class LRUCache
         {
             return;
         }
-        valueMap[old_val]->value = new_val;
-        valueMap[new_val]        = valueMap[old_val];
-        valueMap.erase(old_val);
+        m_valueMap[old_val]->value = new_val;
+        m_valueMap[new_val]        = m_valueMap[old_val];
+        m_valueMap.erase(old_val);
     }
 
     void setCapacity(int c)
@@ -132,10 +125,10 @@ class LRUCache
             throw std::logic_error("Cache capacity cannot less than 1.");
         // The setting standard of the DEFAULT_CAPACITY should be the upper limit of the number of all pictures.
         c += DEFAULT_CAPACITY;
-        this->capacity = c;
-        if (cacheList.size() > capacity)
+        m_capacity = c;
+        if (m_cacheList.size() > m_capacity)
         {
-            deleteCache(cacheList.size() - capacity);
+            deleteCache(m_cacheList.size() - m_capacity);
         }
     }
 
@@ -150,23 +143,23 @@ class LRUCache
             return;
         }
 
-        auto item = valueMap[value];
+        auto item = m_valueMap[value];
         if (item->dirty)
             return;
 
         // modify existing Key.
-        cacheMap.erase(item->key);
+        m_cacheMap.erase(item->key);
         item->key += DIRTY;
         item->dirty = true;
     }
 
     void markAllDirty()
     {
-        for (auto& i : cacheList)
+        for (auto& i : m_cacheList)
         {
             if (i.dirty)
                 continue;
-            cacheMap.erase(i.key);
+            m_cacheMap.erase(i.key);
             i.key += DIRTY;
             i.dirty = true;
         }
@@ -179,14 +172,14 @@ class LRUCache
     void trimUnused()
     {
         auto vg = brls::Application::getNVGContext();
-        for (auto i = cacheList.begin(); i != cacheList.end();)
+        for (auto i = m_cacheList.begin(); i != m_cacheList.end();)
         {
             if (i->count <= 0)
             {
-                nvgDeleteImage(vg, i->value);
-                cacheMap.erase(i->key);
-                valueMap.erase(i->value);
-                i = cacheList.erase(i);
+                nvgDeleteImage(vg, static_cast<int>(i->value));
+                m_cacheMap.erase(i->key);
+                m_valueMap.erase(i->value);
+                i = m_cacheList.erase(i);
             }
             else
             {
@@ -195,24 +188,23 @@ class LRUCache
         }
     }
 
-    std::list<Node<K, T>>& getCacheList() { return cacheList; }
+    std::list<Node<K, T>>& getCacheList() { return m_cacheList; }
 
     void debug()
     {
-        printf("===== cache size: %zu =====\n", cacheList.size());
-        for (auto& i : cacheList)
+        printf("===== cache size: %zu =====\n", m_cacheList.size());
+        for (auto& i : m_cacheList)
         {
-            printf("count: %zu, dirty: %d, value: %zu, key: %s\n", i.count,
-                i.dirty, i.value, i.key.c_str());
+            printf("count: %zu, dirty: %d, value: %zu, key: %s\n", i.count, i.dirty, i.value, i.key.c_str());
         }
     }
 
   private:
-    size_t capacity = 1;
-    T defaultValue;
-    std::list<Node<K, T>> cacheList;
-    std::unordered_map<K, CacheIter> cacheMap;
-    std::unordered_map<T, CacheIter> valueMap;
+    size_t m_capacity = 1;
+    T m_defaultValue;
+    std::list<Node<K, T>> m_cacheList;
+    std::unordered_map<K, CacheIter> m_cacheMap;
+    std::unordered_map<T, CacheIter> m_valueMap;
 
     /**
      * Delete N caches from back to front
@@ -227,15 +219,15 @@ class LRUCache
         if (num <= 0)
             return 0;
         auto vg = brls::Application::getNVGContext();
-        for (auto i = cacheList.rbegin(); i != cacheList.rend(); i++)
+        for (auto i = m_cacheList.rbegin(); i != m_cacheList.rend(); i++)
         {
             if (i->count <= 0)
             {
                 num--;
-                nvgDeleteImage(vg, i->value);
-                cacheMap.erase(i->key);
-                valueMap.erase(i->value);
-                cacheList.erase(std::next(i).base());
+                nvgDeleteImage(vg, static_cast<int>(i->value));
+                m_cacheMap.erase(i->key);
+                m_valueMap.erase(i->value);
+                m_cacheList.erase(std::next(i).base());
                 if (num == 0)
                     break;
             }
@@ -243,14 +235,14 @@ class LRUCache
         return num;
     }
 
-    bool isExisted(K key) { return cacheMap.find(key) != cacheMap.end(); }
+    bool isExisted(const K& key) { return m_cacheMap.find(key) != m_cacheMap.end(); }
 
-    bool isExisted(T val) { return valueMap.find(val) != valueMap.end(); }
+    bool isExisted(T val) { return m_valueMap.find(val) != m_valueMap.end(); }
 
-    bool isCacheHit(K key)
+    bool isCacheHit(const K& key)
     {
         if (isExisted(key))
-            return !cacheMap[key]->dirty;
+            return !m_cacheMap[key]->dirty;
         return false;
     }
 };
@@ -260,15 +252,12 @@ class TextureCache : public Singleton<TextureCache>
   public:
     TextureCache()
     {
-        brls::Application::getWindowSizeChangedEvent()->subscribe(
-            [this]()
-            { this->cache.markAllDirty(); });
+        brls::Application::getWindowSizeChangedEvent()->subscribe([this]() { this->cache.markAllDirty(); });
 
-        brls::Application::getExitEvent()->subscribe([this]()
-            { this->clean(); });
+        brls::Application::getExitEvent()->subscribe([this]() { this->clean(); });
     }
 
-    int getCache(const std::string& key) { return cache.get(key); }
+    int getCache(const std::string& key) { return static_cast<int>(cache.get(key)); }
 
     /**
      * Add cache
@@ -313,7 +302,7 @@ class TextureCache : public Singleton<TextureCache>
         auto vg = brls::Application::getNVGContext();
         for (auto& i : cache.getCacheList())
         {
-            nvgDeleteImage(vg, i.value);
+            nvgDeleteImage(vg, static_cast<int>(i.value));
         }
     }
 

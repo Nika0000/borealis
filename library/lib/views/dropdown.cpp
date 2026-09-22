@@ -149,13 +149,13 @@ RecyclerCell* Dropdown::cellForRow(RecyclerFrame* recycler, IndexPath index)
 
 void Dropdown::didSelectRowAt(RecyclerFrame* recycler, IndexPath index)
 {
-    m_cb(index.row);
+    m_cb(static_cast<int>(index.row));
     Application::popActivity(
         TransitionAnimation::FADE,
         [this, index]
         {
             if (this->m_dismissCb)
-                this->m_dismissCb(index.row);
+                this->m_dismissCb(static_cast<int>(index.row));
         }
     );
 }

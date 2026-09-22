@@ -295,6 +295,12 @@ foreach (lib ${BOREALIS_SOURCE})
     list(APPEND BOREALIS_SRC ${TEMP_SRC})
 endforeach (lib)
 
+if (PLATFORM_IOS OR PLATFORM_TVOS)
+    list(REMOVE_ITEM BOREALIS_SRC
+        ${BOREALIS_PATH}/lib/platforms/desktop/desktop_winrt.cpp
+        ${BOREALIS_PATH}/lib/platforms/desktop/steam_deck.cpp)
+endif ()
+
 # borealis 图形 driver
 set(BOREALIS_DRIVER BOREALIS_USE_OPENGL)
 if (BOREALIS_USE_METAL)

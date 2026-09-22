@@ -46,7 +46,9 @@ static size_t strLen(const std::string& str)
     return res;
 }
 
-static void computeLabelHeight(Label* label, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, YGSize* size, float* originalBounds)
+static void computeLabelHeight(
+    Label* label, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode, YGSize* size, float* originalBounds
+)
 {
     label->setIsWrapping(false);
 
@@ -72,7 +74,7 @@ static void computeLabelHeight(Label* label, float width, YGMeasureMode widthMod
 static YGSize labelMeasureFunc(YGNodeConstRef node, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
 {
     NVGcontext* vg       = Application::getNVGContext();
-    auto* label          = (Label*)YGNodeGetContext(node);
+    auto* label          = (Label*) YGNodeGetContext(node);
     std::string fullText = label->getFullText();
 
     YGSize size = {
@@ -239,55 +241,50 @@ Label::Label()
     YGNodeStyleSetMaxHeightPercent(this->ygNode, 100);
 
     // Register XML attributes
-    this->registerStringXMLAttribute("text", [this](std::string value)
-        { this->setText(value); });
+    this->registerStringXMLAttribute("text", [this](const std::string& value) { this->setText(value); });
 
-    this->registerFloatXMLAttribute("fontSize", [this](float value)
-        { this->setFontSize(value); });
+    this->registerFloatXMLAttribute("fontSize", [this](float value) { this->setFontSize(value); });
 
-    this->registerFloatXMLAttribute("fontQuality", [this](float value)
-        { this->setFontQuality(value); });
+    this->registerFloatXMLAttribute("fontQuality", [this](float value) { this->setFontQuality(value); });
 
-    this->registerStringXMLAttribute("fontFamily", [this](std::string value)
-        { this->setFontFamily(value); });
+    this->registerStringXMLAttribute("fontFamily", [this](const std::string& value) { this->setFontFamily(value); });
 
-    this->registerColorXMLAttribute("textColor", [this](NVGcolor color)
-        { this->setTextColor(color); });
+    this->registerColorXMLAttribute("textColor", [this](NVGcolor color) { this->setTextColor(color); });
 
-    this->registerFloatXMLAttribute("lineHeight", [this](float value)
-        { this->setLineHeight(value); });
+    this->registerFloatXMLAttribute("lineHeight", [this](float value) { this->setLineHeight(value); });
 
-    this->registerBoolXMLAttribute("animated", [this](bool value)
-        { this->setAnimated(value); });
+    this->registerBoolXMLAttribute("animated", [this](bool value) { this->setAnimated(value); });
 
-    this->registerBoolXMLAttribute("autoAnimate", [this](bool value)
-        { this->setAutoAnimate(value); });
+    this->registerBoolXMLAttribute("autoAnimate", [this](bool value) { this->setAutoAnimate(value); });
 
-    this->registerBoolXMLAttribute("singleLine", [this](bool value)
-        { this->setSingleLine(value); });
+    this->registerBoolXMLAttribute("singleLine", [this](bool value) { this->setSingleLine(value); });
 
-    this->registerFloatXMLAttribute("maxLines", [this](float value)
-        { this->setMaxLines(static_cast<int>(value)); });
+    this->registerFloatXMLAttribute("maxLines", [this](float value) { this->setMaxLines(static_cast<int>(value)); });
 
-    this->registerFloatXMLAttribute("cursor", [this](float value)
-        { this->setCursor(value); });
+    this->registerFloatXMLAttribute("cursor", [this](float value) { this->setCursor(value); });
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "horizontalAlign", HorizontalAlign, this->setHorizontalAlign,
+        "horizontalAlign",
+        HorizontalAlign,
+        this->setHorizontalAlign,
         {
             { "left", HorizontalAlign::LEFT },
             { "center", HorizontalAlign::CENTER },
             { "right", HorizontalAlign::RIGHT },
-        });
+        }
+    );
 
     BRLS_REGISTER_ENUM_XML_ATTRIBUTE(
-        "verticalAlign", VerticalAlign, this->setVerticalAlign,
+        "verticalAlign",
+        VerticalAlign,
+        this->setVerticalAlign,
         {
             { "baseline", VerticalAlign::BASELINE },
             { "top", VerticalAlign::TOP },
             { "center", VerticalAlign::CENTER },
             { "bottom", VerticalAlign::BOTTOM },
-        });
+        }
+    );
 }
 
 void Label::setAnimated(bool animated)
@@ -300,20 +297,11 @@ void Label::setAnimated(bool animated)
     this->resetScrollingAnimation();
 }
 
-void Label::setAutoAnimate(bool autoAnimate)
-{
-    this->autoAnimate = autoAnimate;
-}
+void Label::setAutoAnimate(bool autoAnimate) { this->autoAnimate = autoAnimate; }
 
-void Label::setHorizontalAlign(HorizontalAlign align)
-{
-    this->horizontalAlign = align;
-}
+void Label::setHorizontalAlign(HorizontalAlign align) { this->horizontalAlign = align; }
 
-void Label::setVerticalAlign(VerticalAlign align)
-{
-    this->verticalAlign = align;
-}
+void Label::setVerticalAlign(VerticalAlign align) { this->verticalAlign = align; }
 
 void Label::onFocusGained()
 {
@@ -347,10 +335,7 @@ void Label::onParentFocusLost(View* focusedView)
         this->setAnimated(false);
 }
 
-void Label::setTextColor(NVGcolor color)
-{
-    this->textColor = color;
-}
+void Label::setTextColor(NVGcolor color) { this->textColor = color; }
 
 std::string Label::STConverter(const std::string& text)
 {
@@ -404,10 +389,7 @@ void Label::setMaxLines(int maxLines)
     this->invalidate();
 }
 
-int Label::getMaxLines() const
-{
-    return this->maxLines;
-}
+int Label::getMaxLines() const { return this->maxLines; }
 
 void Label::setFontSize(float value)
 {
@@ -437,15 +419,9 @@ void Label::setLineHeight(float value)
     this->invalidate();
 }
 
-void Label::setIsWrapping(bool isWrapping)
-{
-    this->isWrapping = isWrapping;
-}
+void Label::setIsWrapping(bool isWrapping) { this->isWrapping = isWrapping; }
 
-bool Label::isSingleLine()
-{
-    return this->singleLine;
-}
+bool Label::isSingleLine() const { return this->singleLine; }
 
 enum NVGalign Label::getNVGVerticalAlign()
 {
@@ -576,7 +552,7 @@ void Label::draw(NVGcontext* vg, float x, float y, float width, float height, St
         float nextX = nvgText(vg, textX, textY, this->truncatedText.c_str(), nullptr);
 
         // 绘制编辑游标
-        if (this->cursor >= (int)CursorPosition::END)
+        if (this->cursor >= (int) CursorPosition::END)
         {
             // blink
             auto blink = ((brls::getCPUTimeUsec() - cursor_blink) >> 10) % 1000;
@@ -587,12 +563,12 @@ void Label::draw(NVGcontext* vg, float x, float y, float width, float height, St
             float lineh;
             nvgTextMetrics(vg, NULL, NULL, &lineh);
             float cursorX = x;
-            int textSize  = this->truncatedText.size();
-            if (this->cursor == (int)CursorPosition::END)
+            int textSize  = static_cast<int>(this->truncatedText.size());
+            if (this->cursor == (int) CursorPosition::END)
             {
                 cursorX = nextX;
             }
-            else if (this->cursor > (int)CursorPosition::START)
+            else if (this->cursor > (int) CursorPosition::START)
             {
                 if (textSize > this->cursor)
                 {
@@ -648,11 +624,14 @@ void Label::onScrollTimerFinished()
 
     this->scrollingAnimation.addStep(target, duration, EasingFunction::linear);
 
-    this->scrollingAnimation.setEndCallback([this](bool finished)
+    this->scrollingAnimation.setEndCallback(
+        [this](bool finished)
         {
-        // Start over if the scrolling animation ended naturally
-        if (finished)
-            this->startScrollTimer(); });
+            // Start over if the scrolling animation ended naturally
+            if (finished)
+                this->startScrollTimer();
+        }
+    );
 
     this->scrollingAnimation.start();
 
@@ -670,8 +649,7 @@ void Label::startScrollTimer()
 
     this->scrollingTimer.setDuration(style["brls/animations/label_scrolling_timer"]);
 
-    this->scrollingTimer.setEndCallback([this](bool finished)
-        { this->onScrollTimerFinished(); });
+    this->scrollingTimer.setEndCallback([this](bool finished) { this->onScrollTimerFinished(); });
 
     this->scrollingTimer.start();
 
@@ -716,7 +694,7 @@ void Label::onLayout()
 
         std::vector<NVGglyphPosition> positions;
         positions.resize(stringLength);
-        nvgTextGlyphPositions(vg, 0, 0, fullText.c_str(), nullptr, positions.data(), stringLength);
+        nvgTextGlyphPositions(vg, 0, 0, fullText.c_str(), nullptr, positions.data(), static_cast<int>(stringLength));
 
         const char* start   = fullText.c_str();
         this->truncatedText = fullText;
@@ -741,54 +719,24 @@ void Label::onLayout()
     this->resetScrollingAnimation(); // either stops it or restarts it with the new text
 }
 
-int Label::getFont()
-{
-    return this->font;
-}
+int Label::getFont() const { return this->font; }
 
-float Label::getFontSize()
-{
-    return this->fontSize;
-}
+float Label::getFontSize() const { return this->fontSize; }
 
-float Label::getFontQuality()
-{
-    return this->fontQuality;
-}
+float Label::getFontQuality() const { return this->fontQuality; }
 
-float Label::getLineHeight()
-{
-    return this->lineHeight;
-}
+float Label::getLineHeight() const { return this->lineHeight; }
 
-NVGcolor Label::getTextColor()
-{
-    return this->textColor;
-}
+NVGcolor Label::getTextColor() { return this->textColor; }
 
-std::string Label::getFullText()
-{
-    return this->fullText;
-}
+std::string Label::getFullText() { return this->fullText; }
 
-void Label::setRequiredWidth(float requiredWidth)
-{
-    this->requiredWidth = requiredWidth;
-}
+void Label::setRequiredWidth(float requiredWidth) { this->requiredWidth = requiredWidth; }
 
-void Label::setEllipsisWidth(float ellipsisWidth)
-{
-    this->ellipsisWidth = ellipsisWidth;
-}
+void Label::setEllipsisWidth(float ellipsisWidth) { this->ellipsisWidth = ellipsisWidth; }
 
-Label::~Label()
-{
-    this->stopScrollingAnimation();
-}
+Label::~Label() { this->stopScrollingAnimation(); }
 
-View* Label::create()
-{
-    return new Label();
-}
+View* Label::create() { return new Label(); }
 
 } // namespace brls
