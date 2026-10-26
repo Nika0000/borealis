@@ -257,6 +257,22 @@ void Application::processInput()
 
     // Input
     static ControllerState controllerState = {};
+
+    // Drops the highlight of focusBeforePress when a press landed on a view outside of it
+    // and no gesture moved focus elsewhere.
+    const auto unfocusIfPressedOutside = [](View* focusBeforePress, View* pressed)
+    {
+        // A press that moved focus elsewhere is already handled by giveFocus
+        if (!focusBeforePress || Application::currentFocus != focusBeforePress)
+            return;
+
+        for (View* v = pressed; v; v = v->getParent())
+            if (v == focusBeforePress)
+                return;
+
+        Application::giveFocus(nullptr);
+    };
+
     std::vector<RawTouchState> rawTouch;
     RawMouseState rawMouse;
 
@@ -330,9 +346,13 @@ void Application::processInput()
                 i.view = Application::activitiesStack[Application::activitiesStack.size() - 1]->getContentView()->hitTest(position);
         }
 
+        View* focusBeforePress = Application::currentFocus;
+
         if (i.view && i.phase != TouchPhase::NONE)
         {
             Sound sound = i.view->gestureRecognizerRequest(i, MouseState(), i.view);
+            if (i.phase == TouchPhase::START)
+                unfocusIfPressedOutside(focusBeforePress, i.view);
             float pitch = 1;
             if (sound == SOUND_TOUCH)
             {
@@ -406,7 +426,10 @@ void Application::processInput()
 
     if (mouseState.view)
     {
-        Sound sound = mouseState.view->gestureRecognizerRequest(TouchState(), mouseState, mouseState.view);
+        View* focusBeforePress = Application::currentFocus;
+        Sound sound            = mouseState.view->gestureRecognizerRequest(TouchState(), mouseState, mouseState.view);
+        if (mouseState.leftButton == TouchPhase::START)
+            unfocusIfPressedOutside(focusBeforePress, mouseState.view);
         float pitch = 1;
         if (sound == SOUND_TOUCH)
         {
@@ -640,8 +663,11 @@ double Application::getDeactivatedFrameTime() { return 1.0 / Application::deacti
 
 bool Application::handleAction(char button, bool repeating)
 {
-    // Dismiss if input type was changed
-    if (button == BUTTON_A && setInputType(InputType::GAMEPAD))
+    // Dismiss if input type was changed; an inline text session started by pointer/touch must still
+    // receive Enter (submit) on the first press instead of having it swallowed by the switch.
+    ImeManager* ime       = Application::getImeManager();
+    const bool inlineText = ime && ime->isInlineTextActive();
+    if (button == BUTTON_A && !inlineText && setInputType(InputType::GAMEPAD))
         return false;
 
     //    if (button == BUTTON_B && setInputType(InputType::GAMEPAD))
