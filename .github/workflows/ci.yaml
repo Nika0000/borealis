@@ -59,7 +59,7 @@ jobs:
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-cc
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Build
@@ -92,7 +92,7 @@ jobs:
           - { driver: vulkan, cmake: "-DBOREALIS_USE_VULKAN=ON -DUSE_SDL3=ON", ext: "-sdl3" }
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Install dependencies
@@ -123,13 +123,13 @@ jobs:
     runs-on: macos-26
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: cache
         id: cache-key
         run: echo "IOS_CACHE_KEY=ios-cmake-build-dir-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '.github/workflows/ci.yaml') }}" >> $GITHUB_OUTPUT
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: ios-cache
         with:
           path: build
@@ -139,7 +139,7 @@ jobs:
           cmake -B build -G Xcode -DPLATFORM_IOS=ON -DPLATFORM=OS64 -DDEPLOYMENT_TARGET=13.0
           cmake --build build
           ditto -ck --rsrc --sequesterRsrc --keepParent build/Debug-iphoneos/borealis_demo.app borealis_demo.zip
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: ${{ !steps.ios-cache.outputs.cache-hit }}
         with:
           path: build
@@ -235,7 +235,7 @@ jobs:
     name: wasm
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Setup Emscripten
@@ -266,7 +266,7 @@ jobs:
       matrix:
         abi: [arm64-v8a, armeabi-v7a]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Setup
