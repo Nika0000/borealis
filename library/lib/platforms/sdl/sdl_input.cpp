@@ -16,6 +16,7 @@
 */
 
 #include <borealis/core/application.hpp>
+#include <borealis/core/ime.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/platforms/sdl/sdl_input.hpp>
 
@@ -652,8 +653,11 @@ void SDLInputManager::updateUnifiedControllerState(ControllerState* state)
         }
     }
 
-    // Add keyboard keys on top of gamepad buttons
-    for (size_t i = 2; i < SDL_GAMEPAD_BUTTON_MAX; i++)
+    // Add keyboard keys on top of gamepad buttons, except while inline text input owns the keyboard
+    // (arrows and letters are text/caret input there, not navigation or actions)
+    ImeManager* ime            = Application::getImeManager();
+    const bool keyboardIsText = ime && ime->isInlineTextActive();
+    for (size_t i = 2; i < SDL_GAMEPAD_BUTTON_MAX && !keyboardIsText; i++)
     {
         size_t brlsButton = SDL_BUTTONS_MAPPING[i];
         size_t key        = SDL_GAMEPAD_TO_KEYBOARD[i];

@@ -28,6 +28,7 @@ class GLFWImeManager : public ImeManager
 {
   public:
     GLFWImeManager(GLFWwindow* window);
+    ~GLFWImeManager() override;
 
     bool openForText(std::function<void(std::string)> f, std::string headerText = "",
         std::string subText = "", int maxStringLength = 32, std::string initialText = "",
@@ -41,8 +42,26 @@ class GLFWImeManager : public ImeManager
     void openInputDialog(std::function<void(std::string)> cb, std::string headerText,
         std::string subText, size_t maxStringLength = 50, std::string initialText = "");
 
+    bool supportsInline() const override;
+    bool beginInlineText(const InlineTextConfig& config) override;
+    void endInlineText() override;
+    bool isInlineTextActive() const override { return inlineActive; }
+    void updateInlineCaret() override;
+
   private:
     GLFWwindow* window;
+
+    // Inline session state (the dialog path keeps using the statics below)
+    InlineTextConfig inlineConfig;
+    bool inlineActive    = false;
+    bool inlineKeyHooked = false;
+    bool inlinePreeditActive = false;
+    void clearInlinePreedit();
+    inline static GLFWImeManager* instance = nullptr;
+    void handleInlineKey(int key, short mods);
+    void handleInlinePreedit(int preeditCount, unsigned int* preeditString, int caret);
+    void handleInlineChar(unsigned int codepoint);
+
     inline static bool showIME;
     inline static std::wstring textBuffer;
     inline static std::string preeditTextBuffer;

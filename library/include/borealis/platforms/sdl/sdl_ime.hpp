@@ -56,8 +56,24 @@ class SDLImeManager : public ImeManager
         const std::string& initialText = ""
     );
 
+    bool supportsInline() const override;
+    bool beginInlineText(const InlineTextConfig& config) override;
+    void endInlineText() override;
+    bool isInlineTextActive() const override { return m_inlineActive; }
+    void updateInlineCaret() override;
+
   private:
     Event<SDL_Event*>* m_event;
+
+    // Inline session state
+    InlineTextConfig m_inlineConfig;
+    bool m_inlineActive = false;
+    bool m_inlineHooked = false;
+    bool m_dialogActive = false;
+    bool m_inlinePreeditActive = false;
+    void clearInlinePreedit();
+    void handleInlineEvent(SDL_Event* e);
+    void handleInlineKey(int key, short mods);
 
     int m_cursor;
     std::string m_inputBuffer;

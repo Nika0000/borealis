@@ -16,12 +16,19 @@ limitations under the License.
 
 #include <borealis/core/application.hpp>
 #include <borealis/core/event.hpp>
+#include <borealis/core/input.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/platforms/sdl/sdl_ime.hpp>
 #include <borealis/platforms/sdl/sdl_video.hpp>
 #include <borealis/views/edit_text_dialog.hpp>
 
 #include "borealis/core/thread.hpp"
+
+#include <algorithm>
+#include <cstdlib>
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 
 #ifdef __PSV__
 extern "C" uint8_t* vita_ime_init_text;
@@ -37,6 +44,17 @@ __attribute__((weak)) uint32_t vita_ime_type = 0;
 namespace brls
 {
 SDLImeManager::SDLImeManager(Event<SDL_Event*>* event) : m_event(event), m_cursor(-1) {}
+
+// View (content) coordinates -> window coordinates. Must match the mouse mapping
+// in sdl_input.cpp, and is evaluated per call so window resizes are honored.
+[[maybe_unused]] static float imeWindowScale()
+{
+#if defined(BOREALIS_USE_D3D11) || defined(BOREALIS_USE_METAL)
+    return Application::windowScale;
+#else
+    return Application::windowScale / Application::getPlatform()->getVideoContext()->getScaleFactor();
+#endif
+}
 
 static int utf8_len(std::string& s)
 {
@@ -101,6 +119,10 @@ void SDLImeManager::openInputDialog(
     const std::string& initialText
 )
 {
+    // A modal dialog session replaces any inline session
+    endInlineText();
+    m_dialogActive = true;
+
     SDLVideoContext* videoContext = (SDLVideoContext*) Application::getPlatform()->getVideoContext();
     SDL_Window* window            = videoContext->getSDLWindow();
     EditTextDialog* dialog        = new EditTextDialog();
@@ -180,16 +202,12 @@ void SDLImeManager::openInputDialog(
         updateText();
         updateTextCursor();
     }
-#if defined(BOREALIS_USE_D3D11) || defined(BOREALIS_USE_METAL)
-    float scale = Application::windowScale;
-#else
-    float scale = Application::windowScale / Application::getPlatform()->getVideoContext()->getScaleFactor();
-#endif
     // 更新输入法条位置
     dialog->getLayoutEvent()->subscribe(
-        [window, scale](Point p)
+        [window](Point p)
         {
 #ifndef PS4
+            float scale         = imeWindowScale();
             const SDL_Rect rect = { (int) (p.x * scale), (int) (p.y * scale), 100, 20 };
             SDL_SetTextInputArea(window, &rect, 0);
 #endif
@@ -299,6 +317,7 @@ void SDLImeManager::openInputDialog(
     dialog->getCancelEvent()->subscribe(
         [this, window, eventID1]()
         {
+            m_dialogActive = false;
             SDL_StopTextInput(window);
             this->m_event->unsubscribe(eventID1);
             Application::getPlatform()->getInputManager()->clearInputState();
@@ -309,6 +328,7 @@ void SDLImeManager::openInputDialog(
     dialog->getSubmitEvent()->subscribe(
         [this, window, eventID1, cb]()
         {
+            m_dialogActive = false;
             SDL_StopTextInput(window);
             this->m_event->unsubscribe(eventID1);
             Application::getPlatform()->getInputManager()->clearInputState();
@@ -320,6 +340,185 @@ void SDLImeManager::openInputDialog(
     Application::getPlatform()->getInputManager()->clearInputState();
     SDL_StartTextInput(window);
     dialog->open();
+}
+
+bool SDLImeManager::supportsInline() const
+{
+    // Desktop only: consoles, Vita, Android and iOS/tvOS keep the dialog path
+#if defined(__PSV__) || defined(PS4) || defined(__SWITCH__) || defined(__ANDROID__)
+    return false;
+#elif defined(__APPLE__) && TARGET_OS_IPHONE
+    return false;
+#else
+#ifdef __linux__
+    // Steam Deck uses the Steam on-screen keyboard through the dialog path
+    if (getenv("SteamDeck"))
+        return false;
+#endif
+    return true;
+#endif
+}
+
+void SDLImeManager::updateInlineCaret()
+{
+#if !defined(PS4)
+    if (!m_inlineActive || !m_inlineConfig.caretRect)
+        return;
+    SDL_Window* window = ((SDLVideoContext*) Application::getPlatform()->getVideoContext())->getSDLWindow();
+    Rect r             = m_inlineConfig.caretRect();
+    float scale        = imeWindowScale();
+    const SDL_Rect rect = {
+        (int) (r.getMinX() * scale), (int) (r.getMinY() * scale),
+        std::max(1, (int) (r.getWidth() * scale)), std::max(1, (int) (r.getHeight() * scale))
+    };
+    SDL_SetTextInputArea(window, &rect, 0);
+#endif
+}
+
+bool SDLImeManager::beginInlineText(const InlineTextConfig& config)
+{
+    if (!supportsInline() || m_inlineActive || m_dialogActive)
+        return false;
+
+    // Subscribed once and never removed (unsubscribing from inside a fire is unsafe); gated by m_inlineActive.
+    // The hooks capture `this`: this is safe because the platform (event source) and the input manager
+    // are destroyed together with this manager, so they can no longer fire once we are gone.
+    if (!m_inlineHooked)
+    {
+        m_inlineHooked = true;
+        m_event->subscribe(
+            [this](SDL_Event* e)
+            {
+                if (m_inlineActive)
+                    handleInlineEvent(e);
+            }
+        );
+        Application::getPlatform()->getInputManager()->getKeyboardKeyStateChanged()->subscribe(
+            [this](const KeyState& state)
+            {
+                if (m_inlineActive && state.pressed)
+                    handleInlineKey((int) state.key, state.mods);
+            }
+        );
+    }
+
+    m_inlineConfig        = config;
+    m_inlinePreeditActive = false;
+    m_inlineActive        = true;
+    SDL_Window* window    = ((SDLVideoContext*) Application::getPlatform()->getVideoContext())->getSDLWindow();
+    SDL_StartTextInput(window);
+    updateInlineCaret();
+    return true;
+}
+
+void SDLImeManager::endInlineText()
+{
+    if (!m_inlineActive)
+        return;
+    // Move the config out first: this may be called from inside one of its callbacks
+    InlineTextConfig finished = std::move(m_inlineConfig);
+    m_inlineConfig            = InlineTextConfig {};
+    m_inlineActive            = false;
+    m_inlinePreeditActive     = false;
+    SDL_Window* window        = ((SDLVideoContext*) Application::getPlatform()->getVideoContext())->getSDLWindow();
+    SDL_StopTextInput(window);
+    if (finished.onEnd)
+        finished.onEnd();
+}
+
+// Tells the view the composition is gone (a commit replaces it)
+void SDLImeManager::clearInlinePreedit()
+{
+    if (!m_inlinePreeditActive)
+        return;
+    m_inlinePreeditActive = false;
+    auto cb               = m_inlineConfig.onPreedit;
+    if (cb)
+        cb("", 0);
+}
+
+void SDLImeManager::handleInlineEvent(SDL_Event* e)
+{
+    if (e->type == SDL_EVENT_TEXT_INPUT)
+    {
+        std::string text = filterInlineText(e->text.text, m_inlineConfig.kbdDisableBitmask);
+        if (text.empty())
+            return;
+        clearInlinePreedit();
+        if (!m_inlineActive)
+            return;
+        auto cb = m_inlineConfig.onCommit;
+        if (cb)
+            cb(text);
+        updateInlineCaret();
+    }
+    else if (e->type == SDL_EVENT_TEXT_EDITING)
+    {
+        std::string text = e->edit.text ? e->edit.text : "";
+        int caret        = e->edit.start;
+        if (caret < 0 || caret > utf8_len(text))
+            caret = utf8_len(text);
+        m_inlinePreeditActive = !text.empty();
+        auto cb               = m_inlineConfig.onPreedit;
+        if (cb)
+            cb(text, caret);
+        updateInlineCaret();
+    }
+}
+
+void SDLImeManager::handleInlineKey(int key, short mods)
+{
+    InlineTextKey k;
+    switch (key)
+    {
+        case BRLS_KBD_KEY_BACKSPACE:
+            k = InlineTextKey::BACKSPACE;
+            break;
+        case BRLS_KBD_KEY_DELETE:
+            k = InlineTextKey::DELETE_FORWARD;
+            break;
+        case BRLS_KBD_KEY_LEFT:
+            k = InlineTextKey::LEFT;
+            break;
+        case BRLS_KBD_KEY_RIGHT:
+            k = InlineTextKey::RIGHT;
+            break;
+        case BRLS_KBD_KEY_HOME:
+            k = InlineTextKey::HOME;
+            break;
+        case BRLS_KBD_KEY_END:
+            k = InlineTextKey::END;
+            break;
+        case BRLS_KBD_KEY_UP:
+            k = InlineTextKey::UP;
+            break;
+        case BRLS_KBD_KEY_DOWN:
+            k = InlineTextKey::DOWN;
+            break;
+        case BRLS_KBD_KEY_V:
+        {
+#ifdef __APPLE__
+            bool paste = mods & (BRLS_KBD_MODIFIER_CTRL | BRLS_KBD_MODIFIER_META);
+#else
+            bool paste = mods & BRLS_KBD_MODIFIER_CTRL;
+#endif
+            auto cb = m_inlineConfig.onPaste;
+            if (paste && cb)
+            {
+                std::string text = filterInlineText(stripInlineControl(Application::getPlatform()->pasteFromClipboard()), m_inlineConfig.kbdDisableBitmask);
+                if (!text.empty())
+                    cb(text);
+                updateInlineCaret();
+            }
+            return;
+        }
+        default:
+            return;
+    }
+    auto cb = m_inlineConfig.onKey;
+    if (cb)
+        cb(k);
+    updateInlineCaret();
 }
 
 bool SDLImeManager::openForText(

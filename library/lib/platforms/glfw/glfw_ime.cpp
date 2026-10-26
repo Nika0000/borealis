@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <borealis/core/application.hpp>
 #include <borealis/core/box.hpp>
+#include <borealis/core/input.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/core/thread.hpp>
 #include <borealis/platforms/desktop/steam_deck.hpp>
@@ -27,6 +28,7 @@ limitations under the License.
 #include <borealis/views/dialog.hpp>
 #include <borealis/views/edit_text_dialog.hpp>
 #include <borealis/views/label.hpp>
+#include <algorithm>
 #include <codecvt>
 #include <cstring>
 #include <iostream>
@@ -68,6 +70,17 @@ static size_t encode_utf8(char* s, unsigned int ch)
     return count;
 }
 
+// View (content) coordinates -> window coordinates. Must match the mouse mapping
+// in glfw_input.cpp, and is evaluated per call so window resizes are honored.
+static float imeWindowScale()
+{
+#if defined(BOREALIS_USE_METAL) || defined(BOREALIS_USE_D3D11)
+    return Application::windowScale;
+#else
+    return Application::windowScale / Application::getPlatform()->getVideoContext()->getScaleFactor();
+#endif
+}
+
 void GLFWImeManager::ime_callback(GLFWwindow* window)
 {
     currentIMEStatus = glfwGetInputMode(window, GLFW_IME);
@@ -78,6 +91,11 @@ void GLFWImeManager::preedit_callback(GLFWwindow* window, int preeditCount,
     unsigned int* preeditString, int blockCount,
     int* blockSizes, int focusedBlock, int caret)
 {
+    if (instance && instance->inlineActive)
+    {
+        instance->handleInlinePreedit(preeditCount, preeditString, caret);
+        return;
+    }
     int blockIndex = -1, remainingBlockSize = 0;
     if (preeditCount == 0 || blockCount == 0)
     {
@@ -135,6 +153,11 @@ void GLFWImeManager::preedit_callback(GLFWwindow* window, int preeditCount,
 
 void GLFWImeManager::char_callback(GLFWwindow* window, unsigned int codepoint)
 {
+    if (instance && instance->inlineActive)
+    {
+        instance->handleInlineChar(codepoint);
+        return;
+    }
     if (!showIME)
         return;
     if (cursor < 0 || cursor > (int)textBuffer.size())
@@ -147,6 +170,7 @@ GLFWImeManager::GLFWImeManager(GLFWwindow* window)
     : window(window)
 {
     showIME          = false;
+    instance         = this;
     currentIMEStatus = glfwGetInputMode(window, GLFW_IME);
     glfwSetPreeditCursorRectangle(window, 0, 0, 1, 1);
     glfwSetIMEStatusCallback(window, ime_callback);
@@ -154,9 +178,21 @@ GLFWImeManager::GLFWImeManager(GLFWwindow* window)
     glfwSetCharCallback(window, char_callback);
 }
 
+GLFWImeManager::~GLFWImeManager()
+{
+    endInlineText();
+    glfwSetIMEStatusCallback(window, nullptr);
+    glfwSetPreeditCallback(window, nullptr);
+    glfwSetCharCallback(window, nullptr);
+    if (instance == this)
+        instance = nullptr;
+}
+
 void GLFWImeManager::openInputDialog(std::function<void(std::string)> cb, std::string headerText,
     std::string subText, size_t maxStringLength, std::string initialText)
 {
+    // A modal dialog session replaces any inline session
+    endInlineText();
 #ifdef __linux__
     if (isSteamDeck())
     {
@@ -176,13 +212,10 @@ void GLFWImeManager::openInputDialog(std::function<void(std::string)> cb, std::s
     dialog->setHintText(subText);
     dialog->setHeaderText(headerText);
     dialog->setCountText(std::to_string(utf8len(initialText.data())) + "/" + std::to_string(maxStringLength));
-#if defined(BOREALIS_USE_D3D11)
-    float scale = Application::windowScale;
-#else
-    float scale = Application::windowScale / Application::getPlatform()->getVideoContext()->getScaleFactor();
-#endif
-    dialog->getLayoutEvent()->subscribe([this, scale](Point p)
-        { glfwSetPreeditCursorRectangle(window, p.x * scale, p.y * scale, 1, 1); });
+    dialog->getLayoutEvent()->subscribe([this](Point p)
+        {
+            float scale = imeWindowScale();
+            glfwSetPreeditCursorRectangle(window, p.x * scale, p.y * scale, 1, 1); });
 
     dialog->getClipboardEvent()->subscribe([dialog, maxStringLength](const std::string& str)
         {
@@ -289,6 +322,169 @@ void GLFWImeManager::openInputDialog(std::function<void(std::string)> cb, std::s
             return true; });
 
     dialog->open();
+}
+
+bool GLFWImeManager::supportsInline() const
+{
+#ifdef __linux__
+    // Steam Deck uses the Steam on-screen keyboard through the dialog path
+    if (isSteamDeck())
+        return false;
+#endif
+    return true;
+}
+
+void GLFWImeManager::updateInlineCaret()
+{
+    if (!inlineActive || !inlineConfig.caretRect)
+        return;
+    Rect r      = inlineConfig.caretRect();
+    float scale = imeWindowScale();
+    glfwSetPreeditCursorRectangle(window, (int)(r.getMinX() * scale), (int)(r.getMinY() * scale),
+        std::max(1, (int)(r.getWidth() * scale)), std::max(1, (int)(r.getHeight() * scale)));
+}
+
+bool GLFWImeManager::beginInlineText(const InlineTextConfig& config)
+{
+    if (!supportsInline() || inlineActive || showIME)
+        return false;
+
+    // Subscribed once and never removed (unsubscribing from inside a fire is unsafe); gated by inlineActive.
+    // The hook captures `this`: this is safe because the platform destroys the input manager
+    // before this manager, so the event can no longer fire once we are gone.
+    if (!inlineKeyHooked)
+    {
+        inlineKeyHooked = true;
+        Application::getPlatform()->getInputManager()->getKeyboardKeyStateChanged()->subscribe(
+            [this](const KeyState& state)
+            {
+                if (inlineActive && state.pressed)
+                    handleInlineKey((int)state.key, state.mods);
+            });
+    }
+
+    inlineConfig        = config;
+    inlinePreeditActive = false;
+    inlineActive        = true;
+    glfwSetInputMode(window, GLFW_IME, GLFW_TRUE);
+    updateInlineCaret();
+    return true;
+}
+
+void GLFWImeManager::endInlineText()
+{
+    if (!inlineActive)
+        return;
+    // Move the config out first: this may be called from inside one of its callbacks
+    InlineTextConfig finished = std::move(inlineConfig);
+    inlineConfig              = InlineTextConfig {};
+    inlineActive              = false;
+    inlinePreeditActive       = false;
+    glfwSetInputMode(window, GLFW_IME, GLFW_FALSE);
+    if (finished.onEnd)
+        finished.onEnd();
+}
+
+// Tells the view the composition is gone (a commit replaces it)
+void GLFWImeManager::clearInlinePreedit()
+{
+    if (!inlinePreeditActive)
+        return;
+    inlinePreeditActive = false;
+    auto cb             = inlineConfig.onPreedit;
+    if (cb)
+        cb("", 0);
+}
+
+void GLFWImeManager::handleInlineChar(unsigned int codepoint)
+{
+    if (codepoint < 0x20 || codepoint == 0x7f)
+        return;
+    char encoded[5];
+    size_t n  = encode_utf8(encoded, codepoint);
+    auto text = filterInlineText(std::string(encoded, n), inlineConfig.kbdDisableBitmask);
+    if (text.empty())
+        return;
+    clearInlinePreedit();
+    if (!inlineActive)
+        return;
+    auto cb = inlineConfig.onCommit;
+    if (cb)
+        cb(text);
+    updateInlineCaret();
+}
+
+void GLFWImeManager::handleInlinePreedit(int preeditCount, unsigned int* preeditString, int caret)
+{
+    std::string text;
+    for (int i = 0; i < preeditCount; i++)
+    {
+        char encoded[5];
+        size_t n = encode_utf8(encoded, preeditString[i]);
+        text.append(encoded, n);
+    }
+    if (caret < 0 || caret > preeditCount)
+        caret = preeditCount;
+    inlinePreeditActive = !text.empty();
+    auto cb             = inlineConfig.onPreedit;
+    if (cb)
+        cb(text, caret);
+    updateInlineCaret();
+}
+
+void GLFWImeManager::handleInlineKey(int key, short mods)
+{
+    InlineTextKey k;
+    switch (key)
+    {
+        case BRLS_KBD_KEY_BACKSPACE:
+            k = InlineTextKey::BACKSPACE;
+            break;
+        case BRLS_KBD_KEY_DELETE:
+            k = InlineTextKey::DELETE_FORWARD;
+            break;
+        case BRLS_KBD_KEY_LEFT:
+            k = InlineTextKey::LEFT;
+            break;
+        case BRLS_KBD_KEY_RIGHT:
+            k = InlineTextKey::RIGHT;
+            break;
+        case BRLS_KBD_KEY_HOME:
+            k = InlineTextKey::HOME;
+            break;
+        case BRLS_KBD_KEY_END:
+            k = InlineTextKey::END;
+            break;
+        case BRLS_KBD_KEY_UP:
+            k = InlineTextKey::UP;
+            break;
+        case BRLS_KBD_KEY_DOWN:
+            k = InlineTextKey::DOWN;
+            break;
+        case BRLS_KBD_KEY_V:
+        {
+#ifdef __APPLE__
+            bool paste = mods & (BRLS_KBD_MODIFIER_CTRL | BRLS_KBD_MODIFIER_META);
+#else
+            bool paste = mods & BRLS_KBD_MODIFIER_CTRL;
+#endif
+            auto cb = inlineConfig.onPaste;
+            if (paste && cb)
+            {
+                auto text = filterInlineText(stripInlineControl(Application::getPlatform()->pasteFromClipboard()), inlineConfig.kbdDisableBitmask);
+                if (!text.empty())
+                    cb(text);
+                updateInlineCaret();
+            }
+            return;
+        }
+        default:
+            return;
+    }
+    auto cb = inlineConfig.onKey;
+    if (cb)
+        cb(k);
+    updateInlineCaret();
 }
 
 std::string GLFWImeManager::getInputText()

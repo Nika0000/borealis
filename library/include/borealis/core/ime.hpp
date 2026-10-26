@@ -18,6 +18,7 @@ limitations under the License.
 
 #pragma once
 
+#include <borealis/core/geometry.hpp>
 #include <functional>
 #include <string>
 
@@ -37,6 +38,85 @@ enum KeyboardKeyDisableBitmask
     KEYBOARD_DISABLE_USERNAME     = 1 << 7,
 };
 
+enum class InlineTextKey
+{
+    BACKSPACE,
+    DELETE_FORWARD,
+    LEFT,
+    RIGHT,
+    HOME,
+    END,
+    UP,
+    DOWN,
+};
+
+/**
+ * Non-modal text input session. The owning view keeps the text; the backend
+ * only reports input. All callbacks run on the UI thread and may be empty.
+ */
+struct InlineTextConfig
+{
+    std::string initialText; // advisory: the view owns the text
+    int maxLength         = 0; // in code points, 0 = unlimited. Advisory: the view enforces it
+    int kbdDisableBitmask = KEYBOARD_DISABLE_NONE; // single-character bits filter committed/pasted text
+
+    // Caret rectangle in view (content) coordinates, used to place the IME candidate window
+    std::function<Rect()> caretRect;
+
+    std::function<void(const std::string&)> onCommit; // finished text (UTF-8)
+    std::function<void(const std::string&, int)> onPreedit; // composition (UTF-8) + caret in code points; empty = cleared
+    std::function<void(InlineTextKey)> onKey; // backspace / delete / cursor movement
+    std::function<void(const std::string&)> onPaste; // clipboard text (UTF-8, control characters stripped, bitmask applied)
+
+    // Fired once whenever the session ends, including when the backend closes it
+    // (e.g. an EditTextDialog opens) and when endInlineText() is called by the owner.
+    std::function<void()> onEnd;
+};
+
+/** Removes control characters (newlines, tabs, < 0x20, 0x7f), used for pasted text. */
+inline std::string stripInlineControl(const std::string& text)
+{
+    std::string out;
+    out.reserve(text.size());
+    for (char c : text)
+    {
+        unsigned char u = (unsigned char)c;
+        if (u < 0x20 || u == 0x7f)
+            continue;
+        out.push_back(c);
+    }
+    return out;
+}
+
+/**
+ * Removes characters disallowed by a KeyboardKeyDisableBitmask. Only the bits
+ * that map to single characters are applied; USERNAME/DOWNLOADCODE are left to the caller.
+ */
+inline std::string filterInlineText(const std::string& text, int mask)
+{
+    if (mask == KEYBOARD_DISABLE_NONE)
+        return text;
+    std::string out;
+    out.reserve(text.size());
+    for (char c : text)
+    {
+        if ((mask & KEYBOARD_DISABLE_SPACE) && c == ' ')
+            continue;
+        if ((mask & KEYBOARD_DISABLE_AT) && c == '@')
+            continue;
+        if ((mask & KEYBOARD_DISABLE_PERCENT) && c == '%')
+            continue;
+        if ((mask & KEYBOARD_DISABLE_FORWSLASH) && c == '/')
+            continue;
+        if ((mask & KEYBOARD_DISABLE_BACKSLASH) && c == '\\')
+            continue;
+        if ((mask & KEYBOARD_DISABLE_NUMBERS) && c >= '0' && c <= '9')
+            continue;
+        out.push_back(c);
+    }
+    return out;
+}
+
 class ImeManager
 {
   public:
@@ -52,6 +132,26 @@ class ImeManager
         std::string leftButton = "", std::string rightButton = "",
         int kbdDisableBitmask = KeyboardKeyDisableBitmask::KEYBOARD_DISABLE_NONE)
         = 0;
+
+    /**
+     * True if beginInlineText() is available (desktop GLFW/SDL only).
+     * Callers must fall back to openForText() otherwise.
+     */
+    virtual bool supportsInline() const { return false; }
+
+    /**
+     * Starts a non-modal text session. Only one can be active; fails if one is
+     * already active or an EditTextDialog session is open.
+     */
+    virtual bool beginInlineText(const InlineTextConfig& config) { return false; }
+
+    /** Safe to call from inside any session callback. Fires InlineTextConfig::onEnd. */
+    virtual void endInlineText() { }
+
+    virtual bool isInlineTextActive() const { return false; }
+
+    /** Re-reads InlineTextConfig::caretRect and moves the candidate window. */
+    virtual void updateInlineCaret() { }
 };
 
 };
