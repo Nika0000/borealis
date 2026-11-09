@@ -253,6 +253,7 @@ class View
     float m_highlightCornerRadius = 0.0f;
 
     Animatable m_clickAlpha = 0.0f; // animated between 0 and 1
+    float m_hoverAlpha      = 0.0f;
 
     bool m_highlightShaking = false;
     Time m_highlightShakeStart;
@@ -1629,6 +1630,11 @@ class View
      * Sets the click animation alpha value directly.
      */
     void setClickAlpha(float a) { this->m_clickAlpha = a; }
+
+    /**
+     * Sets the hover overlay alpha independently of the click animation.
+     */
+    void setHoverAlpha(float a) { this->m_hoverAlpha = a; }
 
     /**
      * Forces this view and its children to use

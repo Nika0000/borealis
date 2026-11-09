@@ -217,7 +217,7 @@ void View::frame(FrameContext* ctx)
             nvgRestore(ctx->vg);
 
         // draw click animation
-        if (this->m_clickAlpha > 0.0f && !this->m_hideClickAnimation)
+        if ((this->m_clickAlpha > 0.0f || this->m_hoverAlpha > 0.0f) && !this->m_hideClickAnimation)
             this->drawClickAnimation(ctx->vg, ctx, frame);
 
         // draw highlight
@@ -276,7 +276,10 @@ void View::playClickAnimation(bool reverse, bool animateBack, bool force)
 
     Style style = Application::getStyle();
 
-    this->m_clickAlpha.reset(reverse ? 1.0f : 0.0f);
+    // Start hovered clicks from the visible overlay.
+    const float initialAlpha
+        = this->m_hoverAlpha > 0.0f ? std::max(this->m_clickAlpha.getValue(), this->m_hoverAlpha) : (reverse ? 1.0f : 0.0f);
+    this->m_clickAlpha.reset(initialAlpha);
 
     this->m_clickAlpha.addStep(
         reverse ? 0.0f : 1.0f, style["brls/animations/highlight"], reverse ? EasingFunction::quadraticOut : EasingFunction::quadraticIn
@@ -300,7 +303,7 @@ void View::drawClickAnimation(NVGcontext* vg, FrameContext* ctx, Rect frame)
     Theme theme    = ctx->theme;
     NVGcolor color = theme["brls/click_pulse"];
 
-    color.a *= this->m_clickAlpha;
+    color.a *= std::max(this->m_clickAlpha.getValue(), this->m_hoverAlpha);
 
     nvgFillColor(vg, a(color));
     nvgBeginPath(vg);
@@ -320,7 +323,7 @@ void View::drawClickAnimation(NVGcontext* vg, FrameContext* ctx, Rect frame)
             this->m_cornerRadii[3]
         );
     else
-        nvgRoundedRect(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), 4);
+        nvgRoundedRect(vg, frame.getMinX(), frame.getMinY(), frame.getWidth(), frame.getHeight(), this->m_cornerRadius);
 
     nvgFill(vg);
 }

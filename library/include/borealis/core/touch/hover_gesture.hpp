@@ -32,6 +32,7 @@ typedef Event<HoverGestureStatus> HoverGestureEvent;
 // START: first frame when the cursor is over the view without any buttons pressed
 // STAY: subsequent frames while the cursor remains over the view (even if idle)
 // END: when the cursor leaves the view (synthetic signal)
+// Mouse button gestures pause updates while preserving the current hover.
 class HoverGestureRecognizer : public GestureRecognizer
 {
   public:

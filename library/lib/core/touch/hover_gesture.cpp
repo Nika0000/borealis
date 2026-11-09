@@ -27,13 +27,13 @@ HoverGestureRecognizer::HoverGestureRecognizer(View* view, HoverGestureConfig co
             if (status.state == GestureState::START)
             {
                 Application::getPlatform()->getInputManager()->setCursorType(config.cursor);
-                view->setClickAlpha(0.8f);
+                view->setHoverAlpha(0.8f);
             }
 
             if (status.state == GestureState::END)
             {
                 Application::getPlatform()->getInputManager()->setCursorType(CursorType::CURSOR_DEFAULT);
-                view->setClickAlpha(0.0f);
+                view->setHoverAlpha(0.0f);
             } });
 }
 
@@ -56,6 +56,11 @@ GestureState HoverGestureRecognizer::recognitionLoop(TouchState touch, MouseStat
     // Hover is mouse-only: ignore touch-based interactions
     if (touch.phase != TouchPhase::NONE)
     {
+        if (lastState == GestureState::START || lastState == GestureState::STAY)
+        {
+            this->state = GestureState::END;
+            this->hoverEvent.fire(getCurrentStatus());
+        }
         this->state = GestureState::FAILED;
         lastState   = this->state;
         return this->state;
@@ -71,13 +76,13 @@ GestureState HoverGestureRecognizer::recognitionLoop(TouchState touch, MouseStat
         return this->state;
     }
 
-    // If any mouse button is engaged, not a hover
-    bool anyButton = mouse.leftButton != TouchPhase::NONE || mouse.middleButton != TouchPhase::NONE || mouse.rightButton != TouchPhase::NONE;
+    // Pause recognition during a click without losing the existing hover.
+    // Resuming over the same view must not emit another START or interrupt a tap.
+    bool anyButton
+        = mouse.leftButton != TouchPhase::NONE || mouse.middleButton != TouchPhase::NONE || mouse.rightButton != TouchPhase::NONE;
     if (anyButton)
     {
-        this->state = GestureState::FAILED;
-        lastState   = this->state;
-        return this->state;
+        return GestureState::FAILED;
     }
 
     // Track position and delta
